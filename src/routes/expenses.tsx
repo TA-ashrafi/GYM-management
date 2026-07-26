@@ -19,7 +19,7 @@ function Expenses() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string>("Other");
 
-  // Fetch expenses — current branch only
+  // Fetch expenses for the current branch only
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
@@ -42,13 +42,14 @@ function Expenses() {
     total: expenses.filter((e) => e.category === c).reduce((a, e) => a + (e.amount ?? 0), 0),
   }));
 
+  // Add a new expense
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !amount) return;
 
     const branchId = getActiveBranchId();
     if (!branchId) {
-      toast.error("Branch select nahi hai");
+      toast.error("No branch selected");
       return;
     }
 
@@ -69,12 +70,13 @@ function Expenses() {
       setTitle("");
       setAmount("");
       setCategory("Other");
-      toast.success("Expense added");
+      toast.success("Expense added successfully");
     } else {
       toast.error(error?.message || "Failed to add expense");
     }
   }
 
+  // Delete an expense
   async function deleteExpense(id: string) {
     if (!confirm("Delete this expense?")) return;
 
@@ -82,9 +84,9 @@ function Expenses() {
 
     if (!error) {
       setExpenses((prev) => prev.filter((x) => x.id !== id));
-      toast.success("Expense deleted");
+      toast.success("Expense deleted successfully");
     } else {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete expense");
     }
   }
 
@@ -95,6 +97,7 @@ function Expenses() {
         subtitle={`Total: ${inr(total)} across ${expenses.length} entries`} 
       />
 
+      {/* Category Summary Cards */}
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
         {byCat.map(({ c, total }) => (
           <div key={c} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
@@ -169,7 +172,7 @@ function Expenses() {
             {expenses.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center py-12 text-muted-foreground">
-                  No expenses yet.
+                  No expenses recorded yet.
                 </td>
               </tr>
             )}

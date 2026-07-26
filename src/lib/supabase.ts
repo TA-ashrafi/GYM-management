@@ -1,27 +1,46 @@
 import { createClient } from "@supabase/supabase-js";
 
+// ==================== Supabase Client Initialization ====================
+
 const url = import.meta.env.VITE_SUPABASE_URL as string;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(url, key);
 
-// Branch context
+// ==================== Branch Context Management ====================
+
 const BRANCH_KEY = "fs_active_branch";
 
+/**
+ * Get the currently active branch ID from localStorage
+ * @returns The active branch ID or null if not set
+ */
 export function getActiveBranchId(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(BRANCH_KEY);
 }
 
+/**
+ * Set the active branch ID in localStorage
+ * @param id - The branch ID to set as active
+ */
 export function setActiveBranchId(id: string) {
   localStorage.setItem(BRANCH_KEY, id);
 }
 
+/**
+ * Clear the active branch ID from localStorage
+ */
 export function clearActiveBranch() {
   localStorage.removeItem(BRANCH_KEY);
 }
 
-// Branches fetch
+// ==================== Branch Queries ====================
+
+/**
+ * Fetch all branches for the current user
+ * @returns Array of branch objects or empty array on error
+ */
 export async function fetchBranches() {
   const { data, error } = await supabase
     .from("branches")
@@ -31,7 +50,12 @@ export async function fetchBranches() {
   return data ?? [];
 }
 
-// Members fetch for active branch
+// ==================== Member Queries ====================
+
+/**
+ * Fetch all members for the currently active branch
+ * @returns Array of mapped member objects or empty array on error
+ */
 export async function fetchMembers() {
   const branchId = getActiveBranchId();
   if (!branchId) return [];
@@ -44,6 +68,11 @@ export async function fetchMembers() {
   return (data ?? []).map(mapMember);
 }
 
+/**
+ * Map a database row to a Member object
+ * @param row - The raw database row
+ * @returns A formatted Member object
+ */
 export function mapMember(row: any) {
   return {
     id: row.id,

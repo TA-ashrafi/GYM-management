@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { useGym, daysUntil, money, generateSlots } from "@/lib/gym-store";
 import { fetchMembers, supabase } from "@/lib/supabase";
 
+// Helper function to determine member status
 function statusOf(m: any): "active" | "expiring" | "expired" {
   const d = daysUntil(m.expiryDate);
   if (d < 0) return "expired";
@@ -14,6 +15,7 @@ function statusOf(m: any): "active" | "expiring" | "expired" {
   return "active";
 }
 
+// Helper function to get plan badge details
 function planBadge(plan: string) {
   if (plan === "Yearly") return { stars: 3, golden: true };
   if (plan === "HalfYearly") return { stars: 2, golden: false };
@@ -32,10 +34,11 @@ export const Route = createFileRoute("/members")({
   component: MembersRoot,
 });
 
+// Root component to handle nested routes
 function MembersRoot() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   
-  // Yeh important hai - /members/new pe Outlet render hoga
+  // Render Outlet for /members/new route
   if (pathname === "/members/new" || pathname.startsWith("/members/new")) {
     return <Outlet />;
   }
@@ -60,33 +63,36 @@ function MembersPage() {
   const filter = navSearch.filter ?? "all";
   const setFilter = (f: typeof filter) => navigate({ search: { filter: f } });
 
+  // Fetch members on mount
   useEffect(() => {
     fetchMembers().then(setMembers);
   }, []);
 
+  // Delete a member
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete ${name}?`)) return;
     const { error } = await supabase.from("members").delete().eq("id", id);
     if (!error) setMembers((prev) => prev.filter((m) => m.id !== id));
   }
 
+  // Renew a member's plan
   async function handleRenew(m: any) {
     const plan = m.plan as "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
     const DAYS: Record<string, number> = {
       Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365
     };
     
-    // Aaj se ya expiry date se — jo baad mein ho wahan se renew karo
+    // Renew from today or expiry date — whichever is later
     const baseDate = new Date(m.expiryDate) > new Date() 
-      ? new Date(m.expiryDate)  // Pehle se active hai — extend karo
-      : new Date();              // Expire ho gaya — aaj se shuru
+      ? new Date(m.expiryDate)  // Still active — extend from expiry
+      : new Date();              // Expired — start from today
     
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
 
     const confirmed = confirm(
-      `${m.name} ka ${plan} plan renew karo?\n` +
-      `Nai expiry: ${newExpiry.toLocaleDateString("en-IN")}`
+      `Renew ${m.name}'s ${plan} plan?\n` +
+      `New expiry: ${newExpiry.toLocaleDateString("en-IN")}`
     );
     if (!confirmed) return;
 
@@ -106,12 +112,13 @@ function MembersPage() {
             : x
         )
       );
-      toast.success(`${m.name} ka plan renew ho gaya! ✓`);
+      toast.success(`${m.name}'s plan renewed successfully! ✓`);
     } else {
       toast.error(error.message);
     }
   }
 
+  // Filter members based on search and filter criteria
   const filtered = members.filter((m) => {
     const s = statusOf(m);
     const matchesSearch = !q ||
@@ -124,7 +131,7 @@ function MembersPage() {
     if (filter === "expiring") return s === "expiring";
     if (filter === "expired") return s === "expired";
     if (filter === "unpaid") return !m.feePaid;
-    if (filter === "ghost") return false; // baad mein implement karna hai
+    if (filter === "ghost") return false; // To be implemented later
     return true; // all
   });
 
@@ -144,13 +151,14 @@ function MembersPage() {
       />
 
       <div className="bg-card border border-border rounded-2xl">
+        {/* Search and Filter Bar */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, roll, RFID or phone"
+              placeholder="Search by name, roll number, RFID or phone"
               className="w-full pl-9 pr-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40"
             />
           </div>
@@ -170,6 +178,7 @@ function MembersPage() {
           </div>
         </div>
 
+        {/* Members Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -296,8 +305,8 @@ function MembersPage() {
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
                     {members.length === 0
-                      ? "Koi member nahi. + Add Member karo!"
-                      : "No members match."}
+                      ? "No members found. Click + Add Member!"
+                      : "No members match your search criteria."}
                   </td>
                 </tr>
               )}

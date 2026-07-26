@@ -24,9 +24,10 @@ function Onboarding() {
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Create a new branch
   async function createBranch() {
     if (!form.gymName) { 
-      toast.error("Gym ka naam daalo"); 
+      toast.error("Please enter your gym name"); 
       return; 
     }
     setLoading(true);
@@ -34,7 +35,7 @@ function Onboarding() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
-      // Pehle gym_owner record ensure karo
+      // Ensure gym_owner record exists
       await supabase.from("gym_owners").upsert({
         id: user.id,
         name: form.gymName,
@@ -53,25 +54,26 @@ function Onboarding() {
       if (error) throw error;
       
       setActiveBranchId(data.id);
-      toast.success("Gym setup ho gaya! 💪");
+      toast.success("Gym setup complete! 💪");
       nav({ to: "/" });
     } catch (err: any) {
-      toast.error(err.message ?? "Error aaya");
+      toast.error(err.message ?? "An error occurred");
     } finally {
       setLoading(false);
     }
   }
 
+  // Step 2: Gym Details Form
   if (step === "form") {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-heading text-center mb-2">Gym Details</h1>
-          <p className="text-muted-foreground text-center mb-8">Apni gym ki basic info daalo</p>
+          <p className="text-muted-foreground text-center mb-8">Enter your gym's basic information</p>
 
           <div className="bg-card border border-border rounded-3xl p-8 space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Gym Ka Naam *</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Gym Name *</label>
               <input 
                 value={form.gymName} 
                 onChange={(e) => set("gymName", e.target.value)} 
@@ -93,7 +95,7 @@ function Onboarding() {
               <input 
                 value={form.address} 
                 onChange={(e) => set("address", e.target.value)} 
-                placeholder="Gym ka address" 
+                placeholder="Gym address" 
                 className={inp} 
               />
             </div>
@@ -111,7 +113,7 @@ function Onboarding() {
               disabled={loading}
               className="w-full py-3 bg-brand text-brand-foreground rounded-xl font-semibold disabled:opacity-50"
             >
-              {loading ? "Creating..." : "Gym Banao! 💪"}
+              {loading ? "Creating..." : "Create Gym!"}
             </button>
             
             {!search?.skipChoice && (
@@ -128,11 +130,12 @@ function Onboarding() {
     );
   }
 
+  // Step 1: Choice between Single and Multiple Branches
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <h1 className="text-4xl font-heading text-center mb-2">Welcome to Fitness Streak</h1>
-        <p className="text-muted-foreground text-center mb-10">Aapke paas kitni gyms hain?</p>
+        <p className="text-muted-foreground text-center mb-10">How many gyms do you have?</p>
         <div className="grid sm:grid-cols-2 gap-4">
           <button
             onClick={() => setStep("form")}
@@ -142,7 +145,7 @@ function Onboarding() {
               <span className="text-2xl">🏋️</span>
             </div>
             <h2 className="text-xl font-heading">Single Gym</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Ek gym, simple setup — 1 minute mein ready.</p>
+            <p className="mt-2 text-sm text-muted-foreground">One gym, simple setup — ready in 1 minute.</p>
           </button>
           <button
             onClick={() => setStep("form")}
@@ -152,7 +155,7 @@ function Onboarding() {
               <span className="text-2xl">🏢</span>
             </div>
             <h2 className="text-xl font-heading">Multiple Branches</h2>
-            <p className="mt-2 text-sm text-muted-foreground">2+ gyms alag jagah. Har branch ka apna data.</p>
+            <p className="mt-2 text-sm text-muted-foreground">2+ gyms in different locations. Each branch has its own data.</p>
           </button>
         </div>
       </div>

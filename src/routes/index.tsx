@@ -39,19 +39,19 @@ function Dashboard() {
   const [todos, setTodos] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
 
-  // Real-time fetch from Supabase — current branch only
+  // Real-time data fetch from Supabase — current branch only
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
-    // Members
+    // Fetch members
     supabase
       .from("members")
       .select("*")
       .eq("branch_id", branchId)
       .then(({ data }) => setMembers(data ?? []));
 
-    // Today's attendance
+    // Fetch today's attendance records
     const today = new Date().toISOString().split("T")[0];
     supabase
       .from("attendance_logs")
@@ -61,7 +61,7 @@ function Dashboard() {
       .lte("checked_in_at", today + "T23:59:59")
       .then(({ data }) => setTodayLogs(data ?? []));
 
-    // Todos (open only)
+    // Fetch open todos
     supabase
       .from("todos")
       .select("*")
@@ -70,7 +70,7 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Expenses
+    // Fetch expenses
     supabase
       .from("expenses")
       .select("*")
@@ -78,7 +78,7 @@ function Dashboard() {
       .order("date", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
-    // Real-time attendance
+    // Realtime subscription for attendance updates
     const channel = supabase
       .channel("dashboard-realtime")
       .on(
@@ -101,6 +101,7 @@ function Dashboard() {
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
+  // Calculate key statistics
   const stats = useMemo(() => {
     let active = 0, expiring = 0, expired = 0, pendingAmt = 0, revenue = 0;
 
@@ -130,6 +131,7 @@ function Dashboard() {
     return inMemberIds.size;
   }, [todayLogs]);
 
+  // Generate trend data for the chart
   const trend = useMemo(() => {
     const days = [];
     for (let i = 13; i >= 0; i--) {
@@ -148,6 +150,7 @@ function Dashboard() {
     return days;
   }, [todayLogs, members]);
 
+  // Get ghost members (no-shows)
   const ghostList = useMemo(() => {
     const todayPunchedIn = new Set(
       todayLogs
@@ -160,6 +163,7 @@ function Dashboard() {
     }).slice(0, 5);
   }, [members, todayLogs]);
 
+  // Get expiring/expired members
   const expiringList = members
     .filter((m) => { const d = daysUntil(m.expiryDate); return d < 0 || d <= 7; })
     .sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate))
@@ -170,6 +174,7 @@ function Dashboard() {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
+  // Widget drag/drop handlers
   function move(from: number, to: number) {
     if (to < 0 || to >= layout.length) return;
     const next = [...layout];
@@ -279,7 +284,7 @@ function Dashboard() {
           <Link to="/members" search={{ filter: "ghost" }} className="text-xs text-brand hover:underline">View all</Link>
         </div>
         {ghostList.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">Sab regular hain. 💪</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular 💪</p>
         ) : (
           <div className="divide-y divide-border">
             {ghostList.map((m) => {
@@ -355,12 +360,13 @@ function Dashboard() {
         }
       />
 
+      {/* Customize Dashboard Panel */}
       {customize && (
         <div className="mb-6 p-5 bg-card border border-dashed border-brand/40 rounded-2xl">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-heading text-base">Customize Dashboard</h3>
-              <p className="text-xs text-muted-foreground">Drag widgets to reorder, eye-icon to show/hide</p>
+              <p className="text-xs text-muted-foreground">Drag widgets to reorder, use eye-icon to show/hide</p>
             </div>
             <button onClick={() => gym.setLayout(DEFAULT_LAYOUT)}
               className="text-xs text-muted-foreground hover:text-brand inline-flex items-center gap-1">
@@ -383,6 +389,7 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Widget Grid */}
       <div className="flex flex-col gap-6">
         {layout.filter((w) => w.visible).map((w) => (
           <div
@@ -406,6 +413,7 @@ function Dashboard() {
   );
 }
 
+// KPI Card Component
 function Kpi({ to, search, label, value, icon, accent, hint }: {
   to: string; search?: Record<string, string>; label: string; value: number | string;
   icon: React.ReactNode; accent?: string; hint?: string;
@@ -423,6 +431,7 @@ function Kpi({ to, search, label, value, icon, accent, hint }: {
   );
 }
 
+// Money Card Component
 function MoneyCard({ to, search, label, value, sub, tone, icon }: {
   to: string; search?: Record<string, string>; label: string; value: string; sub: string;
   tone: "brand" | "danger" | "muted"; icon: React.ReactNode;

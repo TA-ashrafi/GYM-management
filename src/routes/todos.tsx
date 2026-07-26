@@ -16,7 +16,7 @@ function Todos() {
   const [note, setNote] = useState("");
   const [priority, setPriority] = useState<"low" | "med" | "high">("med");
 
-  // Fetch todos — current branch only
+  // Fetch todos for current branch only
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
@@ -35,13 +35,14 @@ function Todos() {
   const open = todos.filter((t) => !t.done);
   const done = todos.filter((t) => t.done);
 
+  // Add a new task
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
 
     const branchId = getActiveBranchId();
     if (!branchId) {
-      toast.error("Branch select nahi hai");
+      toast.error("No branch selected");
       return;
     }
 
@@ -62,12 +63,13 @@ function Todos() {
       setTitle("");
       setNote("");
       setPriority("med");
-      toast.success("Task added");
+      toast.success("Task added successfully");
     } else {
       toast.error(error?.message || "Failed to add task");
     }
   }
 
+  // Toggle task completion status
   async function toggleTodo(id: string, currentDone: boolean) {
     const { error } = await supabase
       .from("todos")
@@ -79,10 +81,11 @@ function Todos() {
         prev.map((t) => (t.id === id ? { ...t, done: !currentDone } : t))
       );
     } else {
-      toast.error("Failed to update");
+      toast.error("Failed to update task status");
     }
   }
 
+  // Delete a task
   async function deleteTodo(id: string) {
     if (!confirm("Delete this task?")) return;
 
@@ -90,21 +93,22 @@ function Todos() {
 
     if (!error) {
       setTodos((prev) => prev.filter((t) => t.id !== id));
-      toast.success("Task deleted");
+      toast.success("Task deleted successfully");
     } else {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete task");
     }
   }
 
   return (
     <div className="p-8 max-w-4xl">
-      <PageHeader title="Maintenance & To-Do" subtitle="Machine repairs, bills, daily ops" />
+      <PageHeader title="Maintenance & To-Do" subtitle="Machine repairs, bills, daily operations" />
 
+      {/* Add Task Form */}
       <form onSubmit={add} className="bg-card border border-border rounded-2xl p-4 mb-6 space-y-3">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="What needs doing?"
+          placeholder="What needs to be done?"
           className={inp + " w-full text-base font-medium"}
         />
         <div className="grid sm:grid-cols-[1fr,140px,auto] gap-3">
@@ -132,6 +136,7 @@ function Todos() {
         </div>
       </form>
 
+      {/* Open Tasks */}
       <section>
         <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Open ({open.length})</h3>
         <div className="space-y-2 mb-8">
@@ -143,9 +148,10 @@ function Todos() {
               onDelete={() => deleteTodo(t.id)}
             />
           ))}
-          {open.length === 0 && <p className="text-sm text-muted-foreground">No open tasks. 🎉</p>}
+          {open.length === 0 && <p className="text-sm text-muted-foreground">No open tasks. All caught up!</p>}
         </div>
 
+        {/* Completed Tasks */}
         <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Completed ({done.length})</h3>
         <div className="space-y-2 opacity-60">
           {done.map((t) => (
@@ -162,6 +168,7 @@ function Todos() {
   );
 }
 
+// Task Row Component
 function Row({ t, onToggle, onDelete }: { t: any; onToggle: () => void; onDelete: () => void }) {
   const tone = t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent";
 

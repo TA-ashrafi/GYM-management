@@ -38,14 +38,15 @@ function HelpPage() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Handle form submission
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !message.trim()) {
-      toast.error("Name aur message zaruri hai");
+      toast.error("Name and message are required");
       return;
     }
     setSending(true);
-    // Save locally so owner has record
+    // Save locally for record keeping
     const key = "ironsync_support_queries";
     const prev = JSON.parse(localStorage.getItem(key) || "[]");
     prev.unshift({
@@ -64,7 +65,7 @@ function HelpPage() {
     );
     window.open(`${SUPPORT.waLink}?text=${text}`, "_blank");
 
-    toast.success("Query send ho gayi — 24 hours me reply milega ✓");
+    toast.success("Query sent — you will receive a reply within 24 hours ✓");
     setName("");
     setEmail("");
     setSubject("");
@@ -76,13 +77,13 @@ function HelpPage() {
     <div className="p-8 max-w-6xl">
       <PageHeader
         title="Help & Support"
-        subtitle="Koi bhi issue ya sawaal? Hum yahan hain."
+        subtitle="Have an issue or question? We're here to help."
       />
 
       {/* 24h response badge */}
       <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 text-brand text-xs font-medium border border-brand/20">
         <Clock className="size-3.5" />
-        Hum aapko 24 ghante ke andar reach out karenge
+        We'll reach out to you within 24 hours
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -163,7 +164,7 @@ function HelpPage() {
       <section className="mt-8 bg-card border border-border rounded-2xl p-6 lg:p-8">
         <h2 className="font-heading text-xl mb-1">Send us your query</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Form submit karne pe direct WhatsApp support pe forward ho jayega.
+          Submitting this form will forward your query directly to WhatsApp support.
         </p>
         <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4">
           <Field label="Your Name *">
@@ -200,14 +201,14 @@ function HelpPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className={input + " min-h-32 resize-y"}
-                placeholder="Apni problem ya suggestion detail me likhein..."
+                placeholder="Describe your issue or suggestion in detail..."
                 maxLength={2000}
               />
             </Field>
           </div>
           <div className="sm:col-span-2 flex items-center justify-between flex-wrap gap-3">
             <p className="text-xs text-muted-foreground">
-              * required · Response within 24 hrs
+              * required · Response within 24 hours
             </p>
             <button
               type="submit"

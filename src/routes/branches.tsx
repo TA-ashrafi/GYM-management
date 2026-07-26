@@ -15,6 +15,7 @@ function Branches() {
   const [loading, setLoading] = useState(true);
   const activeBranchId = getActiveBranchId();
 
+  // Fetch branches on component mount
   useEffect(() => {
     fetchBranches().then((data) => {
       setBranches(data);
@@ -22,14 +23,16 @@ function Branches() {
     });
   }, []);
 
+  // Switch to a different branch
   async function switchBranch(id: string) {
     setActiveBranchId(id);
-    toast.success("Branch switch ho gayi!");
+    toast.success("Branch switched successfully!");
     nav({ to: "/" });
   }
 
+  // Delete a branch
   async function deleteBranch(id: string, name: string) {
-    if (!confirm(`"${name}" delete karo? Iska sab data chala jayega.`)) return;
+    if (!confirm(`Delete "${name}"? All associated data will be permanently removed.`)) return;
     const { error } = await supabase.from("branches").delete().eq("id", id);
     if (!error) {
       setBranches((prev) => prev.filter((b) => b.id !== id));
@@ -38,7 +41,7 @@ function Branches() {
         if (remaining.length > 0) setActiveBranchId(remaining[0].id);
         else localStorage.removeItem("fs_active_branch");
       }
-      toast.success("Branch delete ho gayi");
+      toast.success("Branch deleted successfully");
     } else {
       toast.error(error.message);
     }
@@ -55,9 +58,10 @@ function Branches() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-3xl mx-auto">
+        {/* Header Section */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-heading">Aapki Branches</h1>
+            <h1 className="text-3xl font-heading">Your Branches</h1>
             <p className="text-muted-foreground mt-1">{branches.length} branch{branches.length !== 1 ? "es" : ""}</p>
           </div>
           <button
@@ -68,6 +72,7 @@ function Branches() {
           </button>
         </div>
 
+        {/* Branches List */}
         <div className="space-y-3">
           {branches.map((b) => {
             const isActive = b.id === activeBranchId;
@@ -77,14 +82,19 @@ function Branches() {
                 className={"p-5 bg-card border rounded-2xl flex items-center gap-4 transition " +
                   (isActive ? "border-brand/60 bg-brand/5" : "border-border hover:border-border/80")}
               >
+                {/* Branch Icon */}
                 <div className={"size-12 rounded-xl grid place-items-center shrink-0 " +
                   (isActive ? "bg-brand text-brand-foreground" : "bg-secondary text-muted-foreground")}>
                   <Building2 className="size-6" />
                 </div>
+                
+                {/* Branch Details */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-lg">{b.gym_name}</p>
                   <p className="text-sm text-muted-foreground">{b.branch_name} {b.address ? `· ${b.address}` : ""}</p>
                 </div>
+                
+                {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
                   {isActive ? (
                     <span className="flex items-center gap-1.5 text-brand text-xs font-bold px-3 py-1.5 bg-brand/10 rounded-lg">
@@ -112,12 +122,13 @@ function Branches() {
           })}
         </div>
 
+        {/* Navigation Button */}
         {branches.length > 0 && (
           <button
             onClick={() => nav({ to: "/" })}
             className="mt-6 w-full py-3 bg-secondary text-foreground rounded-xl text-sm font-medium"
           >
-            Dashboard pe jao →
+            Go to Dashboard →
           </button>
         )}
       </div>

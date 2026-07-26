@@ -27,7 +27,7 @@ function StorePage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
 
-  // Fetch data — current branch only
+  // Fetch data for current branch only
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
@@ -49,6 +49,7 @@ function StorePage() {
       .then(({ data }) => setSales(data ?? []));
   }, []);
 
+  // Filter products by search
   const filtered = useMemo(() =>
     products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())),
     [products, search]
@@ -56,18 +57,20 @@ function StorePage() {
 
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
+  // Add product to cart
   function addToCart(p: Product) {
-    if (p.stock <= 0) { toast.error("Out of stock"); return; }
+    if (p.stock <= 0) { toast.error("Product out of stock"); return; }
     setCart((c) => {
       const existing = c.find((i) => i.productId === p.id);
       if (existing) {
-        if (existing.qty >= p.stock) { toast.error("Stock limit"); return c; }
+        if (existing.qty >= p.stock) { toast.error("Stock limit reached"); return c; }
         return c.map((i) => i.productId === p.id ? { ...i, qty: i.qty + 1 } : i);
       }
       return [...c, { productId: p.id, name: p.name, price: p.price, qty: 1 }];
     });
   }
 
+  // Update quantity in cart
   function updateQty(id: string, delta: number) {
     setCart((c) => c.flatMap((i) => {
       if (i.productId !== id) return [i];
@@ -77,12 +80,13 @@ function StorePage() {
     }));
   }
 
+  // Process checkout
   async function checkout() {
     if (cart.length === 0) return;
 
     const branchId = getActiveBranchId();
     if (!branchId) {
-      toast.error("Branch select nahi hai");
+      toast.error("No branch selected");
       return;
     }
 
@@ -100,7 +104,7 @@ function StorePage() {
       return;
     }
 
-    // Update stock
+    // Update stock for each product
     for (const item of cart) {
       await supabase
         .from("products")
@@ -108,7 +112,7 @@ function StorePage() {
         .eq("id", item.productId);
     }
 
-    // Refresh — current branch only
+    // Refresh data for current branch
     const { data: refreshedProducts } = await supabase
       .from("products")
       .select("*")
@@ -142,7 +146,7 @@ function StorePage() {
     <div className="p-8 max-w-[1600px]">
       <PageHeader
         title="Supplement Store"
-        subtitle="POS billing + inventory tracking"
+        subtitle="POS billing and inventory tracking"
         actions={
           <>
             <button
@@ -155,6 +159,7 @@ function StorePage() {
         }
       />
 
+      {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Stat label="Total Products" value={products.length} />
         <Stat label="Low Stock" value={lowStock.length} tone="warn" />
@@ -162,6 +167,7 @@ function StorePage() {
         <Stat label="Estimated Profit" value={money(totalProfit)} tone="brand" />
       </div>
 
+      {/* Tab Navigation */}
       <div className="flex gap-2 mb-5">
         {[
           ["pos", "POS"],
@@ -182,7 +188,7 @@ function StorePage() {
       {tab === "pos" && (
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search product..." className={input + " mb-4"} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className={input + " mb-4"} />
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {filtered.map((p) => (
                 <button key={p.id} onClick={() => addToCart(p)} className="text-left p-4 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition">
@@ -199,12 +205,13 @@ function StorePage() {
             </div>
           </div>
 
+          {/* Shopping Cart */}
           <div className="bg-card border border-border rounded-2xl p-5 sticky top-24 h-fit">
             <h3 className="font-heading text-lg mb-3 flex items-center gap-2">
               <ShoppingBag className="size-4" /> Cart ({cart.length})
             </h3>
             <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin mb-4">
-              {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Cart khaali hai</p>}
+              {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Cart is empty</p>}
               {cart.map((i) => (
                 <div key={i.productId} className="flex items-center gap-2 p-2 bg-secondary/40 rounded-lg">
                   <div className="flex-1 min-w-0">
@@ -222,6 +229,7 @@ function StorePage() {
               ))}
             </div>
 
+            {/* Checkout Details */}
             <div className="space-y-2 mb-3">
               <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className={input}>
                 <option value="">-- Walk-in customer --</option>
@@ -288,10 +296,10 @@ function StorePage() {
                         <Edit3 className="size-3.5" />
                       </button>
                       <button onClick={async () => {
-                        if (!confirm("Delete?")) return;
+                        if (!confirm("Delete this product?")) return;
                         await supabase.from("products").delete().eq("id", p.id);
                         setProducts(prev => prev.filter(x => x.id !== p.id));
-                        toast.success("Product deleted");
+                        toast.success("Product deleted successfully");
                       }} className="size-8 grid place-items-center rounded bg-secondary hover:bg-danger/10 hover:text-danger inline-flex ml-1">
                         <Trash2 className="size-3.5" />
                       </button>
@@ -307,7 +315,7 @@ function StorePage() {
       {/* Sales Tab */}
       {tab === "sales" && (
         <div className="space-y-2">
-          {sales.length === 0 && <p className="text-sm text-muted-foreground text-center py-12">Abhi tak koi sale nahi.</p>}
+          {sales.length === 0 && <p className="text-sm text-muted-foreground text-center py-12">No sales recorded yet.</p>}
           {sales.map((s) => {
             const m = s.member_id ? members.find((x: any) => x.id === s.member_id) : null;
             return (
@@ -328,7 +336,7 @@ function StorePage() {
         </div>
       )}
 
-      {/* Product Modal */}
+      {/* Product Edit/Add Modal */}
       {editing && (
         <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={() => setEditing(null)}>
           <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md">
@@ -353,11 +361,11 @@ function StorePage() {
               </div>
               <button
                 onClick={async () => {
-                  if (!editing.name.trim()) { toast.error("Name required"); return; }
+                  if (!editing.name.trim()) { toast.error("Product name is required"); return; }
 
                   const branchId = getActiveBranchId();
                   if (!branchId) {
-                    toast.error("Branch select nahi hai");
+                    toast.error("No branch selected");
                     return;
                   }
 
@@ -393,7 +401,7 @@ function StorePage() {
                     .eq("branch_id", branchId)
                     .order("created_at");
                   if (data) setProducts(data);
-                  toast.success(editing.id ? "Product updated" : "Product added");
+                  toast.success(editing.id ? "Product updated successfully" : "Product added successfully");
                   setEditing(null);
                 }}
                 className="w-full py-2.5 bg-brand text-brand-foreground rounded-xl font-semibold text-sm"

@@ -19,11 +19,12 @@ function Reports() {
   const [members, setMembers] = useState<any[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
-  // Fetch all members
+  // Fetch all members on component mount
   useEffect(() => {
     fetchMembers().then((data) => setMembers(data || []));
   }, []);
 
+  // Find matching members based on search query
   const matches = q
     ? members.filter((m) =>
         (m.rollNo + m.name + m.phone + m.rfid).toLowerCase().includes(q.toLowerCase())
@@ -49,7 +50,7 @@ function Reports() {
 
   const status = m ? memberStatus(m) : null;
 
-  // Punch History from attendance_logs
+  // Punch History from attendance logs
   const punchHistory = Object.entries(
     attendanceLogs.reduce<Record<string, string[]>>((acc, log) => {
       const day = new Date(log.checked_in_at).toDateString();
@@ -60,10 +61,10 @@ function Reports() {
     .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
     .slice(0, 30);
 
-  // Diet plan
+  // Diet plan calculation
   const diet = m ? computeDiet(m) : null;
 
-  // Last 30 days heatmap with punch times
+  // Generate last 30 days for heatmap
   const last30 = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
       const d = new Date();
@@ -72,6 +73,7 @@ function Reports() {
     });
   }, []);
 
+  // Map attendance logs by day with IN/OUT times
   const dayMap = useMemo(() => {
     return attendanceLogs.reduce<Record<string, { in?: string; out?: string }>>((acc, log) => {
       const day = log.checked_in_at.split("T")[0];
@@ -103,6 +105,7 @@ function Reports() {
         }
       />
 
+      {/* Search Input */}
       <div className="bg-card border border-border rounded-2xl p-4 mb-6 no-print">
         <div className="relative">
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -110,17 +113,18 @@ function Reports() {
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="IRN-1003, RF100123, Rohan, 9876543210..."
+            placeholder="Search by Roll No (IRN-1003), RFID (RF100123), Name, Phone..."
             className="w-full pl-9 pr-3 py-3 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40"
           />
         </div>
         {q && matches.length > 1 && (
           <p className="text-xs text-muted-foreground mt-3">
-            {matches.length} matches — showing first. Refine for exact.
+            {matches.length} matches found — showing first result. Refine your search for exact match.
           </p>
         )}
       </div>
 
+      {/* Member Report */}
       {m && diet ? (
         <article className="bg-card border border-border rounded-2xl p-8 print:bg-white print:text-black space-y-6">
           {/* Header */}
@@ -155,13 +159,13 @@ function Reports() {
             </div>
           </header>
 
-          {/* Personal Info */}
+          {/* Personal Information */}
           <Block title="Personal Information">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Info label="Gender" value={m.gender === "M" ? "Male" : m.gender === "F" ? "Female" : "Other"} />
               <Info label="Age" value={`${m.age} years`} />
-              <Info label="Address" value={m.address || "—"} />
-              <Info label="Emergency" value={m.emergencyContact || "—"} />
+              <Info label="Address" value={m.address || "Not provided"} />
+              <Info label="Emergency Contact" value={m.emergencyContact || "Not provided"} />
               <Info label="Joined" value={new Date(m.joinDate).toLocaleDateString("en-IN")} />
               <Info label="Preferred Slot" value={m.preferredSlot} />
             </div>
@@ -181,32 +185,32 @@ function Reports() {
             </div>
           </Block>
 
-          {/* Membership */}
+          {/* Membership & Payments */}
           <Block title="Membership & Payments">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-5 bg-secondary/40 rounded-xl">
                 <p className="text-2xl font-heading">{m.plan}</p>
                 <p className="text-sm mt-1">
                   Fee: {money(m.feeAmount)} ·{" "}
-                  {m.feePaid ? <span className="text-brand">Paid ✓</span> : <span className="text-danger">Pending</span>}
+                  {m.feePaid ? <span className="text-brand">Paid</span> : <span className="text-danger">Pending</span>}
                 </p>
                 <p className="text-sm mt-1 text-muted-foreground">
                   Expiry: {new Date(m.expiryDate).toLocaleDateString("en-IN")} ·{" "}
                   {daysUntil(m.expiryDate) >= 0
                     ? `${daysUntil(m.expiryDate)}d left`
-                    : `expired ${-daysUntil(m.expiryDate)}d ago`}
+                    : `Expired ${-daysUntil(m.expiryDate)}d ago`}
                 </p>
               </div>
               <div className="p-5 bg-secondary/40 rounded-xl">
                 <p className="text-2xl font-heading">{attendanceLogs.length} visits</p>
                 <p className="text-sm mt-1 text-muted-foreground">
-                  Last seen: {attendanceLogs[0] ? `${daysSince(attendanceLogs[0].checked_in_at)}d ago` : "never"}
+                  Last seen: {attendanceLogs[0] ? `${daysSince(attendanceLogs[0].checked_in_at)}d ago` : "Never"}
                 </p>
               </div>
             </div>
           </Block>
 
-          {/* Attendance Heatmap (Improved) */}
+          {/* Attendance Heatmap */}
           <Block title="Attendance Heatmap (last 30 days)">
             <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5 mt-4">
               {last30.map((day) => {
@@ -232,7 +236,7 @@ function Reports() {
           {/* Punch History */}
           <Block title="Punch-in History (last 30 days)">
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-              {punchHistory.length === 0 && <p className="text-muted-foreground">No punch-in records.</p>}
+              {punchHistory.length === 0 && <p className="text-muted-foreground">No punch-in records found.</p>}
               {punchHistory.map(([day, times]) => (
                 <div key={day} className="p-3 bg-secondary/40 rounded-lg">
                   <p className="font-semibold">
@@ -267,6 +271,7 @@ function Reports() {
             </div>
           </Block>
 
+          {/* Footer */}
           <footer className="pt-4 border-t border-border text-[10px] text-muted-foreground flex justify-between">
             <span>Generated {new Date().toLocaleString("en-IN")}</span>
           </footer>
@@ -277,13 +282,14 @@ function Reports() {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl p-12 text-center text-muted-foreground">
-          Start typing to find a member…
+          Start typing to search for a member...
         </div>
       )}
     </div>
   );
 }
 
+// Helper Components
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -302,6 +308,7 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Diet Calculation Function
 function computeDiet(m: any) {
   const bmi = m.weightKg / Math.pow(m.heightCm / 100, 2);
   const bmiClass = bmi < 18.5 ? "Underweight" : bmi < 25 ? "Healthy" : bmi < 30 ? "Overweight" : "Obese";
@@ -324,8 +331,8 @@ function computeDiet(m: any) {
   const meals = [
     { name: "Breakfast", items: "4 egg whites + 2 whole eggs, oats 60g with milk, 1 banana, black coffee" },
     { name: "Mid-morning", items: "Handful almonds (15) + greek yogurt 150g + apple" },
-    { name: "Lunch", items: "Grilled chicken/paneer 180g, brown rice 1 cup, mixed veg, salad, dal 1 bowl" },
-    { name: "Pre-workout", items: "Black coffee + 1 banana + 5g creatine (30 min before)" },
+    { name: "Lunch", items: "Grilled chicken/paneer 180g, brown rice 1 cup, mixed vegetables, salad, dal 1 bowl" },
+    { name: "Pre-workout", items: "Black coffee + 1 banana + 5g creatine (30 minutes before)" },
     { name: "Post-workout", items: "Whey protein 1 scoop + 1 banana + 250ml milk" },
     { name: "Dinner", items: "Grilled fish/tofu 180g, 2 chapati, sautéed vegetables, curd 1 bowl" },
   ];

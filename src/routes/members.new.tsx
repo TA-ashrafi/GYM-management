@@ -32,7 +32,7 @@ function NewMember() {
   const [rfidAssigned, setRfidAssigned] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
 
-  // Plan Prices
+  // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
     Monthly: 1500,
     Quarterly: 4000,
@@ -78,11 +78,12 @@ function NewMember() {
       .catch(() => {});
   }, []);
 
+  // Form field update helper
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  // Photo Compression
+  // Handle photo upload with compression
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -105,21 +106,22 @@ function NewMember() {
     img.src = url;
   };
 
+  // Handle form submission
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.phone) {
-      toast.error("Name aur phone zaruri hai");
+      toast.error("Name and phone are required");
       return;
     }
     if (!form.rfid) {
-      toast.error("RFID card assign karo pehle");
+      toast.error("Please assign an RFID card first");
       setScanOpen(true);
       return;
     }
 
     const branchId = getActiveBranchId();
     if (!branchId) {
-      toast.error("Pehle branch select karo");
+      toast.error("Please select a branch first");
       return;
     }
 
@@ -151,12 +153,12 @@ function NewMember() {
     });
 
     if (error) {
-      toast.error("Save nahi hua: " + error.message);
+      toast.error("Failed to save: " + error.message);
       console.error(error);
       return;
     }
 
-    toast.success(`${form.name} add ho gaya! 💪`);
+    toast.success(`${form.name} added successfully! 💪`);
     nav({ to: "/members" });
   }
 
@@ -164,7 +166,7 @@ function NewMember() {
 
   return (
     <div className="p-8 max-w-6xl">
-      <PageHeader title="Add Member" subtitle="Naya gym member register karo with RFID card" />
+      <PageHeader title="Add Member" subtitle="Register a new gym member with RFID card" />
 
       <form onSubmit={submit} className="grid lg:grid-cols-12 gap-6">
         {/* Photo & ID Section */}
@@ -176,7 +178,7 @@ function NewMember() {
             </div>
             <img
               src={uploadedPhoto ?? PHOTOS[photoIdx]}
-              alt="preview"
+              alt="Member preview"
               className="w-full aspect-square object-cover rounded-xl ring-2 ring-brand/30"
             />
             <label className="cursor-pointer block mt-4 px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 text-center">
@@ -239,8 +241,9 @@ function NewMember() {
           </div>
         </div>
 
-        {/* Form */}
+        {/* Main Form */}
         <div className="lg:col-span-8 space-y-6">
+          {/* Personal Information */}
           <Section icon={<User className="size-4" />} title="Personal Information">
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Full Name *">
@@ -284,6 +287,7 @@ function NewMember() {
             </div>
           </Section>
 
+          {/* Body & Goals */}
           <Section icon={<Activity className="size-4" />} title="Body & Goals">
             <div className="grid sm:grid-cols-3 gap-4">
               <Field label="Height (cm)">
@@ -303,7 +307,7 @@ function NewMember() {
                   <option value="Weight Loss">Weight Loss</option>
                   <option value="Calisthenics">Calisthenics</option>
                   <option value="Yoga">Yoga</option>
-                  <option value="General Fitness">General Fitness (Fit Rehna)</option>
+                  <option value="General Fitness">General Fitness (Stay Fit)</option>
                   <option value="Strength Training">Strength Training</option>
                   <option value="Endurance">Endurance / Cardio</option>
                 </select>
@@ -311,12 +315,14 @@ function NewMember() {
             </div>
           </Section>
 
+          {/* Medical Information */}
           <Section icon={<Heart className="size-4" />} title="Medical (optional)">
             <Field label="Medical conditions / Allergies / Injuries">
               <textarea value={form.medical} onChange={(e) => set("medical", e.target.value)} rows={2} className={input + " resize-none"} />
             </Field>
           </Section>
 
+          {/* Membership & Slot */}
           <Section icon={<CreditCard className="size-4" />} title="Membership & Slot">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {PLAN_ORDER.map((p) => (
@@ -344,6 +350,7 @@ function NewMember() {
             </label>
           </Section>
 
+          {/* Action Buttons */}
           <div className="flex gap-3">
             <button type="button" onClick={() => nav({ to: "/members" })} className="px-5 py-3 bg-secondary text-foreground rounded-xl text-sm">Cancel</button>
             <button type="submit" className="flex-1 py-3 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-transform">
@@ -362,7 +369,7 @@ function NewMember() {
   );
 }
 
-// RFID Scan Modal (same as before)
+// RFID Scan Modal Component
 function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: () => void; onAssigned: (code: string) => void; }) {
   const [phase, setPhase] = useState<"waiting" | "detected">("waiting");
   const [uid, setUid] = useState("");
@@ -376,6 +383,7 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
       return;
     }
 
+    // Poll for RFID card scans
     intervalRef.current = setInterval(async () => {
       const { data } = await supabase
         .from("rfid_pending")
@@ -398,10 +406,11 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
     };
   }, [open]);
 
+  // Assign RFID to member
   async function handleAssign() {
     const { data } = await supabase.from("members").select("name").eq("rfid", uid).single();
     if (data) {
-      toast.error(`Yeh RFID already ${data.name} ko assigned hai!`);
+      toast.error(`This RFID is already assigned to ${data.name}!`);
       return;
     }
     onAssigned(uid);
@@ -442,7 +451,7 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
         </div>
 
         <p className="text-center text-sm text-muted-foreground mb-6">
-          {phase === "waiting" ? "RFID card ko scanner ke paas rakho..." : "Card read ho gaya. Assign karo?"}
+          {phase === "waiting" ? "Place the RFID card near the scanner..." : "Card read successfully. Assign it?"}
         </p>
 
         <div className="flex gap-2">

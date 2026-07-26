@@ -11,6 +11,7 @@ export const Route = createFileRoute("/attendance")({
   component: Attendance,
 });
 
+// Type definition for punch status tracking
 type PunchStatus = { in?: string; out?: string; count: number };
 
 function Attendance() {
@@ -28,7 +29,7 @@ function Attendance() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch members + today's logs + realtime
+  // Initialize: fetch members, today's logs, and setup realtime subscription
   useEffect(() => {
     inputRef.current?.focus();
 
@@ -52,6 +53,7 @@ function Attendance() {
         else setTodayLogs(data ?? []);
       });
 
+    // Realtime subscription for new attendance logs
     const channel = supabase
       .channel("attendance-rt")
       .on(
@@ -68,6 +70,7 @@ function Attendance() {
     };
   }, []);
 
+  // Get current punch status for a member
   const getMemberStatus = useCallback((memberId: string): PunchStatus => {
     const logs = todayLogs
       .filter((l) => l.member_id === memberId)
@@ -82,10 +85,11 @@ function Attendance() {
     };
   }, [todayLogs]);
 
+  // Process punch for a member
   const doPunch = async (m: Member) => {
     const st = getMemberStatus(m.id);
     if (st.count >= 2) {
-      toast.error(`${m.name} — already punched IN & OUT today (max 2)`);
+      toast.error(`${m.name} — Already punched IN & OUT today (maximum 2 punches allowed)`);
       return;
     }
 
@@ -111,6 +115,7 @@ function Attendance() {
     }
   };
 
+  // Handle RFID/Card submission
   const punch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
@@ -120,13 +125,14 @@ function Attendance() {
       x.rfid?.toLowerCase() === c || x.rollNo?.toLowerCase() === c
     );
 
-    if (!m) toast.error(`Unknown card / roll no: ${code}`);
+    if (!m) toast.error(`Unknown card / roll number: ${code}`);
     else doPunch(m);
 
     setCode("");
     inputRef.current?.focus();
   };
 
+  // Memoized today's attendance list
   const todayList = useMemo(() => 
     members.map((m) => ({ m, st: getMemberStatus(m.id) })), 
     [members, getMemberStatus]
@@ -136,6 +142,7 @@ function Attendance() {
   const outCount = todayList.filter(({ st }) => st.count === 0).length;
   const doneCount = todayList.filter(({ st }) => st.count >= 2).length;
 
+  // Filter members based on search and filter criteria
   const filtered = todayList.filter(({ m, st }) => {
     if (filter === "in" && st.count < 1) return false;
     if (filter === "out" && st.count >= 1) return false;
@@ -144,6 +151,7 @@ function Attendance() {
     return true;
   });
 
+  // Toggle member for comparison
   const toggleCompare = (id: string) => {
     setCompareIds((ids) =>
       ids.includes(id)
@@ -160,7 +168,7 @@ function Attendance() {
     <div className="p-8 max-w-[1500px]">
       <PageHeader
         title="Attendance"
-        subtitle="RFID punch-in/out · 2 scans per day max"
+        subtitle="RFID punch-in/out · Maximum 2 scans per day"
         actions={
           compareIds.length > 0 && (
             <button
@@ -173,6 +181,7 @@ function Attendance() {
         }
       />
 
+      {/* RFID Scanner Section */}
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2 bg-gradient-to-br from-brand/15 to-card border border-brand/30 rounded-2xl p-6">
           <div className="flex items-center gap-2 text-brand mb-3">
@@ -184,16 +193,17 @@ function Attendance() {
               ref={inputRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Tap card or type RFID / Roll No, hit Enter…"
+              placeholder="Tap card or enter RFID / Roll Number, then press Enter…"
               className="w-full px-5 py-5 bg-background/60 rounded-xl text-xl font-mono outline-none focus:ring-2 focus:ring-brand/60 border border-border"
               autoComplete="off"
             />
           </form>
           <p className="text-[11px] text-muted-foreground mt-3">
-            1st scan = <span className="text-brand font-bold">IN</span> · 2nd scan = <span className="text-warn font-bold">OUT</span> · 3rd blocked
+            1st scan = <span className="text-brand font-bold">IN</span> · 2nd scan = <span className="text-warn font-bold">OUT</span> · 3rd scan blocked
           </p>
         </div>
 
+        {/* Last Punch Display */}
         <div className="bg-card border border-border rounded-2xl p-6">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Last Punch</p>
           {last ? (
@@ -212,6 +222,7 @@ function Attendance() {
         </div>
       </div>
 
+      {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Stat label="Total Members" value={todayList.length} tone="muted" />
         <Stat label="Checked In Today" value={inCount} tone="brand" />
@@ -219,14 +230,16 @@ function Attendance() {
         <Stat label="Completed (IN+OUT)" value={doneCount} tone="brand" />
       </div>
 
+      {/* Members Table */}
       <div className="bg-card border border-border rounded-2xl">
+        {/* Table Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, roll, RFID"
+              placeholder="Search by name, roll number, or RFID"
               className="w-full pl-9 pr-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40"
             />
           </div>
@@ -261,6 +274,7 @@ function Attendance() {
           </div>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -339,13 +353,14 @@ function Attendance() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">No matches.</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">No matches found.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Modals */}
       {historyOf && <HistoryModal member={historyOf} onClose={() => setHistoryOf(null)} />}
       {compareOpen && (
         <CompareModal
@@ -359,6 +374,8 @@ function Attendance() {
 }
 
 /* ====================== Modals ====================== */
+
+// History Modal - Shows member's attendance history
 function HistoryModal({ member, onClose }: { member: Member; onClose: () => void }) {
   const [days, setDays] = useState<5 | 7 | 20 | 30 | 60>(7);
   const cutoff = Date.now() - days * 86400000;
@@ -402,7 +419,7 @@ function HistoryModal({ member, onClose }: { member: Member; onClose: () => void
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-5 space-y-3">
           {Object.keys(byDay).length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No visits in last {days} days.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No visits in the last {days} days.</p>
           )}
           {Object.entries(byDay).map(([day, times]) => (
             <div key={day} className="flex gap-4 items-start">
@@ -427,6 +444,7 @@ function HistoryModal({ member, onClose }: { member: Member; onClose: () => void
   );
 }
 
+// Compare Modal - Compare attendance across multiple members
 function CompareModal({ members, onClose, onClear }: { members: Member[]; onClose: () => void; onClear: () => void }) {
   const [days, setDays] = useState<5 | 7 | 10 | 20 | 30>(7);
   const cutoff = Date.now() - days * 86400000;
@@ -501,6 +519,7 @@ function CompareModal({ members, onClose, onClear }: { members: Member[]; onClos
   );
 }
 
+// Statistics Card Component
 function Stat({ label, value, tone }: { label: string; value: number; tone: "brand" | "danger" | "muted" }) {
   const cls = tone === "brand" ? "text-brand" : tone === "danger" ? "text-danger" : "text-foreground";
   return (

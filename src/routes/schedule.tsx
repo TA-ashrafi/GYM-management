@@ -16,7 +16,7 @@ function Schedule() {
   const [slotDuration, setSlotDuration] = useState(60);
   const settings = useGym((s) => s.settings);
 
-  // Fetch members & gym settings (shifts + slot duration)
+  // Fetch members and gym settings (shifts + slot duration)
   useEffect(() => {
     fetchMembers().then((data) => setMembers(data || []));
 
@@ -31,7 +31,7 @@ function Schedule() {
       });
   }, []);
 
-  // Generate slots (Supabase se shifts prefer karo)
+  // Generate slots (prefer shifts from Supabase)
   const slots = generateSlots(
     shifts.length > 0 ? shifts : settings.shifts,
     slotDuration || settings.slotDurationMin
@@ -41,7 +41,7 @@ function Schedule() {
     <div className="p-8 max-w-[1400px]">
       <PageHeader 
         title="Time Slot Manager" 
-        subtitle="Capacity set karo, overcrowding rokho" 
+        subtitle="Set capacity limits and prevent overcrowding" 
       />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -73,7 +73,7 @@ function Schedule() {
                 />
               </div>
 
-              {/* Capacity Adjust */}
+              {/* Capacity Adjustment */}
               <label className="block mt-4">
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacity</span>
                 <input
@@ -81,13 +81,14 @@ function Schedule() {
                   value={cap}
                   onChange={(e) => {
                     const newCap = Math.max(1, +e.target.value);
-                    // gym.setSlotCapacity(slot, newCap); // agar gym-store mein function hai to uncomment kar sakte ho
+                    // Note: Uncomment below if gym-store has setSlotCapacity function
+                    // gym.setSlotCapacity(slot, newCap);
                   }}
                   className="mt-1 w-full px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40"
                 />
               </label>
 
-              {/* Members Avatars */}
+              {/* Member Avatars */}
               <div className="mt-4 -mx-1 flex flex-wrap gap-1">
                 {bookedMembers.slice(0, 8).map((m) => (
                   m.photo ? (

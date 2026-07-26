@@ -15,7 +15,7 @@ export const Route = createFileRoute("/settings")({
 const CURRENCIES: Settings["currency"][] = ["INR", "USD", "AED", "PKR", "EUR", "GBP"];
 const LANGS: { v: Settings["language"]; label: string }[] = [
   { v: "en", label: "English" },
-  { v: "hi", label: "हिंदी" },
+  { v: "hi", label: "Hindi" },
   { v: "hinglish", label: "Hinglish" },
 ];
 const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
@@ -30,7 +30,7 @@ function SettingsPage() {
   const settings = useGym((s) => s.settings);
   const [form, setForm] = useState<Settings>(settings);
 
-  // Plan Prices
+  // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
     Monthly: 1500,
     Quarterly: 4000,
@@ -39,10 +39,12 @@ function SettingsPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Form field update helper
   function set<K extends keyof Settings>(k: K, v: Settings[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  // Shift management functions
   function updateShift(i: number, patch: Partial<Shift>) {
     setForm((f) => ({ ...f, shifts: f.shifts.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) }));
   }
@@ -55,7 +57,7 @@ function SettingsPage() {
     setForm((f) => ({ ...f, shifts: f.shifts.filter((_, idx) => idx !== i) }));
   }
 
-  // Load settings from branches table
+  // Load settings from branches table on mount
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
@@ -77,10 +79,11 @@ function SettingsPage() {
       .catch(() => {});
   }, []);
 
+  // Save plan prices to database
   async function savePlanPrices() {
     const branchId = getActiveBranchId();
     if (!branchId) {
-      toast.error("Branch select nahi hai");
+      toast.error("No branch selected");
       return;
     }
 
@@ -103,13 +106,14 @@ function SettingsPage() {
     }
   }
 
+  // Save all settings to local state and Supabase
   async function save() {
     const branchId = getActiveBranchId();
     
-    // Local state update
+    // Update local state
     gym.updateSettings(form);
     
-    // Supabase mein bhi save karo
+    // Save to Supabase
     if (branchId) {
       const { error } = await supabase.from("branches").update({
         gym_name: form.gymName,
@@ -123,7 +127,7 @@ function SettingsPage() {
       }
     }
     
-    toast.success("Settings saved ✓");
+    toast.success("Settings saved successfully");
   }
 
   return (
@@ -139,7 +143,7 @@ function SettingsPage() {
       />
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Gym Profile */}
+        {/* Gym Profile Section */}
         <section className="bg-card border border-border rounded-2xl p-6 space-y-4">
           <h2 className="font-heading text-lg">Gym Profile</h2>
           <Field label="Gym Name">
@@ -156,7 +160,7 @@ function SettingsPage() {
           </Field>
         </section>
 
-        {/* Preferences */}
+        {/* Preferences Section */}
         <section className="bg-card border border-border rounded-2xl p-6 space-y-4">
           <h2 className="font-heading text-lg">Preferences</h2>
           <Field label="Language">
@@ -215,7 +219,7 @@ function SettingsPage() {
           </button>
         </section>
 
-        {/* Appearance */}
+        {/* Appearance Section */}
         <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
           <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Palette className="size-4" /> Appearance</h2>
           <p className="text-xs text-muted-foreground mb-4">Theme mode and accent color preset</p>
@@ -245,12 +249,12 @@ function SettingsPage() {
           </div>
         </section>
 
-        {/* Shifts */}
+        {/* Shifts Section */}
         <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="font-heading text-lg">Shifts</h2>
-              <p className="text-xs text-muted-foreground">Slots auto-generate from shifts × duration</p>
+              <p className="text-xs text-muted-foreground">Slots are auto-generated from shifts × duration</p>
             </div>
             <button onClick={addShift} className="px-3 py-2 bg-secondary rounded-lg text-xs inline-flex items-center gap-1 hover:bg-brand/10 hover:text-brand">
               <Plus className="size-3" /> Add Shift
@@ -268,19 +272,19 @@ function SettingsPage() {
                 </button>
               </div>
             ))}
-            {form.shifts.length === 0 && <p className="text-sm text-muted-foreground">No shifts. Add one.</p>}
+            {form.shifts.length === 0 && <p className="text-sm text-muted-foreground">No shifts configured. Add one above.</p>}
           </div>
         </section>
 
         {/* Danger Zone */}
         <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
           <h2 className="font-heading text-lg mb-2">Danger Zone</h2>
-          <p className="text-xs text-muted-foreground mb-4">Reset all data (members, expenses, todos) to factory seed.</p>
+          <p className="text-xs text-muted-foreground mb-4">Reset all data (members, expenses, todos) to factory seed state.</p>
           <button 
-            onClick={() => { if (confirm("Reset all data?")) { gym.reset(); toast.success("Data reset"); } }}
+            onClick={() => { if (confirm("Are you sure you want to reset all data?")) { gym.reset(); toast.success("Data reset successfully"); } }}
             className="px-4 py-2 border border-danger/40 text-danger rounded-lg text-sm hover:bg-danger/10"
           >
-            Reset all data
+            Reset All Data
           </button>
         </section>
       </div>

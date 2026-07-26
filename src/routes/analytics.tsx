@@ -75,10 +75,10 @@ function Analytics() {
 
   return (
     <div className="p-8 max-w-[1600px]">
-      <PageHeader title="Analytics" subtitle="Gym ka pura flow ek nazar mein" />
+      <PageHeader title="Analytics" subtitle="A complete overview of your gym's performance" />
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card title="Peak Hours" subtitle="Kab busy hota hai gym">
+        <Card title="Peak Hours" subtitle="Busiest hours of the day">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={peakHours}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -102,7 +102,7 @@ function Analytics() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title="Membership Plan Mix">
+        <Card title="Membership Plan Distribution">
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={planSplit} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>

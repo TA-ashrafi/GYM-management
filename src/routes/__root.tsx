@@ -45,7 +45,7 @@ function RootComponent() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Sirf ek baar run karo — tab/window switch pe nahi
+    // Run only once on initial mount — do not re-run on tab or window switch.
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -86,7 +86,7 @@ function RootComponent() {
 
     checkAuth();
 
-    // Sirf logout/login pe react karo — tab switch pe nahi
+    // Listen only for authentication events (login/logout), not tab switching.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         localStorage.removeItem("fs_active_branch");
@@ -95,7 +95,7 @@ function RootComponent() {
     });
 
     return () => subscription.unsubscribe();
-  }, []); // EMPTY — sirf mount pe ek baar
+  }, []); // Run only once when the component mounts.
 
   if (!ready) {
     return (

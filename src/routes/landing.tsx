@@ -17,15 +17,15 @@ export const Route = createFileRoute("/landing")({
 });
 
 const FEATURES = [
-  { icon: Radio, title: "RFID Attendance", desc: "Har member ka RFID card. Punch-in mismatch turant detect — no more scan bypass." },
-  { icon: Bell, title: "Ghost Detection", desc: "Jo member 4+ din se aaya nahi lekin membership active hai — auto alert." },
-  { icon: MessageCircle, title: "WhatsApp Reminders", desc: "Expiry, dues, birthdays — ek click me sabko nudge, no gateway needed." },
-  { icon: Users, title: "Member CRM", desc: "50+ pre-seeded members, photos, plans, medical, emergency contacts — sab ek jagah." },
-  { icon: ShoppingBag, title: "Supplement POS", desc: "Protein, snacks bechte ho? Inventory + billing + margin tracking built-in." },
-  { icon: BarChart3, title: "Real Analytics", desc: "Revenue trend, peak hours, churn risk, footfall heatmap — sab live." },
-  { icon: Wallet, title: "Expenses & P&L", desc: "Rent, salary, bijli — sab track, monthly P&L auto." },
-  { icon: Clock, title: "Time Slots", desc: "Shifts + slot capacity. Members assign kar do — bheed control." },
-  { icon: FileText, title: "Complete Reports", desc: "Member profile, attendance history, diet, dues — print-ready A4." },
+  { icon: Radio, title: "RFID Attendance", desc: "Every member gets an RFID card. Punch-in mismatches are instantly detected — no more scan bypass." },
+  { icon: Bell, title: "Ghost Detection", desc: "Members who haven't visited in 4+ days but have active memberships — auto-alert." },
+  { icon: MessageCircle, title: "WhatsApp Reminders", desc: "Expiry, dues, birthdays — nudge everyone with one click, no gateway needed." },
+  { icon: Users, title: "Member CRM", desc: "50+ pre-seeded members, photos, plans, medical records, emergency contacts — all in one place." },
+  { icon: ShoppingBag, title: "Supplement POS", desc: "Selling protein and snacks? Inventory + billing + margin tracking built-in." },
+  { icon: BarChart3, title: "Real Analytics", desc: "Revenue trends, peak hours, churn risk, footfall heatmap — all live." },
+  { icon: Wallet, title: "Expenses & P&L", desc: "Rent, salary, electricity — track everything, monthly P&L auto-generated." },
+  { icon: Clock, title: "Time Slots", desc: "Shifts + slot capacity. Assign members to slots — control the crowd." },
+  { icon: FileText, title: "Complete Reports", desc: "Member profiles, attendance history, diet plans, dues — print-ready A4 format." },
 ];
 
 const STATS = [
@@ -38,7 +38,7 @@ const STATS = [
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
+      {/* Navigation */}
       <header className="sticky top-0 z-40 backdrop-blur bg-background/70 border-b border-border/40">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,var(--color-brand)/0.15,transparent_60%)]" />
         <div className="max-w-6xl mx-auto px-6 pt-20 pb-24 grid lg:grid-cols-2 gap-12 items-center">
@@ -73,7 +73,7 @@ function Landing() {
               <Zap className="size-3" /> Built for Indian gym owners
             </span>
             <h1 className="text-5xl sm:text-6xl font-heading leading-[1.05] tracking-tight">
-              The gym OS that <span className="text-brand">catches</span> what your finger-print scanner misses.
+              The gym OS that <span className="text-brand">catches</span> what your fingerprint scanner misses.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-lg">
               Ghost members, unpaid dues, expired memberships — IronSync flags everything before it costs you money. RFID + WhatsApp + POS + analytics in one dark, fast dashboard.
@@ -135,7 +135,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features Section */}
       <section id="features" className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <h2 className="text-4xl font-heading">Everything you need to run a modern gym</h2>
@@ -154,19 +154,19 @@ function Landing() {
         </div>
       </section>
 
-      {/* Why */}
+      {/* Why IronSync Section */}
       <section id="why" className="bg-card/50 border-y border-border py-20">
         <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="text-xs uppercase tracking-widest text-brand font-semibold">The Problem</span>
-            <h2 className="text-4xl font-heading mt-3">Finger-print scanners lie.</h2>
+            <h2 className="text-4xl font-heading mt-3">Fingerprint scanners lie.</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              Members whose membership expires simply <em>stop</em> punching in — and jinka scan bypass hota hai, unka bhi record nahi. Owner ko 3-4 din baad tak pata nahi chalta. IronSync ka <strong className="text-foreground">Ghost Detection</strong> aisi harkat instantly pakadta hai.
+              Members whose membership expires simply <em>stop</em> punching in — and those who bypass the scanner also leave no record. The owner doesn't find out for 3-4 days. IronSync's <strong className="text-foreground">Ghost Detection</strong> catches such activity instantly.
             </p>
             <ul className="mt-6 space-y-3">
               {[
-                "Members not scanning for 4+ days → auto flag",
-                "Membership expiring in 7 days → WhatsApp nudge",
+                "Members not scanning for 4+ days → auto-flag",
+                "Memberships expiring in 7 days → WhatsApp nudge",
                 "Unpaid dues → daily reminder queue",
                 "Low supplement stock → dashboard alert",
               ].map((x) => (
@@ -186,20 +186,20 @@ function Landing() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Sab kuch aapke browser me store hota hai. Backup/Export module se JSON ya Excel me kabhi bhi nikal lo. No lock-in.
+              Everything is stored in your browser. Use the Backup/Export module to download JSON or Excel anytime. No lock-in.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Pricing Section */}
       <section id="pricing" className="max-w-4xl mx-auto px-6 py-20 text-center">
         <h2 className="text-4xl font-heading">Simple, honest pricing</h2>
-        <p className="mt-3 text-muted-foreground">Ek gym, unlimited members, saari features.</p>
+        <p className="mt-3 text-muted-foreground">One gym, unlimited members, all features.</p>
         <div className="mt-10 p-10 bg-gradient-to-br from-brand/10 via-card to-card border-2 border-brand/30 rounded-3xl inline-block">
           <div className="text-xs uppercase tracking-widest text-brand font-bold">Launch offer</div>
           <div className="text-6xl font-heading mt-3">₹0<span className="text-2xl text-muted-foreground">/forever</span></div>
-          <p className="mt-3 text-muted-foreground max-w-xs mx-auto">Self-hosted. All modules included. No credit card.</p>
+          <p className="mt-3 text-muted-foreground max-w-xs mx-auto">Self-hosted. All modules included. No credit card required.</p>
           <Link
             to="/login"
             className="mt-6 inline-flex px-8 py-3.5 bg-brand text-brand-foreground rounded-xl font-semibold hover:scale-[1.02] transition-transform"
@@ -209,6 +209,7 @@ function Landing() {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-wrap justify-between gap-4 text-xs text-muted-foreground">
           <div>© {new Date().getFullYear()} IronSync — Gym Management OS</div>

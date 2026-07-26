@@ -10,11 +10,13 @@ export const Route = createFileRoute("/backup")({
   component: BackupPage,
 });
 
+// CSV utility functions
 function csvEscape(v: unknown): string {
   const s = v === null || v === undefined ? "" : String(v);
   if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
   return s;
 }
+
 function toCsv(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "";
   const headers = Object.keys(rows[0]);
@@ -22,6 +24,8 @@ function toCsv(rows: Record<string, unknown>[]): string {
   for (const r of rows) lines.push(headers.map((h) => csvEscape(r[h])).join(","));
   return lines.join("\n");
 }
+
+// Download helper
 function download(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -37,11 +41,13 @@ function BackupPage() {
 
   const stamp = new Date().toISOString().slice(0, 10);
 
+  // Export full backup as JSON
   function backupJson() {
     download(`ironsync-backup-${stamp}.json`, JSON.stringify(state, null, 2), "application/json");
-    toast.success("Backup JSON downloaded");
+    toast.success("Backup JSON downloaded successfully");
   }
 
+  // Export members data
   function exportMembers() {
     const rows = state.members.map((m) => ({
       RollNo: m.rollNo, RFID: m.rfid, Name: m.name, Phone: m.phone, Email: m.email ?? "",
@@ -56,9 +62,10 @@ function BackupPage() {
       Address: m.address ?? "", Emergency: m.emergencyContact ?? "",
     }));
     download(`members-${stamp}.csv`, toCsv(rows), "text/csv");
-    toast.success(`${rows.length} members exported`);
+    toast.success(`${rows.length} members exported successfully`);
   }
 
+  // Export attendance records
   function exportAttendance() {
     const rows: Record<string, unknown>[] = [];
     state.members.forEach((m) => {
@@ -72,18 +79,20 @@ function BackupPage() {
     });
     rows.sort((a, b) => String(b.Date).localeCompare(String(a.Date)));
     download(`attendance-${stamp}.csv`, toCsv(rows), "text/csv");
-    toast.success(`${rows.length} punch records exported`);
+    toast.success(`${rows.length} punch records exported successfully`);
   }
 
+  // Export expenses
   function exportExpenses() {
     const rows = state.expenses.map((e) => ({
       Date: new Date(e.date).toLocaleDateString(), Title: e.title,
       Category: e.category, Amount: e.amount,
     }));
     download(`expenses-${stamp}.csv`, toCsv(rows), "text/csv");
-    toast.success(`${rows.length} expenses exported`);
+    toast.success(`${rows.length} expenses exported successfully`);
   }
 
+  // Export sales data
   function exportSales() {
     const rows: Record<string, unknown>[] = [];
     state.sales.forEach((s) => {
@@ -96,9 +105,10 @@ function BackupPage() {
       });
     });
     download(`sales-${stamp}.csv`, toCsv(rows), "text/csv");
-    toast.success(`${rows.length} sale lines exported`);
+    toast.success(`${rows.length} sale lines exported successfully`);
   }
 
+  // Export inventory
   function exportInventory() {
     const rows = state.products.map((p) => ({
       Name: p.name, Category: p.category, Cost: p.cost, Price: p.price,
@@ -106,9 +116,10 @@ function BackupPage() {
       StockValue: p.stock * p.cost,
     }));
     download(`inventory-${stamp}.csv`, toCsv(rows), "text/csv");
-    toast.success(`${rows.length} products exported`);
+    toast.success(`${rows.length} products exported successfully`);
   }
 
+  // Import backup from JSON file
   function importBackup(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -117,7 +128,7 @@ function BackupPage() {
         if (!data.members || !data.settings) throw new Error("Invalid backup file");
         if (!confirm("Replace ALL current data with this backup?")) return;
         gym.setState(data);
-        toast.success("Backup restored ✓");
+        toast.success("Backup restored successfully ✓");
       } catch (e) {
         toast.error("Invalid backup file");
         console.error(e);
@@ -126,6 +137,7 @@ function BackupPage() {
     reader.readAsText(file);
   }
 
+  // Toggle auto-backup
   function toggleAutoBackup(v: boolean) {
     setAutoBackup(v);
     if (typeof window === "undefined") return;
@@ -144,7 +156,7 @@ function BackupPage() {
     <div className="p-8 max-w-5xl">
       <PageHeader
         title="Backup & Export"
-        subtitle="Sara data download karo, restore karo, ya CSV me export"
+        subtitle="Download all data, restore from backup, or export to CSV"
         actions={
           <button onClick={backupJson} className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2">
             <Download className="size-4" /> Full Backup (JSON)
@@ -152,6 +164,7 @@ function BackupPage() {
         }
       />
 
+      {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Stat label="Members" value={state.members.length} />
         <Stat label="Punch Records" value={state.members.reduce((s, m) => s + m.attendance.length, 0)} />
@@ -160,13 +173,14 @@ function BackupPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
+        {/* CSV Exports Section */}
         <section className="bg-card border border-border rounded-2xl p-6">
           <h2 className="font-heading text-lg mb-1 flex items-center gap-2">
             <FileSpreadsheet className="size-5 text-brand" /> CSV Exports
           </h2>
-          <p className="text-xs text-muted-foreground mb-4">Excel/Google Sheets me open kar sakte ho</p>
+          <p className="text-xs text-muted-foreground mb-4">Can be opened in Excel or Google Sheets</p>
           <div className="grid gap-2">
-            <ExportRow label="Members (with status, BMI base, expiry)" count={state.members.length} onClick={exportMembers} />
+            <ExportRow label="Members (with status, BMI, expiry)" count={state.members.length} onClick={exportMembers} />
             <ExportRow label="Attendance / Punch History" count={state.members.reduce((s, m) => s + m.attendance.length, 0)} onClick={exportAttendance} />
             <ExportRow label="Expenses" count={state.expenses.length} onClick={exportExpenses} />
             <ExportRow label="Store Sales" count={state.sales.length} onClick={exportSales} />
@@ -174,6 +188,7 @@ function BackupPage() {
           </div>
         </section>
 
+        {/* Backup & Restore Section */}
         <section className="bg-card border border-border rounded-2xl p-6">
           <h2 className="font-heading text-lg mb-1 flex items-center gap-2">
             <FileJson className="size-5 text-brand" /> Full Backup / Restore
@@ -190,6 +205,7 @@ function BackupPage() {
           <input ref={fileRef} type="file" accept="application/json" className="hidden"
             onChange={(e) => e.target.files?.[0] && importBackup(e.target.files[0])} />
 
+          {/* Auto-save Toggle */}
           <label className="flex items-center justify-between mt-5 p-3 bg-secondary/40 rounded-lg cursor-pointer">
             <div>
               <p className="text-sm font-medium">Auto-save (local)</p>
@@ -198,10 +214,11 @@ function BackupPage() {
             <input type="checkbox" checked={autoBackup} onChange={(e) => toggleAutoBackup(e.target.checked)} className="size-5 accent-current" />
           </label>
 
+          {/* Cloud Backup Tip */}
           <div className="mt-4 p-3 bg-warn/10 border border-warn/30 rounded-lg flex gap-2 text-xs">
             <AlertTriangle className="size-4 text-warn shrink-0 mt-0.5" />
             <p className="text-muted-foreground">
-              <strong className="text-foreground">Cloud backup tip:</strong> Weekly JSON download karo aur Google Drive / Dropbox me daalo.
+              <strong className="text-foreground">Cloud backup tip:</strong> Download weekly JSON backup and store it on Google Drive / Dropbox.
             </p>
           </div>
         </section>
@@ -210,6 +227,7 @@ function BackupPage() {
   );
 }
 
+// Export Row Component
 function ExportRow({ label, count, onClick }: { label: string; count: number; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex items-center justify-between gap-3 p-3 bg-secondary/40 rounded-lg hover:bg-brand/10 hover:text-brand transition group text-left">
@@ -221,6 +239,8 @@ function ExportRow({ label, count, onClick }: { label: string; count: number; on
     </button>
   );
 }
+
+// Statistics Card Component
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="p-4 bg-card border border-border rounded-xl">

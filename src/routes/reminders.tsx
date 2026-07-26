@@ -17,20 +17,22 @@ const TABS: { id: Bucket; label: string; tone: string }[] = [
   { id: "unpaid", label: "Unpaid Dues", tone: "text-warn" },
 ];
 
+// Generate default message based on bucket type
 function defaultMessage(bucket: Bucket, opts: { name: string; gymName: string; ownerName: string; days?: number; amount?: number }) {
   const first = opts.name.split(" ")[0];
   switch (bucket) {
     case "expiring":
-      return `Hi ${first} 👋\nYour ${opts.gymName} membership expires in ${opts.days} din. Renew karwa lo so your routine break na ho.\n\n— ${opts.ownerName}`;
+      return `Hi ${first},\n\nYour ${opts.gymName} membership expires in ${opts.days} days. Please renew to keep your fitness routine uninterrupted.\n\nRegards,\n${opts.ownerName}`;
     case "expired":
-      return `Hi ${first} 👋\nYour ${opts.gymName} membership ${opts.days} din pehle expire ho gayi hai. Aaj aake renew kar lo, hum tumhe miss kar rahe hain. 💪\n\n— ${opts.ownerName}`;
+      return `Hi ${first},\n\nYour ${opts.gymName} membership expired ${opts.days} days ago. We miss you at the gym. Please visit and renew today.\n\nRegards,\n${opts.ownerName}`;
     case "ghost":
-      return `Hey ${first}!\nTumne ${opts.days} din se gym me punch nahi kiya. Sab thik hai? Aaj evening aa jao, fitness routine miss mat karo 🏋️\n\n— ${opts.ownerName} (${opts.gymName})`;
+      return `Hey ${first},\n\nWe noticed you haven't checked in for ${opts.days} days. Everything okay? Don't miss out on your fitness routine. Visit us today.\n\nRegards,\n${opts.ownerName} (${opts.gymName})`;
     case "unpaid":
-      return `Hi ${first} 👋\nYour ${opts.gymName} membership fee of ${money(opts.amount ?? 0)} pending hai. Jaldi clear kar do please.\n\nThanks,\n${opts.ownerName}`;
+      return `Hi ${first},\n\nYour ${opts.gymName} membership fee of ${money(opts.amount ?? 0)} is pending. Please clear the dues at your earliest convenience.\n\nThanks,\n${opts.ownerName}`;
   }
 }
 
+// Generate WhatsApp link
 function waLink(phone: string, text: string) {
   const digits = phone.replace(/[^\d]/g, "");
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
@@ -43,6 +45,7 @@ function RemindersPage() {
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [tmpl, setTmpl] = useState<string>("");
 
+  // Filter members based on selected bucket
   const list = useMemo(() => {
     return members.filter((m) => {
       const st = memberStatus(m);
@@ -54,6 +57,7 @@ function RemindersPage() {
     });
   }, [members, bucket]);
 
+  // Generate message for a specific member
   function msgFor(m: typeof members[number]) {
     if (tmpl.trim()) {
       return tmpl
@@ -71,6 +75,7 @@ function RemindersPage() {
     return defaultMessage("unpaid", { name: m.name, gymName: settings.gymName, ownerName: settings.ownerName, amount: m.feeAmount });
   }
 
+  // Broadcast messages to all members in the list
   function broadcast() {
     list.forEach((m, i) => {
       setTimeout(() => {
@@ -84,7 +89,7 @@ function RemindersPage() {
     <div className="p-8 max-w-6xl">
       <PageHeader
         title="WhatsApp Reminders"
-        subtitle="Ek click me member ko WhatsApp pe nudge bhejo — no API key needed"
+        subtitle="Send WhatsApp nudges to members with one click - no API key required"
         actions={
           <button onClick={broadcast} disabled={list.length === 0}
             className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 disabled:opacity-50">
@@ -93,6 +98,7 @@ function RemindersPage() {
         }
       />
 
+      {/* Tab Navigation */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {TABS.map((t) => {
           const count = members.filter((m) => {
@@ -112,16 +118,18 @@ function RemindersPage() {
         })}
       </div>
 
+      {/* Custom Template */}
       <div className="bg-card border border-border rounded-2xl p-5 mb-4">
         <div className="flex items-center justify-between mb-2">
           <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Custom Template (optional)</label>
           <span className="text-[10px] text-muted-foreground">Placeholders: {"{name}"} {"{gym}"} {"{owner}"} {"{amount}"}</span>
         </div>
         <textarea value={tmpl} onChange={(e) => setTmpl(e.target.value)} rows={3}
-          placeholder="Khaali chhodo to default Hinglish message use hoga..."
+          placeholder="Leave empty to use default English message..."
           className="w-full px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 font-mono" />
       </div>
 
+      {/* Members Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-secondary/40">
@@ -134,7 +142,7 @@ function RemindersPage() {
           </thead>
           <tbody>
             {list.length === 0 && (
-              <tr><td colSpan={4} className="text-center py-12 text-muted-foreground">Is bucket me koi member nahi 🎉</td></tr>
+              <tr><td colSpan={4} className="text-center py-12 text-muted-foreground">No members in this category</td></tr>
             )}
             {list.map((m) => {
               const last = m.attendance[0];
@@ -179,7 +187,7 @@ function RemindersPage() {
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        💡 WhatsApp Web/App open hoga with the pre-filled message. Aap "Send" press karke bhejoge — no API setup, no Twilio cost.
+        Note: WhatsApp Web/App will open with the pre-filled message. Click send to deliver - no API setup or Twilio costs required.
       </p>
     </div>
   );

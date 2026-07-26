@@ -28,7 +28,7 @@ function Auth() {
       if (mode === "login") {
         await signIn(form.email, form.password);
         
-        // Thoda wait karo taaki session set ho jaye
+        // Brief delay to ensure session initialization is complete
         await new Promise((r) => setTimeout(r, 500));
         
         const branches = await fetchBranches();
@@ -41,15 +41,15 @@ function Auth() {
           nav({ to: "/" });
         }
       } else {
-        if (!form.name.trim()) { toast.error("Naam daalo"); setLoading(false); return; }
-        if (form.password.length < 6) { toast.error("Password kam se kam 6 characters"); setLoading(false); return; }
-        if (form.password !== form.confirmPassword) { toast.error("Passwords match nahi"); setLoading(false); return; }
+        if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
+        if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
+        if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); setLoading(false); return; }
         await signUp(form.email, form.password, form.name, form.phone);
         setMode("verify");
-        toast.success("Verification email bheja gaya!");
+        toast.success("Verification email sent successfully!");
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Kuch galat hua");
+      toast.error(err.message ?? "Something went wrong");
     }
     setLoading(false);
   }
@@ -61,23 +61,23 @@ function Auth() {
           <div className="size-20 bg-brand/10 rounded-3xl grid place-items-center mx-auto mb-6">
             <Mail className="size-10 text-brand" />
           </div>
-          <h1 className="text-3xl font-heading mb-3">Email verify karo</h1>
+          <h1 className="text-3xl font-heading mb-3">Verify your email</h1>
           <p className="text-muted-foreground mb-2">
-            Humne <strong className="text-foreground">{form.email}</strong> pe verification link bheja hai.
+            We've sent a verification link to <strong className="text-foreground">{form.email}</strong>
           </p>
           <p className="text-sm text-muted-foreground mb-8">
-            Email open karo → link pe click karo → wapas yahan aa jao
+            Open your email → Click the verification link → Return here
           </p>
           <button
             onClick={() => setMode("login")}
             className="w-full py-3 bg-brand text-brand-foreground rounded-xl font-semibold"
           >
-            Login pe jao →
+            Go to Login →
           </button>
           <p className="text-xs text-muted-foreground mt-4">
-            Email nahi mila? Spam folder check karo ya{" "}
+            Didn't receive the email? Check your spam folder or{" "}
             <button onClick={() => { setMode("signup"); }} className="text-brand hover:underline">
-              dobara try karo
+              try again
             </button>
           </p>
         </div>
@@ -87,7 +87,7 @@ function Auth() {
 
   return (
     <div className="min-h-screen bg-background text-foreground grid lg:grid-cols-2">
-      {/* Left Panel */}
+      {/* Left Panel - Branding and Information */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-brand/20 via-background to-background border-r border-border">
         <Link to="/landing" className="flex items-center gap-3">
           <div className="size-10 bg-brand rounded-xl grid place-items-center">
@@ -101,8 +101,8 @@ function Auth() {
         <div>
           <h2 className="text-4xl font-heading leading-tight">
             {mode === "login"
-              ? <><span className="text-brand">Wapas</span> swagat.<br />Gym chalao.</>
-              : <>Naya account.<br /><span className="text-brand">Gym setup karo.</span></>}
+              ? <><span className="text-brand">Welcome</span> back.<br />Manage your gym.</>
+              : <>Create account.<br /><span className="text-brand">Set up your gym.</span></>}
           </h2>
           <p className="mt-4 text-muted-foreground text-sm leading-relaxed">
             RFID attendance · Member management<br />
@@ -112,7 +112,7 @@ function Auth() {
         <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Fitness Streak</p>
       </div>
 
-      {/* Right Form */}
+      {/* Right Panel - Authentication Form */}
       <div className="flex items-center justify-center p-6 min-h-screen">
         <div className="w-full max-w-sm">
           {/* Mobile Logo */}
@@ -124,13 +124,13 @@ function Auth() {
           </div>
 
           <h2 className="text-2xl font-heading mb-1">
-            {mode === "login" ? "Login karo" : "Account banao"}
+            {mode === "login" ? "Sign In" : "Create Account"}
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            {mode === "login" ? "Apne gym dashboard mein enter karo" : "Gym OS setup shuru karo"}
+            {mode === "login" ? "Access your gym dashboard" : "Start your Gym OS setup"}
           </p>
 
-          {/* Tabs */}
+          {/* Mode Tabs */}
           <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-6">
             <button onClick={() => setMode("login")}
               className={"flex-1 py-2 rounded-lg text-sm font-medium transition " +
@@ -145,6 +145,7 @@ function Auth() {
           </div>
 
           <form onSubmit={submit} className="space-y-4" autoComplete="off">
+            {/* Sign Up Fields */}
             {mode === "signup" && (
               <>
                 <div>
@@ -154,7 +155,7 @@ function Auth() {
                     <input
                       value={form.name}
                       onChange={(e) => set("name", e.target.value)}
-                      placeholder="Aapka naam"
+                      placeholder="Your full name"
                       autoComplete="off"
                       className={inp + " pl-10"}
                       required
@@ -177,6 +178,7 @@ function Auth() {
               </>
             )}
 
+            {/* Email Field */}
             <div>
               <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Email *</label>
               <div className="relative">
@@ -185,7 +187,7 @@ function Auth() {
                   type="email"
                   value={form.email}
                   onChange={(e) => set("email", e.target.value)}
-                  placeholder="aap@example.com"
+                  placeholder="you@example.com"
                   autoComplete="off"
                   className={inp + " pl-10"}
                   required
@@ -193,6 +195,7 @@ function Auth() {
               </div>
             </div>
 
+            {/* Password Field */}
             <div>
               <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Password *</label>
               <div className="relative">
@@ -216,29 +219,30 @@ function Auth() {
               </div>
             </div>
 
-            {/* Forgot Password — only on login */}
+            {/* Forgot Password - Login Mode Only */}
             {mode === "login" && (
               <div className="text-right -mt-2">
                 <button
                   type="button"
                   onClick={async () => {
                     if (!form.email) {
-                      toast.error("Pehle email daalo");
+                      toast.error("Please enter your email first");
                       return;
                     }
                     const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
                       redirectTo: window.location.origin + "/auth",
                     });
-                    if (!error) toast.success("Password reset link bheja gaya email pe!");
+                    if (!error) toast.success("Password reset link sent to your email!");
                     else toast.error(error.message);
                   }}
                   className="text-xs text-brand hover:underline"
                 >
-                  Password bhool gaye?
+                  Forgot password?
                 </button>
               </div>
             )}
 
+            {/* Confirm Password - Sign Up Mode Only */}
             {mode === "signup" && (
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Confirm Password *</label>
@@ -257,6 +261,7 @@ function Auth() {
               </div>
             )}
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -264,13 +269,14 @@ function Auth() {
             >
               {loading
                 ? "Please wait..."
-                : mode === "login" ? "Login →" : "Account Banao 💪"}
+                : mode === "login" ? "Sign In →" : "Create Account 💪"}
             </button>
           </form>
 
+          {/* Navigation Link */}
           <div className="mt-6 text-center">
             <Link to="/landing" className="text-xs text-muted-foreground hover:text-foreground">
-              ← Home pe wapas jao
+              ← Back to Home
             </Link>
           </div>
         </div>

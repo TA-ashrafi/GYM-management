@@ -19,7 +19,7 @@ import {
   Moon,
   LogOut,
   Building2,
-  LifeBuoy,           // ← Added
+  LifeBuoy,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useGym, gym } from "@/lib/gym-store";
@@ -27,6 +27,7 @@ import { useApplyTheme } from "@/lib/theme";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { logout } from "@/lib/auth";
 
+// Navigation configuration
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
 const nav: NavItem[] = [
@@ -44,22 +45,31 @@ const nav: NavItem[] = [
   { to: "/todos", label: "To-Do", icon: CheckSquare },
   { to: "/backup", label: "Backup & Export", icon: Download },
   { to: "/branches", label: "Branches", icon: Building2 },
-  { to: "/help", label: "Help & Support", icon: LifeBuoy },   // ← Claude ke hisaab se added
+  { to: "/help", label: "Help & Support", icon: LifeBuoy },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
+/**
+ * Main application shell component that provides the sidebar layout
+ * and global navigation for the gym management application.
+ * 
+ * @param children - The page content to render within the shell
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   useApplyTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const members = useGym((s) => s.members);
   const settings = useGym((s) => s.settings);
+  
+  // Calculate today's check-in count
   const today = new Date().toDateString();
   const todayCount = members.filter((m) =>
     m.attendance.some((a) => new Date(a).toDateString() === today),
   ).length;
   const capacity = Math.min(100, Math.round((todayCount / Math.max(1, members.length)) * 100));
 
+  // Handle user logout
   async function handleLogout() {
     await logout();
     navigate({ to: "/auth" });
@@ -67,7 +77,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
+      {/* Sidebar */}
       <aside className="no-print w-64 shrink-0 border-r border-border flex flex-col p-5 sticky top-0 h-screen">
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-3 mb-6 px-2">
           <div className="size-9 bg-brand rounded-lg grid place-items-center shadow-[0_0_24px_-4px_var(--color-brand)]">
             <Dumbbell className="size-5 text-brand-foreground" strokeWidth={2.5} />
@@ -80,6 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </Link>
 
+        {/* Navigation */}
         <nav className="space-y-0.5 flex-1 overflow-y-auto scrollbar-thin -mx-1 px-1">
           {nav.map((n) => {
             const active = n.exact ? pathname === n.to : pathname === n.to || pathname.startsWith(n.to + "/");
@@ -102,6 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
+        {/* Capacity Widget */}
         <div className="mt-4 p-4 bg-card rounded-xl border border-border">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Today's Capacity</p>
           <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -114,8 +128,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      {/* Main Content */}
       <main className="flex-1 min-w-0">
+        {/* Top Bar */}
         <div className="no-print sticky top-0 z-30 flex justify-end gap-2 px-8 py-4 bg-background/80 backdrop-blur border-b border-border/40">
+          {/* Theme Toggle */}
           <button
             onClick={() => gym.updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
             className="size-10 rounded-xl bg-card border border-border hover:border-brand/40 grid place-items-center transition"
@@ -123,7 +140,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {settings.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
+          
+          {/* Notifications */}
           <NotificationsBell />
+          
+          {/* Logout Button */}
           <button
             onClick={handleLogout}
             className="h-10 px-4 rounded-xl bg-card border border-border hover:border-danger/40 hover:text-danger flex items-center gap-2 text-sm transition"
@@ -140,6 +161,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Page header component with title, subtitle, and optional action buttons
+ * 
+ * @param title - The main page title
+ * @param subtitle - Optional subtitle text
+ * @param actions - Optional action buttons or elements
+ */
 export function PageHeader({
   title,
   subtitle,
