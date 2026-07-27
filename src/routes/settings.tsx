@@ -3,9 +3,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, Sun, Moon, Palette } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
-import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode } from "@/lib/gym-store";
-import { supabase } from "@/lib/supabase";
-import { getActiveBranchId } from "@/lib/supabase"; 
+import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode, type PlanType } from "@/lib/gym-store";
+import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — IronSync" }] }),
@@ -64,17 +63,28 @@ function SettingsPage() {
 
     supabase
       .from("branches")
-      .select("plan_prices, gym_name, shifts, slot_duration_min, slot_capacity")
+      .select("*")
       .eq("id", branchId)
       .single()
       .then(({ data }) => {
         if (!data) return;
 
+        const merged = {
+          ...form,
+          gymName: data.gym_name ?? form.gymName,
+          shifts: data.shifts ?? form.shifts,
+          slotDurationMin: data.slot_duration_min ?? form.slotDurationMin,
+          slotCapacity: data.slot_capacity ?? form.slotCapacity,
+          theme: data.theme ?? form.theme,
+          preset: data.preset ?? form.preset,
+          currency: data.currency ?? form.currency,
+          language: data.language ?? form.language,
+        };
+
+        setForm(merged);
+        gym.updateSettings(merged);
+
         if (data.plan_prices) setPlanPrices(data.plan_prices);
-        if (data.gym_name) gym.updateSettings({ gymName: data.gym_name });
-        if (data.shifts) gym.updateSettings({ shifts: data.shifts });
-        if (data.slot_duration_min !== undefined) gym.updateSettings({ slotDurationMin: data.slot_duration_min });
-        if (data.slot_capacity !== undefined) gym.updateSettings({ slotCapacity: data.slot_capacity });
       })
       .catch(() => {});
   }, []);
@@ -108,26 +118,31 @@ function SettingsPage() {
 
   // Save all settings to local state and Supabase
   async function save() {
-    const branchId = getActiveBranchId();
-    
-    // Update local state
     gym.updateSettings(form);
-    
-    // Save to Supabase
+
+    const branchId = getActiveBranchId();
     if (branchId) {
-      const { error } = await supabase.from("branches").update({
-        gym_name: form.gymName,
-        shifts: form.shifts,
-        slot_duration_min: form.slotDurationMin,
-        slot_capacity: form.slotCapacity,
-      }).eq("id", branchId);
+      const { error } = await supabase
+        .from("branches")
+        .update({
+          gym_name: form.gymName,
+          shifts: form.shifts,
+          slot_duration_min: form.slotDurationMin,
+          slot_capacity: form.slotCapacity,
+          theme: form.theme,
+          preset: form.preset,
+          currency: form.currency,
+          language: form.language,
+        })
+        .eq("id", branchId);
 
       if (error) {
-        console.error("Supabase save error:", error);
+        toast.error("Error: " + error.message);
+        return;
       }
     }
-    
-    toast.success("Settings saved successfully");
+
+    toast.success("Settings saved ✓");
   }
 
   return (

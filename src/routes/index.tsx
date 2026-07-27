@@ -39,19 +39,19 @@ function Dashboard() {
   const [todos, setTodos] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
 
-  // Real-time data fetch from Supabase — current branch only
+  // Real-time fetch from Supabase — current branch only
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
-    // Fetch members
+    // Members
     supabase
       .from("members")
       .select("*")
       .eq("branch_id", branchId)
       .then(({ data }) => setMembers(data ?? []));
 
-    // Fetch today's attendance records
+    // Today's attendance
     const today = new Date().toISOString().split("T")[0];
     supabase
       .from("attendance_logs")
@@ -61,7 +61,7 @@ function Dashboard() {
       .lte("checked_in_at", today + "T23:59:59")
       .then(({ data }) => setTodayLogs(data ?? []));
 
-    // Fetch open todos
+    // Todos (open only)
     supabase
       .from("todos")
       .select("*")
@@ -70,7 +70,7 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Fetch expenses
+    // Expenses
     supabase
       .from("expenses")
       .select("*")
@@ -78,7 +78,7 @@ function Dashboard() {
       .order("date", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
-    // Realtime subscription for attendance updates
+    // Real-time attendance
     const channel = supabase
       .channel("dashboard-realtime")
       .on(
@@ -101,21 +101,24 @@ function Dashboard() {
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
-  // Calculate key statistics
   const stats = useMemo(() => {
     let active = 0, expiring = 0, expired = 0, pendingAmt = 0, revenue = 0;
 
     members.forEach((m) => {
-      const d = daysUntil(m.expiryDate);
+      const expiryDate = m.expiry_date ?? m.expiryDate;
+      const feePaid = m.fee_paid ?? m.feePaid;
+      const feeAmount = m.fee_amount ?? m.feeAmount ?? 0;
+
+      const d = daysUntil(expiryDate);
       if (d < 0) {
         expired++;
-        pendingAmt += m.feeAmount;
+        pendingAmt += feeAmount;
       } else if (d <= 7) {
         expiring++;
       } else {
         active++;
       }
-      if (m.feePaid) revenue += m.feeAmount;
+      if (feePaid) revenue += feeAmount;
     });
 
     const expenseTotal = expenses.reduce((a: number, e: any) => a + (e.amount ?? 0), 0);
@@ -131,7 +134,6 @@ function Dashboard() {
     return inMemberIds.size;
   }, [todayLogs]);
 
-  // Generate trend data for the chart
   const trend = useMemo(() => {
     const days = [];
     for (let i = 13; i >= 0; i--) {
@@ -143,14 +145,17 @@ function Dashboard() {
         l.checked_in_at?.startsWith(dateStr) && (l.punch_type ?? "in") === "in"
       ).length;
       const revenue = members
-        .filter((m) => m.joinDate?.startsWith(dateStr) && m.feePaid)
-        .reduce((sum: number, m: any) => sum + m.feeAmount, 0);
+        .filter((m) => {
+          const joinDate = m.join_date ?? m.joinDate;
+          const feePaid = m.fee_paid ?? m.feePaid;
+          return joinDate?.startsWith(dateStr) && feePaid;
+        })
+        .reduce((sum: number, m: any) => sum + (m.fee_amount ?? m.feeAmount ?? 0), 0);
       days.push({ d: label, revenue, visits });
     }
     return days;
   }, [todayLogs, members]);
 
-  // Get ghost members (no-shows)
   const ghostList = useMemo(() => {
     const todayPunchedIn = new Set(
       todayLogs
@@ -158,15 +163,19 @@ function Dashboard() {
         .map((l: any) => l.member_id)
     );
     return members.filter((m) => {
-      const d = daysUntil(m.expiryDate);
+      const d = daysUntil(m.expiry_date ?? m.expiryDate);
       return d >= 0 && !todayPunchedIn.has(m.id);
     }).slice(0, 5);
   }, [members, todayLogs]);
 
-  // Get expiring/expired members
   const expiringList = members
-    .filter((m) => { const d = daysUntil(m.expiryDate); return d < 0 || d <= 7; })
-    .sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate))
+    .filter((m) => {
+      const d = daysUntil(m.expiry_date ?? m.expiryDate);
+      return d < 0 || d <= 7;
+    })
+    .sort((a, b) =>
+      daysUntil(a.expiry_date ?? a.expiryDate) - daysUntil(b.expiry_date ?? b.expiryDate)
+    )
     .slice(0, 5);
 
   const openTodos = todos.slice(0, 4);
@@ -174,7 +183,6 @@ function Dashboard() {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  // Widget drag/drop handlers
   function move(from: number, to: number) {
     if (to < 0 || to >= layout.length) return;
     const next = [...layout];
@@ -284,7 +292,7 @@ function Dashboard() {
           <Link to="/members" search={{ filter: "ghost" }} className="text-xs text-brand hover:underline">View all</Link>
         </div>
         {ghostList.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular 💪</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular. 💪</p>
         ) : (
           <div className="divide-y divide-border">
             {ghostList.map((m) => {
@@ -294,7 +302,7 @@ function Dashboard() {
                   <img src={m.photo} alt={m.name} className="size-10 rounded-full object-cover ring-1 ring-border" width={40} height={40} loading="lazy" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.rollNo} · {m.plan}</p>
+                    <p className="text-xs text-muted-foreground">{m.roll_no ?? m.rollNo} · {m.plan}</p>
                   </div>
                   <span className="px-2 py-1 bg-danger/10 text-danger text-[10px] rounded uppercase font-bold tracking-wider">
                     No-show {last ? daysSince(last) : "30+"}d
@@ -312,7 +320,7 @@ function Dashboard() {
         <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
-            const d = daysUntil(m.expiryDate);
+            const d = daysUntil(m.expiry_date ?? m.expiryDate);
             return (
               <div key={m.id} className="flex items-center gap-3">
                 <img src={m.photo} alt={m.name} className="size-9 rounded-full object-cover ring-1 ring-border" width={36} height={36} loading="lazy" />
@@ -323,11 +331,11 @@ function Dashboard() {
                   </p>
                 </div>
                 <button onClick={(e) => {
-                    e.preventDefault();
-                    const next = new Date();
-                    next.setDate(next.getDate() + 30);
-                    gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
-                  }}
+                  e.preventDefault();
+                  const next = new Date();
+                  next.setDate(next.getDate() + 30);
+                  gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
+                }}
                   className="text-[10px] uppercase tracking-wider text-brand hover:underline">
                   Renew
                 </button>
@@ -360,13 +368,12 @@ function Dashboard() {
         }
       />
 
-      {/* Customize Dashboard Panel */}
       {customize && (
         <div className="mb-6 p-5 bg-card border border-dashed border-brand/40 rounded-2xl">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-heading text-base">Customize Dashboard</h3>
-              <p className="text-xs text-muted-foreground">Drag widgets to reorder, use eye-icon to show/hide</p>
+              <p className="text-xs text-muted-foreground">Drag widgets to reorder, eye-icon to show/hide</p>
             </div>
             <button onClick={() => gym.setLayout(DEFAULT_LAYOUT)}
               className="text-xs text-muted-foreground hover:text-brand inline-flex items-center gap-1">
@@ -389,7 +396,6 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Widget Grid */}
       <div className="flex flex-col gap-6">
         {layout.filter((w) => w.visible).map((w) => (
           <div
@@ -413,7 +419,6 @@ function Dashboard() {
   );
 }
 
-// KPI Card Component
 function Kpi({ to, search, label, value, icon, accent, hint }: {
   to: string; search?: Record<string, string>; label: string; value: number | string;
   icon: React.ReactNode; accent?: string; hint?: string;
@@ -431,7 +436,6 @@ function Kpi({ to, search, label, value, icon, accent, hint }: {
   );
 }
 
-// Money Card Component
 function MoneyCard({ to, search, label, value, sub, tone, icon }: {
   to: string; search?: Record<string, string>; label: string; value: string; sub: string;
   tone: "brand" | "danger" | "muted"; icon: React.ReactNode;
