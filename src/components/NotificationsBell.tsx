@@ -1,50 +1,174 @@
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bell, AlertTriangle, Clock, Ghost, Wallet, CheckSquare, Package, X } from "lucide-react";
-import { useGym, gym, computeNotifications, type Notification } from "@/lib/gym-store";
+import { supabase, getActiveBranchId } from "@/lib/supabase";
+import { daysUntil } from "@/lib/gym-store";
 
-// Map notification types to their respective icons
+type Notif = {
+  id: string;
+  type: "expiry" | "ghost" | "dues" | "task" | "stock" | "slot";
+  tone: "danger" | "warn" | "info";
+  title: string;
+  desc: string;
+  href?: string;
+};
+
 const ICONS = {
   expiry: Clock,
   ghost: Ghost,
   dues: Wallet,
   task: CheckSquare,
   stock: Package,
+  slot: AlertTriangle,
 } as const;
 
+function useNotifications() {
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const branchId = getActiveBranchId();
+      if (!branchId) return;
+
+      const out: Notif[] = [];
+
+      // Members
+      const { data: members } = await supabase
+        .from("members")
+        .select("*")
+        .eq("branch_id", branchId);
+
+      // Today attendance
+      const today = new Date().toISOString().split("T")[0];
+      const { data: logs } = await supabase
+        .from("attendance_logs")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("checked_in_at", today + "T00:00:00");
+
+      // Products
+      const { data: products } = await supabase
+        .from("products")
+        .select("*")
+        .eq("branch_id", branchId);
+
+      // Todos (open only)
+      const { data: todos } = await supabase
+        .from("todos")
+        .select("*")
+        .eq("branch_id", branchId)
+        .eq("done", false);
+
+      members?.forEach((m: any) => {
+        const expiry = m.expiry_date ?? m.expiryDate;
+        const d = daysUntil(expiry);
+
+        // Expiry
+        if (d < 0) {
+          out.push({
+            id: `exp_${m.id}`,
+            type: "expiry",
+            tone: "danger",
+            title: `${m.name}'s membership expired`,
+            desc: `${Math.abs(d)} days ago — renewal pending`,
+            href: "/members?filter=expired",
+          });
+        } else if (d <= 7) {
+          out.push({
+            id: `expg_${m.id}`,
+            type: "expiry",
+            tone: "warn",
+            title: `${m.name}'s membership expiring`,
+            desc: `${d} days left`,
+            href: "/members?filter=expiring",
+          });
+        }
+
+        // Unpaid dues
+        if (!m.fee_paid && !m.feePaid) {
+          out.push({
+            id: `dues_${m.id}`,
+            type: "dues",
+            tone: "warn",
+            title: `Dues pending: ${m.name}`,
+            desc: `₹${m.fee_amount ?? m.feeAmount ?? 0} unpaid`,
+            href: "/members?filter=unpaid",
+          });
+        }
+
+        // Wrong time slot
+        const preferredSlot = m.preferred_slot ?? m.preferredSlot;
+        if (preferredSlot && logs) {
+          const memberPunchedToday = logs.find((l: any) => l.member_id === m.id);
+          if (memberPunchedToday) {
+            const [startStr, endStr] = preferredSlot.split("-");
+            if (startStr && endStr) {
+              const [sh, sm] = startStr.split(":").map(Number);
+              const [eh, em] = endStr.split(":").map(Number);
+              const slotStart = sh * 60 + (sm || 0);
+              const slotEnd = eh * 60 + (em || 0);
+              const punchTime = new Date(memberPunchedToday.checked_in_at);
+              const punchMin = punchTime.getHours() * 60 + punchTime.getMinutes();
+
+              if (punchMin < slotStart || punchMin > slotEnd) {
+                out.push({
+                  id: `slot_${m.id}_${today}`,
+                  type: "slot",
+                  tone: "warn",
+                  title: `Wrong slot: ${m.name}`,
+                  desc: `Expected ${preferredSlot}, checked in at ${punchTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`,
+                  href: "/attendance",
+                });
+              }
+            }
+          }
+        }
+      });
+
+      // Low stock
+      products?.forEach((p: any) => {
+        const lowAt = p.low_stock_at ?? p.lowStockAt ?? 3;
+        if (p.stock <= lowAt) {
+          out.push({
+            id: `stock_${p.id}`,
+            type: "stock",
+            tone: p.stock === 0 ? "danger" : "warn",
+            title: `Low stock: ${p.name}`,
+            desc: `Only ${p.stock} units left (alert at ${lowAt})`,
+            href: "/store",
+          });
+        }
+      });
+
+      // Todos
+      todos?.forEach((t: any) => {
+        out.push({
+          id: `todo_${t.id}`,
+          type: "task",
+          tone: t.priority === "high" ? "danger" : t.priority === "med" ? "warn" : "info",
+          title: `Task pending: ${t.title}`,
+          desc: t.note ?? `Priority: ${t.priority}`,
+          href: "/todos",
+        });
+      });
+
+      setNotifs(out);
+    }
+
+    load();
+  }, []);
+
+  return notifs;
+}
+
 export function NotificationsBell() {
-  const members = useGym((s) => s.members);
-  const todos = useGym((s) => s.todos);
-  const products = useGym((s) => s.products);
-  const settings = useGym((s) => s.settings);
+  const notifs = useNotifications();
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
-  // Compute notifications from the current state
-  const notifs = useMemo(
-    () => computeNotifications({ members, todos, products, settings, expenses: [], slots: {}, sales: [] }),
-    [members, todos, products, settings]
-  );
+  const visible = notifs.filter((n) => !dismissed.has(n.id));
 
-  // Generate low stock alerts separately
-  const lowStockAlerts: Notification[] = useMemo(() => {
-    return products
-      .filter((p) => p.stock <= (p.lowStockAt || 3) && p.stock > 0)
-      .map((p) => ({
-        id: `stock-${p.id}`,
-        type: "stock" as const,
-        tone: "warn" as const,
-        title: `${p.name} - Low Stock`,
-        desc: `Only ${p.stock} units remaining`,
-        href: "/store",
-        ts: Date.now(),
-      }));
-  }, [products]);
-
-  // Combine all notifications
-  const allNotifications = [...notifs, ...lowStockAlerts];
-
-  // Close dropdown when clicking outside
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
@@ -53,11 +177,11 @@ export function NotificationsBell() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const count = allNotifications.length;
-  
-  // Group notifications by type for better organization
-  const grouped: Record<string, Notification[]> = {};
-  allNotifications.forEach((n) => {
+  const count = visible.length;
+
+  // Group by type
+  const grouped: Record<string, Notif[]> = {};
+  visible.forEach((n) => {
     (grouped[n.type] ||= []).push(n);
   });
 
@@ -89,7 +213,7 @@ export function NotificationsBell() {
             {count > 0 && (
               <button
                 onClick={() => {
-                  notifs.forEach((n) => gym.dismissNotification(n.id));
+                  setDismissed(new Set(notifs.map((n) => n.id)));
                   setOpen(false);
                 }}
                 className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand"
@@ -109,19 +233,20 @@ export function NotificationsBell() {
 
             {Object.entries(grouped).map(([type, list]) => (
               <div key={type}>
-                {/* Group Header */}
                 <div className="px-4 py-2 text-[10px] uppercase tracking-widest text-muted-foreground bg-secondary/30">
                   {type === "expiry" ? "Membership Expiry" :
                    type === "ghost" ? "Scan Bypass / Ghosts" :
                    type === "dues" ? "Pending Dues" :
-                   type === "task" ? "Tasks" : "Low Stock"}
+                   type === "task" ? "Tasks" :
+                   type === "slot" ? "Wrong Slot" : "Low Stock"}
                 </div>
-                
-                {/* Notification Items */}
+
                 {list.slice(0, 8).map((n) => {
-                  const Icon = ICONS[n.type as keyof typeof ICONS] ?? AlertTriangle;
-                  const toneCls = n.tone === "danger" ? "text-danger bg-danger/10"
-                    : n.tone === "warn" ? "text-warn bg-warn/10" : "text-info bg-info/10";
+                  const Icon = ICONS[n.type] ?? AlertTriangle;
+                  const toneCls =
+                    n.tone === "danger" ? "text-danger bg-danger/10" :
+                    n.tone === "warn" ? "text-warn bg-warn/10" :
+                    "text-info bg-info/10";
 
                   return (
                     <div key={n.id} className="px-4 py-3 flex gap-3 hover:bg-secondary/50 border-b border-border/50 last:border-0">
@@ -129,8 +254,8 @@ export function NotificationsBell() {
                         <Icon className="size-4" />
                       </div>
                       <Link
-                        to={n.href.split("?")[0] as "/"}
-                        search={Object.fromEntries(new URLSearchParams(n.href.split("?")[1] ?? "")) as never}
+                        to={(n.href?.split("?")[0] ?? "/") as "/"}
+                        search={Object.fromEntries(new URLSearchParams(n.href?.split("?")[1] ?? "")) as never}
                         onClick={() => setOpen(false)}
                         className="flex-1 min-w-0"
                       >
@@ -138,9 +263,7 @@ export function NotificationsBell() {
                         <p className="text-xs text-muted-foreground truncate">{n.desc}</p>
                       </Link>
                       <button
-                        onClick={() => {
-                          if (n.type !== "stock") gym.dismissNotification(n.id);
-                        }}
+                        onClick={() => setDismissed((prev) => new Set([...prev, n.id]))}
                         className="size-6 rounded grid place-items-center hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                       >
                         <X className="size-3" />
