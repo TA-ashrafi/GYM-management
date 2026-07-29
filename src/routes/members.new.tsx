@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, IdCard, User, Activity, CreditCard, Heart, Radio, CheckCircle2, X, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
-import { useGym, generateSlots, currencySymbol, type PlanType } from "@/lib/gym-store";
+import { useGym, generateSlots, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 import m1 from "@/assets/m1.jpg";
@@ -32,7 +32,6 @@ function NewMember() {
   const [rfidAssigned, setRfidAssigned] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
 
-  // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
     Monthly: 1500,
     Quarterly: 4000,
@@ -60,7 +59,6 @@ function NewMember() {
     joiningDate: new Date().toISOString().split("T")[0],
   });
 
-  // Load plan prices from current branch
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
@@ -71,19 +69,15 @@ function NewMember() {
       .eq("id", branchId)
       .single()
       .then(({ data }) => {
-        if (data?.plan_prices) {
-          setPlanPrices(data.plan_prices);
-        }
+        if (data?.plan_prices) setPlanPrices(data.plan_prices);
       })
       .catch(() => {});
   }, []);
 
-  // Form field update helper
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  // Handle photo upload with compression
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -106,7 +100,6 @@ function NewMember() {
     img.src = url;
   };
 
-  // Handle form submission
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.phone) {
@@ -126,36 +119,62 @@ function NewMember() {
     }
 
     const expiry = new Date();
-    expiry.setDate(expiry.getDate() + (form.plan === "Monthly" ? 30 : form.plan === "Quarterly" ? 90 : form.plan === "HalfYearly" ? 180 : 365));
+    expiry.setDate(
+      expiry.getDate() +
+        (form.plan === "Monthly" ? 30 : form.plan === "Quarterly" ? 90 : form.plan === "HalfYearly" ? 180 : 365)
+    );
 
-    const { error } = await supabase.from("members").insert({
-      branch_id: branchId,
-      roll_no: form.rollNo,
-      rfid: form.rfid,
-      name: form.name,
-      phone: form.phone,
-      email: form.email || null,
-      address: form.address || null,
-      gender: form.gender,
-      age: form.age,
-      height_cm: form.heightCm,
-      weight_kg: form.weightKg,
-      goal: form.goal,
-      medical: form.medical || null,
-      emergency_contact: form.emergencyContact || null,
-      photo: uploadedPhoto ?? PHOTOS[photoIdx],
-      joining_date: form.joiningDate || null,
-      plan: form.plan,
-      fee_amount: planPrices[form.plan],
-      fee_paid: form.feePaid,
-      expiry_date: expiry.toISOString(),
-      preferred_slot: form.preferredSlot,
-    });
+    const amount = planPrices[form.plan] ?? 0;
+
+    const { data: newMember, error } = await supabase
+      .from("members")
+      .insert({
+        branch_id: branchId,
+        roll_no: form.rollNo,
+        rfid: form.rfid,
+        name: form.name,
+        phone: form.phone,
+        email: form.email || null,
+        address: form.address || null,
+        gender: form.gender,
+        age: form.age,
+        height_cm: form.heightCm,
+        weight_kg: form.weightKg,
+        goal: form.goal,
+        medical: form.medical || null,
+        emergency_contact: form.emergencyContact || null,
+        photo: uploadedPhoto ?? PHOTOS[photoIdx],
+        joining_date: form.joiningDate || null,
+        plan: form.plan,
+        fee_amount: amount,
+        fee_paid: form.feePaid,
+        expiry_date: expiry.toISOString(),
+        preferred_slot: form.preferredSlot,
+      })
+      .select()
+      .single();
 
     if (error) {
       toast.error("Failed to save: " + error.message);
       console.error(error);
       return;
+    }
+
+    // Payment record — sirf jab fee paid ho
+    if (newMember && form.feePaid) {
+      const { error: payError } = await supabase.from("payments").insert({
+        branch_id: branchId,
+        member_id: newMember.id,
+        amount,
+        plan: form.plan,
+        payment_date: new Date().toISOString(),
+        note: "New member joining",
+      });
+
+      if (payError) {
+        console.error("Payment insert error:", payError);
+        // Member ban gaya, payment fail hone pe bhi aage badho
+      }
     }
 
     toast.success(`${form.name} added successfully! 💪`);
@@ -169,7 +188,6 @@ function NewMember() {
       <PageHeader title="Add Member" subtitle="Register a new gym member with RFID card" />
 
       <form onSubmit={submit} className="grid lg:grid-cols-12 gap-6">
-        {/* Photo & ID Section */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center gap-2 text-muted-foreground mb-3">
@@ -199,7 +217,6 @@ function NewMember() {
             </div>
           </div>
 
-          {/* RFID Section */}
           <div className="bg-gradient-to-br from-brand/15 to-card border border-brand/30 rounded-2xl p-6">
             <div className="flex items-center gap-2 text-brand mb-3">
               <IdCard className="size-4" />
@@ -241,9 +258,7 @@ function NewMember() {
           </div>
         </div>
 
-        {/* Main Form */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Personal Information */}
           <Section icon={<User className="size-4" />} title="Personal Information">
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Full Name *">
@@ -260,7 +275,7 @@ function NewMember() {
               </Field>
               <Field label="Gender">
                 <div className="flex gap-2">
-                  {(["M","F","O"] as const).map((g) => (
+                  {(["M", "F", "O"] as const).map((g) => (
                     <button type="button" key={g} onClick={() => set("gender", g)}
                       className={"flex-1 py-2 rounded-lg text-sm border " + (form.gender === g ? "bg-brand text-brand-foreground border-brand" : "bg-secondary border-border text-muted-foreground")}>
                       {g === "M" ? "Male" : g === "F" ? "Female" : "Other"}
@@ -287,7 +302,6 @@ function NewMember() {
             </div>
           </Section>
 
-          {/* Body & Goals */}
           <Section icon={<Activity className="size-4" />} title="Body & Goals">
             <div className="grid sm:grid-cols-3 gap-4">
               <Field label="Height (cm)">
@@ -297,11 +311,7 @@ function NewMember() {
                 <input type="number" value={form.weightKg} onChange={(e) => set("weightKg", +e.target.value)} className={input} />
               </Field>
               <Field label="Fitness Goal">
-                <select
-                  value={form.goal}
-                  onChange={(e) => set("goal", e.target.value)}
-                  className={input + " w-full"}
-                >
+                <select value={form.goal} onChange={(e) => set("goal", e.target.value)} className={input + " w-full"}>
                   <option value="Muscle Gain">Muscle Gain</option>
                   <option value="Fat Loss / Cuts">Fat Loss / Cuts</option>
                   <option value="Weight Loss">Weight Loss</option>
@@ -315,20 +325,18 @@ function NewMember() {
             </div>
           </Section>
 
-          {/* Medical Information */}
           <Section icon={<Heart className="size-4" />} title="Medical (optional)">
             <Field label="Medical conditions / Allergies / Injuries">
               <textarea value={form.medical} onChange={(e) => set("medical", e.target.value)} rows={2} className={input + " resize-none"} />
             </Field>
           </Section>
 
-          {/* Membership & Slot */}
           <Section icon={<CreditCard className="size-4" />} title="Membership & Slot">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {PLAN_ORDER.map((p) => (
-                <button 
-                  type="button" 
-                  key={p} 
+                <button
+                  type="button"
+                  key={p}
                   onClick={() => set("plan", p)}
                   className={"p-4 rounded-xl border text-left transition " + (form.plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
                 >
@@ -350,7 +358,6 @@ function NewMember() {
             </label>
           </Section>
 
-          {/* Action Buttons */}
           <div className="flex gap-3">
             <button type="button" onClick={() => nav({ to: "/members" })} className="px-5 py-3 bg-secondary text-foreground rounded-xl text-sm">Cancel</button>
             <button type="submit" className="flex-1 py-3 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-transform">
@@ -369,8 +376,7 @@ function NewMember() {
   );
 }
 
-// RFID Scan Modal Component
-function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: () => void; onAssigned: (code: string) => void; }) {
+function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: () => void; onAssigned: (code: string) => void }) {
   const [phase, setPhase] = useState<"waiting" | "detected">("waiting");
   const [uid, setUid] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -383,7 +389,6 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
       return;
     }
 
-    // Poll for RFID card scans
     intervalRef.current = setInterval(async () => {
       const { data } = await supabase
         .from("rfid_pending")
@@ -406,7 +411,6 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
     };
   }, [open]);
 
-  // Assign RFID to member
   async function handleAssign() {
     const { data } = await supabase.from("members").select("name").eq("rfid", uid).single();
     if (data) {
@@ -469,7 +473,6 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
   );
 }
 
-// Helper Components
 const input = "w-full px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40";
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {

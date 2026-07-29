@@ -5,17 +5,15 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, daysUntil, money, generateSlots } from "@/lib/gym-store";
-import { fetchMembers, supabase } from "@/lib/supabase";
+import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
 
-// Helper function to determine member status
 function statusOf(m: any): "active" | "expiring" | "expired" {
-  const d = daysUntil(m.expiryDate);
+  const d = daysUntil(m.expiryDate ?? m.expiry_date);
   if (d < 0) return "expired";
   if (d <= 7) return "expiring";
   return "active";
 }
 
-// Helper function to get plan badge details
 function planBadge(plan: string) {
   if (plan === "Yearly") return { stars: 3, golden: true };
   if (plan === "HalfYearly") return { stars: 2, golden: false };
@@ -34,15 +32,13 @@ export const Route = createFileRoute("/members")({
   component: MembersRoot,
 });
 
-// Root component to handle nested routes
 function MembersRoot() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  
-  // Render Outlet for /members/new route
+
   if (pathname === "/members/new" || pathname.startsWith("/members/new")) {
     return <Outlet />;
   }
-  
+
   return <MembersPage />;
 }
 
@@ -59,36 +55,35 @@ function MembersPage() {
   const settings = useGym((s) => s.settings);
   const slots = generateSlots(settings.shifts, settings.slotDurationMin);
   const [q, setQ] = useState("");
-  
+
   const filter = navSearch.filter ?? "all";
   const setFilter = (f: typeof filter) => navigate({ search: { filter: f } });
 
-  // Fetch members on mount
   useEffect(() => {
     fetchMembers().then(setMembers);
   }, []);
 
-  // Delete a member
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete ${name}?`)) return;
     const { error } = await supabase.from("members").delete().eq("id", id);
     if (!error) setMembers((prev) => prev.filter((m) => m.id !== id));
   }
 
-  // Renew a member's plan
   async function handleRenew(m: any) {
     const plan = m.plan as "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
     const DAYS: Record<string, number> = {
-      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365
+      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
     };
-    
-    // Renew from today or expiry date — whichever is later
-    const baseDate = new Date(m.expiryDate) > new Date() 
-      ? new Date(m.expiryDate)  // Still active — extend from expiry
-      : new Date();              // Expired — start from today
-    
+
+    const expiryRaw = m.expiryDate ?? m.expiry_date;
+    const baseDate = new Date(expiryRaw) > new Date()
+      ? new Date(expiryRaw)
+      : new Date();
+
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
+
+    const amount = m.feeAmount ?? m.fee_amount ?? 0;
 
     const confirmed = confirm(
       `Renew ${m.name}'s ${plan} plan?\n` +
@@ -104,35 +99,49 @@ function MembersPage() {
       })
       .eq("id", m.id);
 
-    if (!error) {
-      setMembers((prev) =>
-        prev.map((x) =>
-          x.id === m.id
-            ? { ...x, expiryDate: newExpiry.toISOString(), feePaid: true }
-            : x
-        )
-      );
-      toast.success(`${m.name}'s plan renewed successfully! ✓`);
-    } else {
+    if (error) {
       toast.error(error.message);
+      return;
     }
+
+    // Payment record for renewal
+    const branchId = getActiveBranchId();
+    if (branchId) {
+      const { error: payError } = await supabase.from("payments").insert({
+        branch_id: branchId,
+        member_id: m.id,
+        amount,
+        plan: m.plan,
+        payment_date: new Date().toISOString(),
+        note: "Plan renewal",
+      });
+      if (payError) console.error("Payment insert error:", payError);
+    }
+
+    setMembers((prev) =>
+      prev.map((x) =>
+        x.id === m.id
+          ? { ...x, expiryDate: newExpiry.toISOString(), feePaid: true }
+          : x
+      )
+    );
+    toast.success(`${m.name}'s plan renewed successfully! ✓`);
   }
 
-  // Filter members based on search and filter criteria
   const filtered = members.filter((m) => {
     const s = statusOf(m);
     const matchesSearch = !q ||
-      (m.name + m.rollNo + m.phone + m.rfid)
+      ((m.name ?? "") + (m.rollNo ?? m.roll_no ?? "") + (m.phone ?? "") + (m.rfid ?? ""))
         .toLowerCase()
         .includes(q.toLowerCase());
-    
+
     if (!matchesSearch) return false;
     if (filter === "active") return s === "active";
     if (filter === "expiring") return s === "expiring";
     if (filter === "expired") return s === "expired";
-    if (filter === "unpaid") return !m.feePaid;
-    if (filter === "ghost") return false; // To be implemented later
-    return true; // all
+    if (filter === "unpaid") return !(m.feePaid ?? m.fee_paid);
+    if (filter === "ghost") return false;
+    return true;
   });
 
   return (
@@ -151,7 +160,6 @@ function MembersPage() {
       />
 
       <div className="bg-card border border-border rounded-2xl">
-        {/* Search and Filter Bar */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -178,7 +186,6 @@ function MembersPage() {
           </div>
         </div>
 
-        {/* Members Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -196,7 +203,7 @@ function MembersPage() {
             <tbody className="divide-y divide-border">
               {filtered.map((m) => {
                 const s = statusOf(m);
-                const d = daysUntil(m.expiryDate);
+                const d = daysUntil(m.expiryDate ?? m.expiry_date);
                 const overdueDays = d < 0 ? -d : 0;
                 const rowRed = d < 0 && overdueDays >= 5;
                 const badge = planBadge(m.plan);
@@ -213,6 +220,8 @@ function MembersPage() {
                     : d <= 7
                     ? "text-warn font-semibold"
                     : "text-brand";
+                const feePaid = m.feePaid ?? m.fee_paid;
+                const feeAmount = m.feeAmount ?? m.fee_amount ?? 0;
 
                 return (
                   <tr
@@ -235,7 +244,7 @@ function MembersPage() {
                           />
                         ) : (
                           <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
-                            {m.name[0]}
+                            {m.name?.[0] ?? "?"}
                           </div>
                         )}
                         <div>
@@ -256,18 +265,18 @@ function MembersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                      <div>{m.rollNo}</div>
+                      <div>{m.rollNo ?? m.roll_no}</div>
                       <div className="text-brand">{m.rfid}</div>
                     </td>
                     <td className="px-4 py-3">{m.plan}</td>
                     <td className="px-4 py-3">
-                      <span className={m.feePaid ? "text-brand" : "text-danger"}>
-                        {money(m.feeAmount)} {m.feePaid ? "✓" : "·due"}
+                      <span className={feePaid ? "text-brand" : "text-danger"}>
+                        {money(feeAmount)} {feePaid ? "✓" : "·due"}
                       </span>
                     </td>
                     <td className={"px-4 py-3 " + expiryCls}>{expiryText}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-muted-foreground">{m.preferredSlot}</span>
+                      <span className="text-xs text-muted-foreground">{m.preferredSlot ?? m.preferred_slot}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={"px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider inline-block w-fit " + statusStyles[s]}>
@@ -278,7 +287,7 @@ function MembersPage() {
                       <div className="inline-flex gap-2">
                         <Link
                           to="/reports"
-                          search={{ q: m.rollNo }}
+                          search={{ q: m.rollNo ?? m.roll_no }}
                           className="size-8 rounded-md bg-secondary hover:bg-accent/10 hover:text-accent grid place-items-center text-[10px] font-bold"
                         >
                           R

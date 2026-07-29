@@ -38,20 +38,26 @@ function Dashboard() {
   const [todayLogs, setTodayLogs] = useState<any[]>([]);
   const [todos, setTodos] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [storeSales, setStoreSales] = useState<any[]>([]);
 
-  // Real-time fetch from Supabase — current branch only
+  const [cycleStart] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
-    // Members
     supabase
       .from("members")
       .select("*")
       .eq("branch_id", branchId)
       .then(({ data }) => setMembers(data ?? []));
 
-    // Today's attendance
     const today = new Date().toISOString().split("T")[0];
     supabase
       .from("attendance_logs")
@@ -61,7 +67,6 @@ function Dashboard() {
       .lte("checked_in_at", today + "T23:59:59")
       .then(({ data }) => setTodayLogs(data ?? []));
 
-    // Todos (open only)
     supabase
       .from("todos")
       .select("*")
@@ -70,15 +75,30 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Expenses
     supabase
       .from("expenses")
       .select("*")
       .eq("branch_id", branchId)
+      .gte("date", cycleStart.toISOString())
       .order("date", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
-    // Real-time attendance
+    // Payments this cycle
+    supabase
+      .from("payments")
+      .select("*")
+      .eq("branch_id", branchId)
+      .gte("payment_date", cycleStart.toISOString())
+      .then(({ data }) => setPayments(data ?? []));
+
+    // Store sales this cycle
+    supabase
+      .from("sales")
+      .select("*")
+      .eq("branch_id", branchId)
+      .gte("created_at", cycleStart.toISOString())
+      .then(({ data }) => setStoreSales(data ?? []));
+
     const channel = supabase
       .channel("dashboard-realtime")
       .on(
@@ -94,7 +114,7 @@ function Dashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [cycleStart]);
 
   const settings = useGym((s) => s.settings);
   const layout = settings.dashboardLayout?.length ? settings.dashboardLayout : DEFAULT_LAYOUT;
@@ -102,7 +122,7 @@ function Dashboard() {
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
   const stats = useMemo(() => {
-    let active = 0, expiring = 0, expired = 0, pendingAmt = 0, revenue = 0;
+    let active = 0, expiring = 0, expired = 0, pendingAmt = 0;
 
     members.forEach((m) => {
       const expiryDate = m.expiry_date ?? m.expiryDate;
@@ -118,12 +138,28 @@ function Dashboard() {
       } else {
         active++;
       }
-      if (feePaid) revenue += feeAmount;
+      // pending for unpaid active members too
+      if (!feePaid && d >= 0) pendingAmt += feeAmount;
     });
 
-    const expenseTotal = expenses.reduce((a: number, e: any) => a + (e.amount ?? 0), 0);
-    return { active, expiring, expired, pendingAmt, revenue, expenseTotal };
-  }, [members, expenses]);
+    const memberRevenue = payments.reduce((a, p) => a + (p.amount ?? 0), 0);
+    const storeRevenue = storeSales.reduce((a, s) => a + (s.total ?? 0), 0);
+    const totalRevenue = memberRevenue + storeRevenue;
+    const totalExpenses = expenses.reduce((a, e) => a + (e.amount ?? 0), 0);
+    const netProfit = totalRevenue - totalExpenses;
+
+    return {
+      active,
+      expiring,
+      expired,
+      pendingAmt,
+      memberRevenue,
+      storeRevenue,
+      totalRevenue,
+      totalExpenses,
+      netProfit,
+    };
+  }, [members, expenses, payments, storeSales]);
 
   const todayCheckIns = useMemo(() => {
     const inMemberIds = new Set(
@@ -144,17 +180,16 @@ function Dashboard() {
       const visits = todayLogs.filter((l: any) =>
         l.checked_in_at?.startsWith(dateStr) && (l.punch_type ?? "in") === "in"
       ).length;
-      const revenue = members
-        .filter((m) => {
-          const joinDate = m.join_date ?? m.joinDate;
-          const feePaid = m.fee_paid ?? m.feePaid;
-          return joinDate?.startsWith(dateStr) && feePaid;
-        })
-        .reduce((sum: number, m: any) => sum + (m.fee_amount ?? m.feeAmount ?? 0), 0);
-      days.push({ d: label, revenue, visits });
+      const dayPayments = payments
+        .filter((p) => p.payment_date?.startsWith(dateStr))
+        .reduce((sum: number, p: any) => sum + (p.amount ?? 0), 0);
+      const daySales = storeSales
+        .filter((s) => s.created_at?.startsWith(dateStr))
+        .reduce((sum: number, s: any) => sum + (s.total ?? 0), 0);
+      days.push({ d: label, revenue: dayPayments + daySales, visits });
     }
     return days;
-  }, [todayLogs, members]);
+  }, [todayLogs, payments, storeSales]);
 
   const ghostList = useMemo(() => {
     const todayPunchedIn = new Set(
@@ -182,6 +217,8 @@ function Dashboard() {
 
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  const cycleLabel = cycleStart.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 
   function move(from: number, to: number) {
     if (to < 0 || to >= layout.length) return;
@@ -214,9 +251,31 @@ function Dashboard() {
     ),
     money: (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MoneyCard to="/analytics" label="Collected this cycle" value={money(stats.revenue)} sub={`${members.length - stats.expired} paid`} tone="brand" icon={<TrendingUp className="size-5" />} />
-        <MoneyCard to="/members" search={{ filter: "expired" }} label="Pending Dues" value={money(stats.pendingAmt)} sub={`${stats.expired} expired members`} tone="danger" icon={<Wallet className="size-5" />} />
-        <MoneyCard to="/expenses" label="Monthly Expenses" value={money(stats.expenseTotal)} sub={`${expenses.length} entries`} tone="muted" icon={<Wallet className="size-5" />} />
+        <MoneyCard
+          to="/analytics"
+          label="Collected this cycle"
+          value={money(stats.totalRevenue)}
+          sub={`Members ${money(stats.memberRevenue)} · Store ${money(stats.storeRevenue)} · ${cycleLabel}`}
+          tone="brand"
+          icon={<TrendingUp className="size-5" />}
+        />
+        <MoneyCard
+          to="/members"
+          search={{ filter: "expired" }}
+          label="Pending Dues"
+          value={money(stats.pendingAmt)}
+          sub={`${stats.expired} expired members`}
+          tone="danger"
+          icon={<Wallet className="size-5" />}
+        />
+        <MoneyCard
+          to="/expenses"
+          label="Net Profit (cycle)"
+          value={money(stats.netProfit)}
+          sub={`Revenue ${money(stats.totalRevenue)} − Expenses ${money(stats.totalExpenses)}`}
+          tone={stats.netProfit >= 0 ? "brand" : "danger"}
+          icon={<Wallet className="size-5" />}
+        />
       </div>
     ),
     chart: (
