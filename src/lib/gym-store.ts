@@ -77,6 +77,7 @@ export type Sale = {
 
 export type ThemeMode = "dark" | "light";
 export type ThemePreset = "lime" | "red" | "blue";
+export type DesignStyle = "glass" | "neo" | "classic";
 
 export type WidgetId = "kpi" | "money" | "chart" | "maintenance" | "ghosts" | "expiring";
 export type DashboardWidget = { id: WidgetId; visible: boolean };
@@ -95,16 +96,7 @@ export type Settings = {
   preset: ThemePreset;
   dashboardLayout: DashboardWidget[];
   dismissedNotifIds: string[];
-};
-
-type State = {
-  members: Member[];
-  expenses: Expense[];
-  todos: Todo[];
-  slots: Record<string, number>;
-  products: Product[];
-  sales: Sale[];
-  settings: Settings;
+  designStyle: DesignStyle;
 };
 
 // ==================== Constants & Helpers ====================
@@ -169,6 +161,7 @@ const DEFAULT_SETTINGS: Settings = {
   preset: "lime",
   dashboardLayout: DEFAULT_LAYOUT,
   dismissedNotifIds: [],
+  designStyle: "glass",
 };
 
 // ==================== State Management ====================
@@ -229,6 +222,7 @@ function load(): State {
     if (!merged.settings.theme) merged.settings.theme = "dark";
     if (!merged.settings.preset) merged.settings.preset = "lime";
     if (!merged.settings.dismissedNotifIds) merged.settings.dismissedNotifIds = [];
+    if (!merged.settings.designStyle) merged.settings.designStyle = "glass";
     
     return merged;
   } catch {
@@ -456,7 +450,7 @@ export function daysSince(iso: string) {
  * @returns Status string: "active" | "expiring" | "expired" | "ghost"
  */
 export function memberStatus(m: Member): "active" | "expiring" | "expired" | "ghost" {
-  const d = daysUntil(m.expiryDate);
+  const d = daysUntil(m.expiryDate ?? m.expiry_date ?? m.expiry_date);
   if (d < 0) return "expired";
   const lastVisit = m.attendance[0];
   const since = lastVisit ? daysSince(lastVisit) : 999;

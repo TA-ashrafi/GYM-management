@@ -52,6 +52,11 @@ function SettingsPage() {
     setForm((f) => ({ ...f, shifts: [...f.shifts, { start: "06:00", end: "10:00" }] }));
   }
 
+  // Check and keep active settings
+  useEffect(() => {
+    setForm(settings);
+  }, [settings]);
+
   function removeShift(i: number) {
     setForm((f) => ({ ...f, shifts: f.shifts.filter((_, idx) => idx !== i) }));
   }
@@ -146,20 +151,20 @@ function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl w-full">
       <PageHeader
         title="Settings"
         subtitle="Gym profile, shifts, currency & language"
         actions={
-          <button onClick={save} className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2">
+          <button onClick={save} className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 w-full sm:w-auto justify-center cursor-pointer">
             <Save className="size-4" /> Save Changes
           </button>
         }
       />
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gym Profile Section */}
-        <section className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 space-y-4">
           <h2 className="font-heading text-lg">Gym Profile</h2>
           <Field label="Gym Name">
             <input value={form.gymName} onChange={(e) => set("gymName", e.target.value)} className={input} />
@@ -176,23 +181,23 @@ function SettingsPage() {
         </section>
 
         {/* Preferences Section */}
-        <section className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 space-y-4">
           <h2 className="font-heading text-lg">Preferences</h2>
           <Field label="Language">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {LANGS.map((l) => (
                 <button key={l.v} onClick={() => set("language", l.v)}
-                  className={"px-4 py-2 rounded-lg text-sm border " + (form.language === l.v ? "bg-brand text-brand-foreground border-brand" : "bg-secondary border-border text-muted-foreground")}>
+                  className={"px-4 py-2 rounded-lg text-sm border flex-1 text-center cursor-pointer " + (form.language === l.v ? "bg-brand text-brand-foreground border-brand font-medium" : "bg-secondary border-border text-muted-foreground")}>
                   {l.label}
                 </button>
               ))}
             </div>
           </Field>
           <Field label="Currency">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CURRENCIES.map((c) => (
                 <button key={c} onClick={() => set("currency", c)}
-                  className={"px-3 py-2 rounded-lg text-sm border " + (form.currency === c ? "bg-brand text-brand-foreground border-brand" : "bg-secondary border-border text-muted-foreground")}>
+                  className={"px-3 py-2 rounded-lg text-sm border text-center cursor-pointer " + (form.currency === c ? "bg-brand text-brand-foreground border-brand font-medium" : "bg-secondary border-border text-muted-foreground")}>
                   {c}
                 </button>
               ))}
@@ -207,19 +212,19 @@ function SettingsPage() {
         </section>
 
         {/* Membership Plan Prices */}
-        <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h3 className="font-heading text-lg mb-4">Membership Plan Prices</h3>
-          <div className="grid sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {PLAN_ORDER.map((plan) => (
               <div key={plan}>
                 <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">{plan}</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-sm">₹</span>
+                  <span className="text-muted-foreground text-sm font-bold">₹</span>
                   <input
                     type="number"
                     value={planPrices[plan]}
                     onChange={(e) => setPlanPrices((prev) => ({ ...prev, [plan]: +e.target.value }))}
-                    className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40"
+                    className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40"
                   />
                 </div>
               </div>
@@ -228,61 +233,65 @@ function SettingsPage() {
           <button
             onClick={savePlanPrices}
             disabled={saving}
-            className="mt-4 px-5 py-2 bg-brand text-brand-foreground rounded-lg text-sm font-semibold disabled:opacity-50"
+            className="mt-4 px-5 py-2.5 bg-brand text-brand-foreground rounded-lg text-sm font-semibold disabled:opacity-50 w-full sm:w-auto text-center cursor-pointer"
           >
             {saving ? "Saving..." : "Save Plan Prices"}
           </button>
         </section>
 
         {/* Appearance Section */}
-        <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Palette className="size-4" /> Appearance</h2>
-          <p className="text-xs text-muted-foreground mb-4">Theme mode and accent color preset</p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <Field label="Mode">
-              <div className="flex gap-2">
-                {(["dark", "light"] as ThemeMode[]).map((m) => (
-                  <button key={m} onClick={() => { set("theme", m); gym.updateSettings({ theme: m }); }}
-                    className={"flex-1 px-4 py-3 rounded-lg text-sm border inline-flex items-center justify-center gap-2 " + (form.theme === m ? "bg-brand text-brand-foreground border-brand" : "bg-secondary border-border text-muted-foreground")}>
-                    {m === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                    {m === "dark" ? "Dark" : "Light"}
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <Field label="Color Preset">
-              <div className="grid grid-cols-3 gap-2">
-                {PRESETS.map((p) => (
-                  <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
-                    className={"px-3 py-3 rounded-lg text-sm border flex flex-col items-center gap-2 " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
-                    <span className="size-6 rounded-full ring-2 ring-border" style={{ background: p.swatch }} />
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </Field>
+          <p className="text-xs text-muted-foreground mb-4">Customize theme and color preset</p>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Field label="Mode">
+                <div className="flex gap-2">
+                  {(["dark", "light"] as ThemeMode[]).map((m) => (
+                    <button key={m} onClick={() => { set("theme", m); gym.updateSettings({ theme: m }); }}
+                      className={"flex-1 px-4 py-3 rounded-lg text-sm border inline-flex items-center justify-center gap-2 cursor-pointer " + (form.theme === m ? "bg-brand text-brand-foreground border-brand font-medium" : "bg-secondary border-border text-muted-foreground")}>
+                      {m === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                      {m === "dark" ? "Dark" : "Light"}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Color Preset">
+                <div className="grid grid-cols-3 gap-2">
+                  {PRESETS.map((p) => (
+                    <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
+                      className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
+                      <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
+                      <span className="text-sm font-semibold">{p.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            </div>
           </div>
         </section>
 
         {/* Shifts Section */}
-        <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
               <h2 className="font-heading text-lg">Shifts</h2>
               <p className="text-xs text-muted-foreground">Slots are auto-generated from shifts × duration</p>
             </div>
-            <button onClick={addShift} className="px-3 py-2 bg-secondary rounded-lg text-xs inline-flex items-center gap-1 hover:bg-brand/10 hover:text-brand">
+            <button onClick={addShift} className="px-3 py-2 bg-secondary rounded-lg text-xs inline-flex items-center gap-1 hover:bg-brand/10 hover:text-brand font-semibold cursor-pointer">
               <Plus className="size-3" /> Add Shift
             </button>
           </div>
           <div className="space-y-3">
             {form.shifts.map((s, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground w-16">Shift {i + 1}</span>
-                <input type="time" value={s.start} onChange={(e) => updateShift(i, { start: e.target.value })} className={input + " w-32"} />
-                <span className="text-muted-foreground text-sm">to</span>
-                <input type="time" value={s.end} onChange={(e) => updateShift(i, { end: e.target.value })} className={input + " w-32"} />
-                <button onClick={() => removeShift(i)} className="ml-auto size-9 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center">
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-secondary/40 rounded-xl">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground w-16 shrink-0 font-bold">Shift {i + 1}</span>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <input type="time" value={s.start} onChange={(e) => updateShift(i, { start: e.target.value })} className={input + " flex-1 sm:w-32"} />
+                  <span className="text-muted-foreground text-sm">to</span>
+                  <input type="time" value={s.end} onChange={(e) => updateShift(i, { end: e.target.value })} className={input + " flex-1 sm:w-32"} />
+                </div>
+                <button onClick={() => removeShift(i)} className="ml-auto size-9 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center shrink-0">
                   <Trash2 className="size-4" />
                 </button>
               </div>
@@ -292,12 +301,12 @@ function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="lg:col-span-2 bg-card border border-border rounded-2xl p-6">
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="font-heading text-lg mb-2">Danger Zone</h2>
           <p className="text-xs text-muted-foreground mb-4">Reset all data (members, expenses, todos) to factory seed state.</p>
           <button 
             onClick={() => { if (confirm("Are you sure you want to reset all data?")) { gym.reset(); toast.success("Data reset successfully"); } }}
-            className="px-4 py-2 border border-danger/40 text-danger rounded-lg text-sm hover:bg-danger/10"
+            className="px-4 py-2 border border-danger/40 text-danger rounded-lg text-sm hover:bg-danger/10 w-full sm:w-auto text-center font-semibold cursor-pointer"
           >
             Reset All Data
           </button>
@@ -311,9 +320,9 @@ const input = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
+    <div className="block">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
       <div className="mt-1.5">{children}</div>
-    </label>
+    </div>
   );
 }

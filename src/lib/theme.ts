@@ -6,11 +6,6 @@ import { useGym } from "@/lib/gym-store";
  * 
  * This hook synchronizes the application's theme state with the HTML element's
  * classes and data attributes, ensuring the correct visual theme is applied.
- * 
- * @remarks
- * - Removes existing "dark" and "light" classes before adding the current theme
- * - Sets the "data-preset" attribute for color scheme customization
- * - Runs automatically when theme or preset values change
  */
 export function useApplyTheme() {
   const theme = useGym((s) => s.settings.theme);
@@ -28,7 +23,7 @@ export function useApplyTheme() {
     // Apply the current theme class
     html.classList.add(theme);
     
-    // Set the preset attribute for color scheme
+    // Set attributes for color scheme
     html.setAttribute("data-preset", preset);
   }, [theme, preset]);
 }
