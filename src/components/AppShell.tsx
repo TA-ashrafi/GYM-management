@@ -62,10 +62,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const settings = useGym((s) => s.settings);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   // Real-time capacity statistics from Supabase
   const [liveMemberCount, setLiveMemberCount] = useState(0);
   const [liveCheckInCount, setLiveCheckInCount] = useState(0);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+    });
+  }, []);
 
   useEffect(() => {
     const branchId = getActiveBranchId();
@@ -125,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Handle user logout
   async function handleLogout() {
     await logout();
+    gym.reset(); // Completely wipe the local cache state on log out
     navigate({ to: "/auth" });
   }
 
@@ -231,6 +240,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-muted-foreground">of {liveMemberCount} checked in</span>
           </p>
         </div>
+
+        {/* Divider */}
+        <div className="my-4 border-t border-border/40" />
+
+        {/* Sidebar Account Section */}
+        <div className="p-3 bg-secondary/40 border border-border/40 rounded-2xl flex items-center gap-3 justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="size-8 bg-brand/10 text-brand rounded-lg grid place-items-center text-[10px] font-bold shrink-0">
+              {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-xs text-foreground truncate">
+                {currentUser?.user_metadata?.name || "Gym Owner"}
+              </p>
+              <p className="text-[9px] text-muted-foreground truncate">
+                {currentUser?.email || ""}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="size-8 rounded-lg bg-card border border-border/80 hover:bg-danger/10 hover:text-danger grid place-items-center cursor-pointer transition shrink-0"
+            title="Log out"
+          >
+            <LogOut className="size-4" />
+          </button>
+        </div>
       </aside>
 
       {/* Dimmed backdrop when mobile menu is open */}
@@ -257,15 +293,65 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Notifications */}
           <NotificationsBell />
           
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="h-10 px-4 rounded-xl bg-card border border-border/80 hover:border-danger/40 hover:text-danger flex items-center gap-2 text-sm transition cursor-pointer hover:scale-95 shadow-sm"
-            aria-label="Logout"
-          >
-            <LogOut className="size-4" />
-            <span className="hidden sm:inline font-semibold">Logout</span>
-          </button>
+          {/* Account Profile Menu Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="h-10 px-3.5 rounded-xl bg-card border border-border/80 hover:border-brand/40 flex items-center gap-2 text-sm transition cursor-pointer hover:scale-95 shadow-sm font-semibold text-foreground select-none"
+              aria-label="Account Menu"
+            >
+              <div className="size-6 bg-brand/10 text-brand rounded-lg grid place-items-center text-xs font-bold">
+                {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+              </div>
+              <span className="hidden sm:inline">Account</span>
+            </button>
+
+            {userDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setUserDropdownOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-2xl p-4 shadow-2xl z-50 animate-fade-in text-left">
+                  <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+                    <div className="size-10 bg-brand/10 text-brand rounded-xl grid place-items-center text-sm font-bold shrink-0">
+                      {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-foreground truncate">
+                        {currentUser?.user_metadata?.name || "Gym Owner"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {currentUser?.email || ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="py-2.5 my-1 text-xs space-y-1 text-muted-foreground font-semibold">
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className="text-brand font-bold">Authenticated</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Branch:</span>
+                      <span className="text-foreground max-w-[150px] truncate">{settings.gymName}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full mt-2 py-2.5 bg-danger/10 hover:bg-danger text-danger hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LogOut className="size-4" />
+                    Sign Out Account
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Children Render Area */}
