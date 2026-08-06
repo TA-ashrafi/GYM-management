@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
 import { gym } from "@/lib/gym-store";
+import { useApplyTheme } from "@/lib/theme";
 
 const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
 
@@ -17,7 +18,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fitness Streak — Gym OS" },
+      { title: "Gym OS — Premium Fitness streak" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -44,6 +45,9 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const [ready, setReady] = useState(false);
+
+  // Apply theme & preset globally at root level, ensuring perfect persistence across logins, logouts, reloads, and landing/auth screens instantly!
+  useApplyTheme();
 
   useEffect(() => {
     // Run only once on initial mount — do not re-run on tab or window switch.
@@ -116,11 +120,12 @@ function RootComponent() {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="size-12 bg-brand rounded-xl grid place-items-center mx-auto mb-3">
-              <span className="text-xl font-heading text-brand-foreground">FS</span>
+          <div className="text-center relative">
+            {/* Highly customized premium pulsing GYM OS logo loader */}
+            <div className="size-20 bg-brand rounded-2xl grid place-items-center mx-auto mb-4 shadow-[0_0_40px_-4px_var(--color-brand)] animate-bounce">
+              <span className="text-lg font-heading text-brand-foreground font-extrabold tracking-tighter">GYM OS</span>
             </div>
-            <p className="text-muted-foreground text-sm">Loading...</p>
+            <p className="text-muted-foreground text-xs font-bold tracking-widest uppercase animate-pulse">Loading System...</p>
           </div>
         </div>
         <Toaster position="top-right" />

@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase, setActiveBranchId } from "@/lib/supabase";
+import { Building2, Landmark, CheckCircle2, Phone, MapPin, ArrowRight, Dumbbell } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Setup — Fitness Streak" }] }),
+  head: () => ({ meta: [{ title: "Setup — Gym OS" }] }),
   component: Onboarding,
 });
 
@@ -54,7 +55,7 @@ function Onboarding() {
       if (error) throw error;
       
       setActiveBranchId(data.id);
-      toast.success("Gym setup complete! 💪");
+      toast.success("Gym setup complete! Setup your RFID scanner now. 💪");
       nav({ to: "/" });
     } catch (err: any) {
       toast.error(err.message ?? "An error occurred");
@@ -66,62 +67,81 @@ function Onboarding() {
   // Step 2: Gym Details Form
   if (step === "form") {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <h1 className="text-3xl font-heading text-center mb-2">Gym Details</h1>
-          <p className="text-muted-foreground text-center mb-8">Enter your gym's basic information</p>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 sm:p-8 bg-[radial-gradient(circle_at_top_right,rgba(var(--color-brand),0.12),transparent)]">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="text-center mb-6">
+            <div className="size-16 bg-brand/10 text-brand rounded-2xl grid place-items-center mx-auto mb-4 shadow-[0_0_24px_rgba(var(--color-brand),0.2)]">
+              <Dumbbell className="size-8" />
+            </div>
+            <h1 className="text-3xl font-heading font-extrabold text-foreground tracking-tight">Gym Configuration</h1>
+            <p className="text-muted-foreground text-sm font-medium mt-1">Configure your main console settings</p>
+          </div>
 
-          <div className="bg-card border border-border rounded-3xl p-8 space-y-4">
+          <div className="bg-card/75 backdrop-blur-md border border-border p-6 sm:p-8 rounded-3xl shadow-2xl space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Gym Name *</label>
-              <input 
-                value={form.gymName} 
-                onChange={(e) => set("gymName", e.target.value)} 
-                placeholder="e.g. Iron Gym" 
-                className={inp} 
-              />
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1.5 font-bold">Gym Name *</label>
+              <div className="relative">
+                <Building2 className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={form.gymName}
+                  onChange={(e) => set("gymName", e.target.value)}
+                  placeholder="e.g. Fitness Streak"
+                  className={inp + " pl-10"}
+                  required
+                />
+              </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Branch Name</label>
-              <input 
-                value={form.branchName} 
-                onChange={(e) => set("branchName", e.target.value)} 
-                placeholder="Main Branch" 
-                className={inp} 
-              />
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1.5 font-bold">Branch Name</label>
+              <div className="relative">
+                <Landmark className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={form.branchName}
+                  onChange={(e) => set("branchName", e.target.value)}
+                  placeholder="e.g. Main Branch"
+                  className={inp + " pl-10"}
+                />
+              </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Address</label>
-              <input 
-                value={form.address} 
-                onChange={(e) => set("address", e.target.value)} 
-                placeholder="Gym address" 
-                className={inp} 
-              />
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1.5 font-bold">Address</label>
+              <div className="relative">
+                <MapPin className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder="Street details, Landmark, City"
+                  className={inp + " pl-10"}
+                />
+              </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Phone</label>
-              <input 
-                value={form.phone} 
-                onChange={(e) => set("phone", e.target.value)} 
-                placeholder="+91 9000000000" 
-                className={inp} 
-              />
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1.5 font-bold">Phone Contact</label>
+              <div className="relative">
+                <Phone className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={form.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+91 90000 00000"
+                  className={inp + " pl-10"}
+                />
+              </div>
             </div>
+
             <button
               onClick={createBranch}
               disabled={loading}
-              className="w-full py-3 bg-brand text-brand-foreground rounded-xl font-semibold disabled:opacity-50"
+              className="w-full py-3.5 bg-brand text-brand-foreground rounded-xl font-bold hover:scale-[1.01] active:scale-95 transition shadow-[0_4px_24px_rgba(var(--color-brand),0.3)] cursor-pointer mt-4"
             >
-              {loading ? "Creating..." : "Create Gym!"}
+              {loading ? "Initializing..." : "Launch Gym OS Console ⚡"}
             </button>
             
             {!search?.skipChoice && (
               <button
                 onClick={() => setStep("choice")}
-                className="w-full py-2 text-sm text-muted-foreground hover:text-foreground"
+                className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition cursor-pointer"
               >
-                ← Back
+                ← Return to Choices
               </button>
             )}
           </div>
@@ -130,32 +150,47 @@ function Onboarding() {
     );
   }
 
-  // Step 1: Choice between Single and Multiple Branches
+  // Step 1: Choice between Single and Multiple Branches (Cinematic Style)
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-4xl font-heading text-center mb-2">Welcome to Fitness Streak</h1>
-        <p className="text-muted-foreground text-center mb-10">How many gyms do you have?</p>
-        <div className="grid sm:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 sm:p-8 bg-[radial-gradient(circle_at_bottom_left,rgba(var(--color-accent),0.1),transparent)]">
+      <div className="w-full max-w-3xl animate-fade-in">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand/10 border border-brand/20 text-brand text-xs font-bold rounded-full uppercase tracking-wider mb-4 animate-pulse">
+            ⚡ Welcome to Gym OS
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-heading font-extrabold text-foreground tracking-tight">Onboard Your Gym</h1>
+          <p className="text-muted-foreground text-sm sm:text-base mt-2 font-medium">Choose how you plan to manage your gym network</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <button
             onClick={() => setStep("form")}
-            className="p-8 bg-card border border-border rounded-3xl hover:border-brand/60 hover:bg-brand/5 transition text-left"
+            className="p-6 sm:p-8 bg-card border border-border/80 rounded-3xl hover:border-brand/60 hover:bg-brand/5 hover:scale-[1.02] active:scale-98 transition-all duration-300 text-left shadow-lg group relative overflow-hidden cursor-pointer"
           >
-            <div className="size-12 bg-brand/10 text-brand rounded-xl grid place-items-center mb-4">
+            <div className="size-12 bg-brand/10 text-brand rounded-xl grid place-items-center mb-6 shadow-[0_0_16px_-4px_var(--color-brand)] group-hover:scale-110 transition-transform">
               <span className="text-2xl">🏋️</span>
             </div>
-            <h2 className="text-xl font-heading">Single Gym</h2>
-            <p className="mt-2 text-sm text-muted-foreground">One gym, simple setup — ready in 1 minute.</p>
+            <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-1.5">
+              Single Gym <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-brand shrink-0" />
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">
+              Perfect setup for managing one primary location. Quick setup under 1 minute.
+            </p>
           </button>
+
           <button
             onClick={() => setStep("form")}
-            className="p-8 bg-card border border-border rounded-3xl hover:border-brand/60 hover:bg-brand/5 transition text-left"
+            className="p-6 sm:p-8 bg-card border border-border/80 rounded-3xl hover:border-brand/60 hover:bg-brand/5 hover:scale-[1.02] active:scale-98 transition-all duration-300 text-left shadow-lg group relative overflow-hidden cursor-pointer"
           >
-            <div className="size-12 bg-brand/10 text-brand rounded-xl grid place-items-center mb-4">
+            <div className="size-12 bg-brand/10 text-brand rounded-xl grid place-items-center mb-6 shadow-[0_0_16px_-4px_var(--color-brand)] group-hover:scale-110 transition-transform">
               <span className="text-2xl">🏢</span>
             </div>
-            <h2 className="text-xl font-heading">Multiple Branches</h2>
-            <p className="mt-2 text-sm text-muted-foreground">2+ gyms in different locations. Each branch has its own data.</p>
+            <h2 className="text-xl font-heading font-bold text-foreground flex items-center gap-1.5">
+              Multi-Branch Network <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-brand shrink-0" />
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">
+              Manage 2+ locations. Each branch has its own isolated staff, data, time slots, and attendance logs.
+            </p>
           </button>
         </div>
       </div>
@@ -163,4 +198,4 @@ function Onboarding() {
   );
 }
 
-const inp = "w-full px-4 py-3 bg-secondary rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-border";
+const inp = "w-full px-4 py-3 bg-secondary rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand/45 border border-border/80 text-foreground transition-all";
