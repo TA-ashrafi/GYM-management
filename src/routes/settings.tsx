@@ -84,7 +84,6 @@ function SettingsPage() {
           preset: data.preset ?? form.preset,
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
-          designStyle: data.design_style ?? form.designStyle,
         };
 
         setForm(merged);
@@ -139,7 +138,6 @@ function SettingsPage() {
           preset: form.preset,
           currency: form.currency,
           language: form.language,
-          design_style: form.designStyle,
         })
         .eq("id", branchId);
 
@@ -151,9 +149,6 @@ function SettingsPage() {
 
     toast.success("Settings saved ✓");
   }
-
-  const activeStyle = form.designStyle || "glass";
-  const cardStyle = activeStyle === "glass" ? "style-glass" : activeStyle === "neo" ? "style-neo" : "style-classic";
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl w-full">
@@ -169,7 +164,7 @@ function SettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gym Profile Section */}
-        <section className={cardStyle + " rounded-2xl p-4 sm:p-6 space-y-4"}>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 space-y-4">
           <h2 className="font-heading text-lg">Gym Profile</h2>
           <Field label="Gym Name">
             <input value={form.gymName} onChange={(e) => set("gymName", e.target.value)} className={input} />
@@ -186,7 +181,7 @@ function SettingsPage() {
         </section>
 
         {/* Preferences Section */}
-        <section className={cardStyle + " rounded-2xl p-4 sm:p-6 space-y-4"}>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 space-y-4">
           <h2 className="font-heading text-lg">Preferences</h2>
           <Field label="Language">
             <div className="flex flex-wrap gap-2">
@@ -217,7 +212,7 @@ function SettingsPage() {
         </section>
 
         {/* Membership Plan Prices */}
-        <section className={cardStyle + " lg:col-span-2 rounded-2xl p-4 sm:p-6"}>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h3 className="font-heading text-lg mb-4">Membership Plan Prices</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {PLAN_ORDER.map((plan) => (
@@ -245,9 +240,9 @@ function SettingsPage() {
         </section>
 
         {/* Appearance Section */}
-        <section className={cardStyle + " lg:col-span-2 rounded-2xl p-4 sm:p-6"}>
-          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Palette className="size-4" /> Appearance & Style</h2>
-          <p className="text-xs text-muted-foreground mb-4">Customize the design style, theme, and color preset</p>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
+          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Palette className="size-4" /> Appearance</h2>
+          <p className="text-xs text-muted-foreground mb-4">Customize theme and color preset</p>
           <div className="grid grid-cols-1 gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field label="Mode">
@@ -261,37 +256,23 @@ function SettingsPage() {
                   ))}
                 </div>
               </Field>
-              <Field label="Design Style Selector">
+              <Field label="Color Preset">
                 <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { v: "glass", label: "Glassmorphic Premium" },
-                    { v: "neo", label: "Neomorphic Soft" },
-                    { v: "classic", label: "Classic Minimal" }
-                  ].map((s) => (
-                    <button key={s.v} type="button" onClick={() => { set("designStyle", s.v as any); gym.updateSettings({ designStyle: s.v as any }); }}
-                      className={"px-2.5 py-3 rounded-lg text-[10px] sm:text-xs border font-bold flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer " + (form.designStyle === s.v ? "border-brand bg-brand/10 text-foreground" : "bg-secondary border-border text-muted-foreground")}>
-                      {s.label}
+                  {PRESETS.map((p) => (
+                    <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
+                      className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
+                      <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
+                      <span className="text-sm font-semibold">{p.label}</span>
                     </button>
                   ))}
                 </div>
               </Field>
             </div>
-            <Field label="Color Preset">
-              <div className="grid grid-cols-3 gap-2">
-                {PRESETS.map((p) => (
-                  <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
-                    className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
-                    <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
-                    <span className="text-sm font-semibold">{p.label}</span>
-                  </button>
-                ))}
-              </div>
-            </Field>
           </div>
         </section>
 
         {/* Shifts Section */}
-        <section className={cardStyle + " lg:col-span-2 rounded-2xl p-4 sm:p-6"}>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
               <h2 className="font-heading text-lg">Shifts</h2>
@@ -320,7 +301,7 @@ function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className={cardStyle + " lg:col-span-2 rounded-2xl p-4 sm:p-6"}>
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="font-heading text-lg mb-2">Danger Zone</h2>
           <p className="text-xs text-muted-foreground mb-4">Reset all data (members, expenses, todos) to factory seed state.</p>
           <button 

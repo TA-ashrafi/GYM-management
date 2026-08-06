@@ -201,13 +201,13 @@ export function NotificationsBell() {
         )}
       </button>
 
-      {/* Dropdown Panel - Fixed mobile overflow using dynamic responsive width classes */}
+      {/* Dropdown Panel - Solved mobile overflow using fixed responsive viewport positioning */}
       {open && (
-        <div className="absolute -right-2 sm:right-0 mt-2 w-[calc(100vw-32px)] sm:w-[360px] max-h-[70vh] overflow-hidden bg-popover border border-border rounded-2xl shadow-2xl z-50 flex flex-col">
+        <div className="fixed md:absolute top-16 left-4 right-4 md:left-auto md:right-0 md:top-full mt-2 w-auto md:w-[360px] max-h-[70vh] overflow-hidden bg-popover border border-border rounded-2xl shadow-2xl z-50 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div>
-              <h3 className="font-heading text-base">Notifications</h3>
+              <h3 className="font-heading text-base text-foreground">Notifications</h3>
               <p className="text-[11px] text-muted-foreground">{count} alerts pending</p>
             </div>
             {count > 0 && (
@@ -216,7 +216,7 @@ export function NotificationsBell() {
                   setDismissed(new Set(notifs.map((n) => n.id)));
                   setOpen(false);
                 }}
-                className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand cursor-pointer"
+                className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand cursor-pointer font-semibold"
               >
                 Clear All
               </button>

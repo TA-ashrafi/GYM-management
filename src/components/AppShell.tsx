@@ -28,6 +28,7 @@ import { useGym, gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { logout } from "@/lib/auth";
+import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 // Navigation configuration
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
@@ -61,16 +62,67 @@ export function AppShell({ children }: { children: ReactNode }) {
   useApplyTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const members = useGym((s) => s.members);
   const settings = useGym((s) => s.settings);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Calculate today's check-in count
-  const today = new Date().toDateString();
-  const todayCount = members.filter((m) =>
-    m.attendance.some((a) => new Date(a).toDateString() === today),
-  ).length;
-  const capacity = Math.min(100, Math.round((todayCount / Math.max(1, members.length)) * 100));
+  // Real-time capacity statistics from Supabase
+  const [liveMemberCount, setLiveMemberCount] = useState(0);
+  const [liveCheckInCount, setLiveCheckInCount] = useState(0);
+
+  useEffect(() => {
+    const branchId = getActiveBranchId();
+    if (!branchId) return;
+
+    // Fetch total live member count
+    supabase
+      .from("members")
+      .select("id", { count: "exact" })
+      .eq("branch_id", branchId)
+      .then(({ count }) => {
+        setLiveMemberCount(count ?? 0);
+      })
+      .catch(err => console.error(err));
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Fetch uniquechecked-in members count for today
+    const loadCheckInCount = () => {
+      supabase
+        .from("attendance_logs")
+        .select("member_id")
+        .eq("branch_id", branchId)
+        .gte("checked_in_at", today + "T00:00:00")
+        .lte("checked_in_at", today + "T23:59:59")
+        .then(({ data }) => {
+          const uniqueMemberIds = new Set(data?.map((log: any) => log.member_id));
+          setLiveCheckInCount(uniqueMemberIds.size);
+        })
+        .catch(err => console.error(err));
+    };
+
+    loadCheckInCount();
+
+    // Subscribe to real-time check-in log creations
+    const channel = supabase
+      .channel("appshell-rt")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "attendance_logs" },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.branch_id === branchId) {
+            loadCheckInCount();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pathname]); // Refresh on navigation changes
+
+  const capacity = Math.min(100, Math.round((liveCheckInCount / Math.max(1, liveMemberCount)) * 100));
 
   // Handle user logout
   async function handleLogout() {
@@ -168,8 +220,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="h-full bg-brand transition-all" style={{ width: `${capacity}%` }} />
           </div>
           <p className="mt-2 text-xs font-medium">
-            <span className="text-foreground">{todayCount}</span>{" "}
-            <span className="text-muted-foreground">of {members.length} checked in</span>
+            <span className="text-foreground">{liveCheckInCount}</span>{" "}
+            <span className="text-muted-foreground">of {liveMemberCount} checked in</span>
           </p>
         </div>
       </aside>
