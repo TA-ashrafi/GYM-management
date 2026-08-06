@@ -49,7 +49,29 @@ function Auth() {
         toast.success("Verification email sent successfully!");
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+      console.error("Auth action failed:", err);
+      let errMsg = "Something went wrong";
+      if (err) {
+        if (typeof err === "string") {
+          errMsg = err;
+        } else if (err.message) {
+          errMsg = err.message;
+        } else if (err.error_description) {
+          errMsg = err.error_description;
+        } else {
+          try {
+            const str = JSON.stringify(err);
+            if (str && str !== "{}") {
+              errMsg = str;
+            } else {
+              errMsg = err.toString();
+            }
+          } catch (e) {
+            errMsg = err.toString() || "Something went wrong";
+          }
+        }
+      }
+      toast.error(errMsg);
     }
     setLoading(false);
   }
