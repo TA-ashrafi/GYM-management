@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/AppShell";
 import {
-  useGym, daysSince, daysUntil, money, gym,
+  useGym, daysUntil, money, gym,
   DEFAULT_LAYOUT, type WidgetId,
 } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
@@ -36,10 +36,13 @@ const WIDGET_LABELS: Record<WidgetId, string> = {
 function Dashboard() {
   const [members, setMembers] = useState<any[]>([]);
   const [todayLogs, setTodayLogs] = useState<any[]>([]);
+  const [chartLogs, setChartLogs] = useState<any[]>([]);
+  const [allLogs, setAllLogs] = useState<any[]>([]);
   const [todos, setTodos] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [storeSales, setStoreSales] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
 
   const [cycleStart] = useState(() => {
     const d = new Date();
@@ -58,6 +61,13 @@ function Dashboard() {
       .eq("branch_id", branchId)
       .then(({ data }) => setMembers(data ?? []));
 
+    // Products — cost lookup ke liye
+    supabase
+      .from("products")
+      .select("id, cost, price")
+      .eq("branch_id", branchId)
+      .then(({ data }) => setProducts(data ?? []));
+
     const today = new Date().toISOString().split("T")[0];
     supabase
       .from("attendance_logs")
@@ -67,6 +77,26 @@ function Dashboard() {
       .lte("checked_in_at", today + "T23:59:59")
       .then(({ data }) => setTodayLogs(data ?? []));
 
+    const chartStart = new Date();
+    chartStart.setDate(chartStart.getDate() - 13);
+    chartStart.setHours(0, 0, 0, 0);
+    supabase
+      .from("attendance_logs")
+      .select("*")
+      .eq("branch_id", branchId)
+      .gte("checked_in_at", chartStart.toISOString())
+      .then(({ data }) => setChartLogs(data ?? []));
+
+    const fourDaysAgo = new Date();
+    fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+    fourDaysAgo.setHours(0, 0, 0, 0);
+    supabase
+      .from("attendance_logs")
+      .select("member_id, checked_in_at")
+      .eq("branch_id", branchId)
+      .gte("checked_in_at", fourDaysAgo.toISOString())
+      .then(({ data }) => setAllLogs(data ?? []));
+
     supabase
       .from("todos")
       .select("*")
@@ -75,29 +105,52 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
+    // Monthly expenses — month start se
     supabase
       .from("expenses")
       .select("*")
       .eq("branch_id", branchId)
-      .gte("date", cycleStart.toISOString())
-      .order("date", { ascending: false })
+      .gte("created_at", cycleStart.toISOString())
+      .order("created_at", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
-    // Payments this cycle
-    supabase
-      .from("payments")
-      .select("*")
-      .eq("branch_id", branchId)
-      .gte("payment_date", cycleStart.toISOString())
-      .then(({ data }) => setPayments(data ?? []));
+    Promise.all([
+      supabase
+        .from("payments")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("payment_date", cycleStart.toISOString()),
+      supabase
+        .from("sales")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("created_at", cycleStart.toISOString()),
+      supabase
+        .from("members")
+        .select("id, fee_amount, fee_paid, created_at")
+        .eq("branch_id", branchId)
+        .gte("created_at", cycleStart.toISOString()),
+    ]).then(([payRes, salesRes, membersRes]) => {
+      const payData = payRes.data ?? [];
+      const salesData = salesRes.data ?? [];
+      const newMembers = membersRes.data ?? [];
 
-    // Store sales this cycle
-    supabase
-      .from("sales")
-      .select("*")
-      .eq("branch_id", branchId)
-      .gte("created_at", cycleStart.toISOString())
-      .then(({ data }) => setStoreSales(data ?? []));
+      const existingPaymentMemberIds = new Set(payData.map((p: any) => p.member_id));
+
+      const extraPayments = newMembers
+        .filter((m: any) => {
+          const paid = m.fee_paid ?? false;
+          return paid && !existingPaymentMemberIds.has(m.id);
+        })
+        .map((m: any) => ({
+          amount: m.fee_amount ?? 0,
+          member_id: m.id,
+          note: "Legacy join (no payment row)",
+        }));
+
+      setPayments([...payData, ...extraPayments]);
+      setStoreSales(salesData);
+    });
 
     const channel = supabase
       .channel("dashboard-realtime")
@@ -108,12 +161,16 @@ function Dashboard() {
           const row = payload.new as any;
           if (row.branch_id === branchId) {
             setTodayLogs((prev) => [...prev, row]);
+            setChartLogs((prev) => [...prev, row]);
+            setAllLogs((prev) => [...prev, { member_id: row.member_id, checked_in_at: row.checked_in_at }]);
           }
         }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [cycleStart]);
 
   const settings = useGym((s) => s.settings);
@@ -121,10 +178,30 @@ function Dashboard() {
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
+  // Store profit = (sell - cost) × qty — cost products table se
+  const storeRevenue = useMemo(() => {
+    return storeSales.reduce((total: number, sale: any) => {
+      const items = Array.isArray(sale.items) ? sale.items : [];
+      if (items.length === 0) return total + (sale.total ?? 0);
+
+      return (
+        total +
+        items.reduce((sum: number, item: any) => {
+          const productId = item.productId ?? item.product_id;
+          const product = products.find((p: any) => p.id === productId);
+          const cost = product?.cost ?? item.cost ?? 0;
+          const sellPrice = item.price ?? 0;
+          const qty = item.qty ?? item.quantity ?? 1;
+          return sum + (sellPrice - cost) * qty;
+        }, 0)
+      );
+    }, 0);
+  }, [storeSales, products]);
+
   const stats = useMemo(() => {
     let active = 0, expiring = 0, expired = 0, pendingAmt = 0;
 
-    members.forEach((m) => {
+    members.forEach((m: any) => {
       const expiryDate = m.expiry_date ?? m.expiryDate;
       const feePaid = m.fee_paid ?? m.feePaid;
       const feeAmount = m.fee_amount ?? m.feeAmount ?? 0;
@@ -138,15 +215,12 @@ function Dashboard() {
       } else {
         active++;
       }
-      // pending for unpaid active members too
       if (!feePaid && d >= 0) pendingAmt += feeAmount;
     });
 
-    const memberRevenue = payments.reduce((a, p) => a + (p.amount ?? 0), 0);
-    const storeRevenue = storeSales.reduce((a, s) => a + (s.total ?? 0), 0);
-    const totalRevenue = memberRevenue + storeRevenue;
-    const totalExpenses = expenses.reduce((a, e) => a + (e.amount ?? 0), 0);
-    const netProfit = totalRevenue - totalExpenses;
+    const memberRevenue = payments.reduce((a: number, p: any) => a + (p.amount ?? 0), 0);
+    const totalCycleRevenue = memberRevenue + storeRevenue;
+    const expenseTotal = expenses.reduce((a: number, e: any) => a + (e.amount ?? 0), 0);
 
     return {
       active,
@@ -155,11 +229,11 @@ function Dashboard() {
       pendingAmt,
       memberRevenue,
       storeRevenue,
-      totalRevenue,
-      totalExpenses,
-      netProfit,
+      totalCycleRevenue,
+      expenseTotal,
+      paymentCount: payments.length,
     };
-  }, [members, expenses, payments, storeSales]);
+  }, [members, expenses, payments, storeRevenue]);
 
   const todayCheckIns = useMemo(() => {
     const inMemberIds = new Set(
@@ -177,39 +251,47 @@ function Dashboard() {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
       const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-      const visits = todayLogs.filter((l: any) =>
-        l.checked_in_at?.startsWith(dateStr) && (l.punch_type ?? "in") === "in"
-      ).length;
-      const dayPayments = payments
-        .filter((p) => p.payment_date?.startsWith(dateStr))
-        .reduce((sum: number, p: any) => sum + (p.amount ?? 0), 0);
-      const daySales = storeSales
-        .filter((s) => s.created_at?.startsWith(dateStr))
-        .reduce((sum: number, s: any) => sum + (s.total ?? 0), 0);
-      days.push({ d: label, revenue: dayPayments + daySales, visits });
+
+      const visits = chartLogs.filter((l: any) => {
+        const logDate = new Date(l.checked_in_at).toISOString().split("T")[0];
+        return logDate === dateStr && (l.punch_type ?? "in") === "in";
+      }).length;
+
+      const dayRevenue = payments
+        .filter((p: any) => {
+          const raw = p.payment_date ?? p.created_at;
+          if (!raw) return false;
+          const pDate = new Date(raw).toISOString().split("T")[0];
+          return pDate === dateStr;
+        })
+        .reduce((a: number, p: any) => a + (p.amount ?? 0), 0);
+
+      days.push({ d: label, revenue: dayRevenue, visits });
     }
     return days;
-  }, [todayLogs, payments, storeSales]);
+  }, [chartLogs, payments]);
 
   const ghostList = useMemo(() => {
-    const todayPunchedIn = new Set(
-      todayLogs
-        .filter((l: any) => (l.punch_type ?? "in") === "in")
-        .map((l: any) => l.member_id)
-    );
-    return members.filter((m) => {
+    const activeMembers = members.filter((m: any) => {
       const d = daysUntil(m.expiry_date ?? m.expiryDate);
-      return d >= 0 && !todayPunchedIn.has(m.id);
-    }).slice(0, 5);
-  }, [members, todayLogs]);
+      return d >= 0;
+    });
+
+    const recentMemberIds = new Set(allLogs.map((l: any) => l.member_id));
+
+    return activeMembers
+      .filter((m: any) => !recentMemberIds.has(m.id))
+      .slice(0, 5);
+  }, [members, allLogs]);
 
   const expiringList = members
     .filter((m) => {
       const d = daysUntil(m.expiry_date ?? m.expiryDate);
       return d < 0 || d <= 7;
     })
-    .sort((a, b) =>
-      daysUntil(a.expiry_date ?? a.expiryDate) - daysUntil(b.expiry_date ?? b.expiryDate)
+    .sort(
+      (a, b) =>
+        daysUntil(a.expiry_date ?? a.expiryDate) - daysUntil(b.expiry_date ?? b.expiryDate)
     )
     .slice(0, 5);
 
@@ -253,9 +335,9 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MoneyCard
           to="/analytics"
-          label="Collected this cycle"
-          value={money(stats.totalRevenue)}
-          sub={`Members ${money(stats.memberRevenue)} · Store ${money(stats.storeRevenue)} · ${cycleLabel}`}
+          label="Collected This Cycle"
+          value={money(stats.totalCycleRevenue)}
+          sub={`${stats.paymentCount} payments · ₹${stats.storeRevenue.toLocaleString("en-IN")} store profit · ${cycleLabel}`}
           tone="brand"
           icon={<TrendingUp className="size-5" />}
         />
@@ -270,10 +352,10 @@ function Dashboard() {
         />
         <MoneyCard
           to="/expenses"
-          label="Net Profit (cycle)"
-          value={money(stats.netProfit)}
-          sub={`Revenue ${money(stats.totalRevenue)} − Expenses ${money(stats.totalExpenses)}`}
-          tone={stats.netProfit >= 0 ? "brand" : "danger"}
+          label="Monthly Expenses"
+          value={money(stats.expenseTotal)}
+          sub={`${expenses.length} entries`}
+          tone="muted"
           icon={<Wallet className="size-5" />}
         />
       </div>
@@ -305,7 +387,14 @@ function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
               <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} />
               <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "var(--color-popover)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--color-popover)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
               <Area type="monotone" dataKey="visits" stroke="var(--color-accent)" fill="url(#g2)" strokeWidth={2} />
               <Area type="monotone" dataKey="revenue" stroke="var(--color-brand)" fill="url(#g1)" strokeWidth={2} />
             </AreaChart>
@@ -322,15 +411,23 @@ function Dashboard() {
         <div className="space-y-2">
           {openTodos.length === 0 && <p className="text-sm text-muted-foreground">All caught up 🎉</p>}
           {openTodos.map((t) => (
-            <div key={t.id}
-              className={"p-3 bg-secondary/40 rounded-lg border-l-2 flex items-start justify-between gap-3 " +
-                (t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent")}>
+            <div
+              key={t.id}
+              className={
+                "p-3 bg-secondary/40 rounded-lg border-l-2 flex items-start justify-between gap-3 " +
+                (t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent")
+              }
+            >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{t.title}</p>
                 {t.note && <p className="text-xs text-muted-foreground truncate">{t.note}</p>}
               </div>
-              <button onClick={(e) => { e.preventDefault(); }}
-                className="text-[10px] uppercase tracking-wider text-brand hover:underline shrink-0">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+                className="text-[10px] uppercase tracking-wider text-brand hover:underline shrink-0"
+              >
                 Done
               </button>
             </div>
@@ -346,56 +443,91 @@ function Dashboard() {
               <span className="size-2 rounded-full bg-danger animate-pulse" />
               Scan Bypass Alerts
             </h2>
-            <p className="text-xs text-muted-foreground">Members not punching RFID for 4+ days</p>
+            <p className="text-xs text-muted-foreground">Active members with no RFID punch in last 4 days</p>
           </div>
-          <Link to="/members" search={{ filter: "ghost" }} className="text-xs text-brand hover:underline">View all</Link>
+          <Link to="/members" search={{ filter: "ghost" }} className="text-xs text-brand hover:underline">
+            View all
+          </Link>
         </div>
         {ghostList.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular. 💪</p>
         ) : (
           <div className="divide-y divide-border">
-            {ghostList.map((m) => {
-              const last = m.attendance?.[0];
-              return (
-                <div key={m.id} className="py-3 flex items-center gap-4">
-                  <img src={m.photo} alt={m.name} className="size-10 rounded-full object-cover ring-1 ring-border" width={40} height={40} loading="lazy" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.roll_no ?? m.rollNo} · {m.plan}</p>
+            {ghostList.map((m) => (
+              <div key={m.id} className="py-3 flex items-center gap-4">
+                {m.photo ? (
+                  <img
+                    src={m.photo}
+                    alt={m.name}
+                    className="size-10 rounded-full object-cover ring-1 ring-border"
+                    width={40}
+                    height={40}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
+                    {m.name?.[0] ?? "?"}
                   </div>
-                  <span className="px-2 py-1 bg-danger/10 text-danger text-[10px] rounded uppercase font-bold tracking-wider">
-                    No-show {last ? daysSince(last) : "30+"}d
-                  </span>
-                  <Link to="/reminders" className="text-xs text-brand hover:underline shrink-0">Remind</Link>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {m.roll_no ?? m.rollNo} · {m.plan}
+                  </p>
                 </div>
-              );
-            })}
+                <span className="px-2 py-1 bg-danger/10 text-danger text-[10px] rounded uppercase font-bold tracking-wider">
+                  4d+ no show
+                </span>
+                <Link to="/reminders" className="text-xs text-brand hover:underline shrink-0">
+                  Remind
+                </Link>
+              </div>
+            ))}
           </div>
         )}
       </div>
     ),
     expiring: (
-      <Link to="/members" search={{ filter: "expiring" }} className="bg-card border border-border rounded-2xl p-6 hover:border-brand/30 transition-colors block">
+      <Link
+        to="/members"
+        search={{ filter: "expiring" }}
+        className="bg-card border border-border rounded-2xl p-6 hover:border-brand/30 transition-colors block"
+      >
         <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
             const d = daysUntil(m.expiry_date ?? m.expiryDate);
             return (
               <div key={m.id} className="flex items-center gap-3">
-                <img src={m.photo} alt={m.name} className="size-9 rounded-full object-cover ring-1 ring-border" width={36} height={36} loading="lazy" />
+                {m.photo ? (
+                  <img
+                    src={m.photo}
+                    alt={m.name}
+                    className="size-9 rounded-full object-cover ring-1 ring-border"
+                    width={36}
+                    height={36}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="size-9 rounded-full bg-brand/20 grid place-items-center text-brand font-bold text-sm">
+                    {m.name?.[0] ?? "?"}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{m.name}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {d < 0 ? `Expired ${-d}d ago` : d === 0 ? "Expires today" : `${d}d left`}
                   </p>
                 </div>
-                <button onClick={(e) => {
-                  e.preventDefault();
-                  const next = new Date();
-                  next.setDate(next.getDate() + 30);
-                  gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
-                }}
-                  className="text-[10px] uppercase tracking-wider text-brand hover:underline">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const next = new Date();
+                    next.setDate(next.getDate() + 30);
+                    gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
+                  }}
+                  className="text-[10px] uppercase tracking-wider text-brand hover:underline"
+                >
                   Renew
                 </button>
               </div>
@@ -413,14 +545,22 @@ function Dashboard() {
         subtitle={`${greet}, ${settings.ownerName} 🏋️ — ${settings.gymName}`}
         actions={
           <>
-            <button onClick={() => setCustomize((v) => !v)}
-              className="px-4 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand">
+            <button
+              onClick={() => setCustomize((v) => !v)}
+              className="px-4 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand"
+            >
               <GripVertical className="size-4" /> {customize ? "Done" : "Customize"}
             </button>
-            <Link to="/attendance" className="px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand transition">
+            <Link
+              to="/attendance"
+              className="px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand transition"
+            >
               <Radio className="size-4" /> Punch In
             </Link>
-            <Link to="/members/new" className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-transform text-sm">
+            <Link
+              to="/members/new"
+              className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-transform text-sm"
+            >
               + New Member
             </Link>
           </>
@@ -434,8 +574,10 @@ function Dashboard() {
               <h3 className="font-heading text-base">Customize Dashboard</h3>
               <p className="text-xs text-muted-foreground">Drag widgets to reorder, eye-icon to show/hide</p>
             </div>
-            <button onClick={() => gym.setLayout(DEFAULT_LAYOUT)}
-              className="text-xs text-muted-foreground hover:text-brand inline-flex items-center gap-1">
+            <button
+              onClick={() => gym.setLayout(DEFAULT_LAYOUT)}
+              className="text-xs text-muted-foreground hover:text-brand inline-flex items-center gap-1"
+            >
               <RotateCcw className="size-3" /> Reset
             </button>
           </div>
@@ -444,8 +586,12 @@ function Dashboard() {
               <div key={w.id} className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg">
                 <GripVertical className="size-4 text-muted-foreground" />
                 <span className="text-sm flex-1 truncate">{WIDGET_LABELS[w.id]}</span>
-                <button onClick={() => move(i, i - 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move up">↑</button>
-                <button onClick={() => move(i, i + 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move down">↓</button>
+                <button onClick={() => move(i, i - 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move up">
+                  ↑
+                </button>
+                <button onClick={() => move(i, i + 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move down">
+                  ↓
+                </button>
                 <button onClick={() => toggle(w.id)} className="size-7 grid place-items-center rounded hover:bg-secondary" aria-label="Toggle visibility">
                   {w.visible ? <Eye className="size-3.5 text-brand" /> : <EyeOff className="size-3.5 text-muted-foreground" />}
                 </button>
@@ -456,35 +602,60 @@ function Dashboard() {
       )}
 
       <div className="flex flex-col gap-6">
-        {layout.filter((w) => w.visible).map((w) => (
-          <div
-            key={w.id}
-            draggable={customize}
-            onDragStart={() => setDragId(w.id)}
-            onDragOver={(e) => { if (customize) e.preventDefault(); }}
-            onDrop={() => onDrop(w.id)}
-            className={customize ? "relative ring-2 ring-dashed ring-border rounded-2xl cursor-move transition " + (dragId === w.id ? "opacity-50" : "") : ""}
-          >
-            {customize && (
-              <div className="absolute -top-3 left-4 px-2 py-0.5 bg-brand text-brand-foreground text-[10px] uppercase tracking-widest rounded font-bold z-10">
-                {WIDGET_LABELS[w.id]}
-              </div>
-            )}
-            {widgets[w.id]}
-          </div>
-        ))}
+        {layout
+          .filter((w) => w.visible)
+          .map((w) => (
+            <div
+              key={w.id}
+              draggable={customize}
+              onDragStart={() => setDragId(w.id)}
+              onDragOver={(e) => {
+                if (customize) e.preventDefault();
+              }}
+              onDrop={() => onDrop(w.id)}
+              className={
+                customize
+                  ? "relative ring-2 ring-dashed ring-border rounded-2xl cursor-move transition " +
+                  (dragId === w.id ? "opacity-50" : "")
+                  : ""
+              }
+            >
+              {customize && (
+                <div className="absolute -top-3 left-4 px-2 py-0.5 bg-brand text-brand-foreground text-[10px] uppercase tracking-widest rounded font-bold z-10">
+                  {WIDGET_LABELS[w.id]}
+                </div>
+              )}
+              {widgets[w.id]}
+            </div>
+          ))}
       </div>
     </div>
   );
 }
 
-function Kpi({ to, search, label, value, icon, accent, hint }: {
-  to: string; search?: Record<string, string>; label: string; value: number | string;
-  icon: React.ReactNode; accent?: string; hint?: string;
+function Kpi({
+  to,
+  search,
+  label,
+  value,
+  icon,
+  accent,
+  hint,
+}: {
+  to: string;
+  search?: Record<string, string>;
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  accent?: string;
+  hint?: string;
 }) {
   return (
-    <Link to={to as "/"} search={search as never}
-      className="p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group">
+    <Link
+      to={to as "/"}
+      search={search as never}
+      className="p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group"
+    >
       <div className="flex items-center justify-between text-muted-foreground mb-2">
         <span className="text-[10px] uppercase tracking-widest">{label}</span>
         <span className="group-hover:text-brand transition">{icon}</span>
@@ -495,14 +666,35 @@ function Kpi({ to, search, label, value, icon, accent, hint }: {
   );
 }
 
-function MoneyCard({ to, search, label, value, sub, tone, icon }: {
-  to: string; search?: Record<string, string>; label: string; value: string; sub: string;
-  tone: "brand" | "danger" | "muted"; icon: React.ReactNode;
+function MoneyCard({
+  to,
+  search,
+  label,
+  value,
+  sub,
+  tone,
+  icon,
+}: {
+  to: string;
+  search?: Record<string, string>;
+  label: string;
+  value: string;
+  sub: string;
+  tone: "brand" | "danger" | "muted";
+  icon: React.ReactNode;
 }) {
-  const accent = tone === "brand" ? "text-brand bg-brand/10" : tone === "danger" ? "text-danger bg-danger/10" : "text-muted-foreground bg-secondary";
+  const accent =
+    tone === "brand"
+      ? "text-brand bg-brand/10"
+      : tone === "danger"
+        ? "text-danger bg-danger/10"
+        : "text-muted-foreground bg-secondary";
   return (
-    <Link to={to as "/"} search={search as never}
-      className="p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition">
+    <Link
+      to={to as "/"}
+      search={search as never}
+      className="p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition"
+    >
       <div className={"size-12 rounded-xl grid place-items-center " + accent}>{icon}</div>
       <div>
         <p className="text-xs text-muted-foreground uppercase tracking-widest">{label}</p>

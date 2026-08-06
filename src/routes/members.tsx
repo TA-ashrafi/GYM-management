@@ -52,6 +52,7 @@ function MembersPage() {
   const navSearch = Route.useSearch();
   const navigate = Route.useNavigate();
   const [members, setMembers] = useState<any[]>([]);
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const settings = useGym((s) => s.settings);
   const slots = generateSlots(settings.shifts, settings.slotDurationMin);
   const [q, setQ] = useState("");
@@ -61,6 +62,20 @@ function MembersPage() {
 
   useEffect(() => {
     fetchMembers().then(setMembers);
+
+    const branchId = getActiveBranchId();
+    if (!branchId) return;
+
+    const fourDaysAgo = new Date();
+    fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+    fourDaysAgo.setHours(0, 0, 0, 0);
+
+    supabase
+      .from("attendance_logs")
+      .select("member_id, checked_in_at")
+      .eq("branch_id", branchId)
+      .gte("checked_in_at", fourDaysAgo.toISOString())
+      .then(({ data }) => setRecentLogs(data ?? []));
   }, []);
 
   async function handleDelete(id: string, name: string) {
@@ -104,7 +119,6 @@ function MembersPage() {
       return;
     }
 
-    // Payment record for renewal
     const branchId = getActiveBranchId();
     if (branchId) {
       const { error: payError } = await supabase.from("payments").insert({
@@ -128,9 +142,12 @@ function MembersPage() {
     toast.success(`${m.name}'s plan renewed successfully! ✓`);
   }
 
+  const recentMemberIds = new Set(recentLogs.map((l: any) => l.member_id));
+
   const filtered = members.filter((m) => {
     const s = statusOf(m);
-    const matchesSearch = !q ||
+    const matchesSearch =
+      !q ||
       ((m.name ?? "") + (m.rollNo ?? m.roll_no ?? "") + (m.phone ?? "") + (m.rfid ?? ""))
         .toLowerCase()
         .includes(q.toLowerCase());
@@ -140,7 +157,11 @@ function MembersPage() {
     if (filter === "expiring") return s === "expiring";
     if (filter === "expired") return s === "expired";
     if (filter === "unpaid") return !(m.feePaid ?? m.fee_paid);
-    if (filter === "ghost") return false;
+    if (filter === "ghost") {
+      // Active member who has NOT punched in last 4 days
+      const d = daysUntil(m.expiryDate ?? m.expiry_date);
+      return d >= 0 && !recentMemberIds.has(m.id);
+    }
     return true;
   });
 
@@ -175,10 +196,12 @@ function MembersPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={"px-3 py-1.5 text-xs rounded-lg capitalize transition-colors " +
+                className={
+                  "px-3 py-1.5 text-xs rounded-lg capitalize transition-colors " +
                   (filter === f
                     ? "bg-brand text-brand-foreground font-medium"
-                    : "bg-secondary text-muted-foreground hover:text-foreground")}
+                    : "bg-secondary text-muted-foreground hover:text-foreground")
+                }
               >
                 {f}
               </button>
@@ -218,18 +241,18 @@ function MembersPage() {
                   d < 0
                     ? "text-danger font-bold"
                     : d <= 7
-                    ? "text-warn font-semibold"
-                    : "text-brand";
+                      ? "text-warn font-semibold"
+                      : "text-brand";
                 const feePaid = m.feePaid ?? m.fee_paid;
                 const feeAmount = m.feeAmount ?? m.fee_amount ?? 0;
 
                 return (
                   <tr
                     key={m.id}
-                    className={"transition-colors " +
-                      (rowRed
-                        ? "bg-danger/10 hover:bg-danger/15"
-                        : "hover:bg-secondary/30")}
+                    className={
+                      "transition-colors " +
+                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/30")
+                    }
                   >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
@@ -251,7 +274,12 @@ function MembersPage() {
                           <p className="flex items-center gap-1.5">
                             <span className={nameCls}>{m.name}</span>
                             {badge.stars > 0 && (
-                              <span className={"inline-flex items-center " + (badge.golden ? "text-yellow-400" : "text-warn")}>
+                              <span
+                                className={
+                                  "inline-flex items-center " +
+                                  (badge.golden ? "text-yellow-400" : "text-warn")
+                                }
+                              >
                                 {Array.from({ length: badge.stars }).map((_, i) => (
                                   <Star key={i} className="size-3 fill-current" />
                                 ))}
@@ -276,10 +304,17 @@ function MembersPage() {
                     </td>
                     <td className={"px-4 py-3 " + expiryCls}>{expiryText}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-muted-foreground">{m.preferredSlot ?? m.preferred_slot}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {m.preferredSlot ?? m.preferred_slot}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={"px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider inline-block w-fit " + statusStyles[s]}>
+                      <span
+                        className={
+                          "px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider inline-block w-fit " +
+                          statusStyles[s]
+                        }
+                      >
                         {s}
                       </span>
                     </td>
