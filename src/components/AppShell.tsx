@@ -20,8 +20,10 @@ import {
   LogOut,
   Building2,
   LifeBuoy,
+  Menu,
+  X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { useGym, gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 import { NotificationsBell } from "@/components/NotificationsBell";
@@ -61,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const members = useGym((s) => s.members);
   const settings = useGym((s) => s.settings);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Calculate today's check-in count
   const today = new Date().toDateString();
@@ -75,22 +78,65 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth" });
   }
 
+  // Close mobile menu on pathname change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      {/* Sidebar */}
-      <aside className="no-print w-64 shrink-0 border-r border-border flex flex-col p-5 sticky top-0 h-screen">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 mb-6 px-2">
-          <div className="size-9 bg-brand rounded-lg grid place-items-center shadow-[0_0_24px_-4px_var(--color-brand)]">
-            <Dumbbell className="size-5 text-brand-foreground" strokeWidth={2.5} />
+    <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
+      {/* Mobile Top Bar */}
+      <div className="no-print md:hidden flex items-center justify-between px-4 py-3 bg-background border-b border-border sticky top-0 z-40">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="size-8 bg-brand rounded-lg grid place-items-center shadow-[0_0_16px_-4px_var(--color-brand)]">
+            <Dumbbell className="size-4.5 text-brand-foreground" strokeWidth={2.5} />
           </div>
-          <div className="min-w-0">
-            <div className="font-heading text-xl tracking-tight text-foreground leading-none truncate">
-              {settings.gymName.split(" ")[0].toUpperCase()}
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">Gym OS</div>
-          </div>
+          <span className="font-heading text-lg tracking-tight text-foreground uppercase">
+            {settings.gymName.split(" ")[0]}
+          </span>
         </Link>
+        <div className="flex items-center gap-2">
+          <NotificationsBell />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="size-10 rounded-xl bg-card border border-border grid place-items-center"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Sidebar for Desktop / Collapsible Overlay for Mobile */}
+      <aside
+        className={
+          "no-print shrink-0 border-r border-border flex flex-col p-5 bg-background transition-all duration-300 z-40 " +
+          "md:w-64 md:sticky md:top-0 md:h-screen md:flex " +
+          (mobileMenuOpen
+            ? "fixed inset-y-0 left-0 w-72 flex h-full border-r border-border"
+            : "hidden")
+        }
+      >
+        {/* Logo and Mobile Close Button */}
+        <div className="flex items-center justify-between mb-6 px-2">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="size-9 bg-brand rounded-lg grid place-items-center shadow-[0_0_24px_-4px_var(--color-brand)]">
+              <Dumbbell className="size-5 text-brand-foreground" strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-heading text-xl tracking-tight text-foreground leading-none truncate uppercase">
+                {settings.gymName.split(" ")[0]}
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">Gym OS</div>
+            </div>
+          </Link>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="md:hidden size-8 rounded-lg bg-secondary grid place-items-center text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
 
         {/* Navigation */}
         <nav className="space-y-0.5 flex-1 overflow-y-auto scrollbar-thin -mx-1 px-1">
@@ -128,10 +174,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      {/* Dimmed backdrop when mobile menu is open */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden fixed inset-0 bg-black/50 z-30 transition-opacity"
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 min-w-0">
-        {/* Top Bar */}
-        <div className="no-print sticky top-0 z-30 flex justify-end gap-2 px-8 py-4 bg-background/80 backdrop-blur border-b border-border/40">
+      <main className="flex-1 min-w-0 flex flex-col">
+        {/* Desktop Top Bar */}
+        <div className="no-print hidden md:flex sticky top-0 z-30 justify-end gap-2 px-8 py-4 bg-background/80 backdrop-blur border-b border-border/40">
           {/* Theme Toggle */}
           <button
             onClick={() => gym.updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
@@ -155,7 +209,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {children}
+        {/* Children Render Area */}
+        <div className="flex-1 w-full">
+          {children}
+        </div>
       </main>
     </div>
   );
@@ -178,12 +235,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex items-end justify-between gap-4 mb-8 flex-wrap">
+    <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 flex-wrap">
       <div>
-        <h1 className="text-3xl font-heading text-foreground">{title}</h1>
+        <h1 className="text-2xl sm:text-3xl font-heading text-foreground">{title}</h1>
         {subtitle && <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>}
       </div>
-      {actions && <div className="flex gap-2 no-print">{actions}</div>}
+      {actions && <div className="flex gap-2 no-print flex-wrap">{actions}</div>}
     </header>
   );
 }

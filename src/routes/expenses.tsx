@@ -91,29 +91,30 @@ function Expenses() {
   }
 
   return (
-    <div className="p-8 max-w-[1400px]">
+    <div className="p-4 sm:p-8 max-w-[1400px] w-full">
       <PageHeader 
         title="Expenses" 
         subtitle={`Total: ${inr(total)} across ${expenses.length} entries`} 
       />
 
       {/* Category Summary Cards */}
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
         {byCat.map(({ c, total }) => (
-          <div key={c} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">{c}</span>
-            <span className="font-heading text-lg">{inr(total)}</span>
+          <div key={c} className="bg-card border border-border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{c}</span>
+            <span className="font-heading text-base sm:text-lg font-bold">{inr(total)}</span>
           </div>
         ))}
       </div>
 
       {/* Add Expense Form */}
-      <form onSubmit={add} className="bg-card border border-border rounded-2xl p-4 grid sm:grid-cols-[1fr,140px,140px,auto] gap-3 mb-6">
+      <form onSubmit={add} className="bg-card border border-border rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-[1fr,140px,140px,auto] gap-3 mb-6">
         <input
           placeholder="What for?"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className={inp}
+          required
         />
         <input
           type="number"
@@ -121,6 +122,7 @@ function Expenses() {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className={inp}
+          required
         />
         <select
           value={category}
@@ -131,56 +133,94 @@ function Expenses() {
             <option key={c}>{c}</option>
           ))}
         </select>
-        <button className="px-5 bg-brand text-brand-foreground rounded-lg font-semibold text-sm">
-          Add
+        <button type="submit" className="px-5 py-2.5 bg-brand text-brand-foreground rounded-lg font-semibold text-sm hover:scale-[1.01] transition-transform cursor-pointer text-center">
+          Add Expense
         </button>
       </form>
 
       {/* Expenses Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-              <th className="px-6 py-3">Date</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {expenses.map((e) => (
-              <tr key={e.id} className="hover:bg-secondary/30">
-                <td className="px-6 py-3 text-muted-foreground">
-                  {new Date(e.date).toLocaleDateString("en-IN")}
-                </td>
-                <td className="px-4 py-3 font-medium">{e.title}</td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 bg-secondary text-xs rounded">{e.category}</span>
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{inr(e.amount)}</td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => deleteExpense(e.id)}
-                    className="text-muted-foreground hover:text-danger"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </td>
+        {/* Desktop view */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
+                <th className="px-6 py-3">Date</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3 w-12"></th>
               </tr>
-            ))}
-            {expenses.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-12 text-muted-foreground">
-                  No expenses recorded yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {expenses.map((e) => (
+                <tr key={e.id} className="hover:bg-secondary/30">
+                  <td className="px-6 py-3 text-muted-foreground">
+                    {new Date(e.date).toLocaleDateString("en-IN")}
+                  </td>
+                  <td className="px-4 py-3 font-medium">{e.title}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-0.5 bg-secondary text-xs rounded font-medium">{e.category}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-semibold">{inr(e.amount)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => deleteExpense(e.id)}
+                      className="text-muted-foreground hover:text-danger p-1"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {expenses.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-muted-foreground">
+                    No expenses recorded yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block sm:hidden divide-y divide-border">
+          {expenses.map((e) => (
+            <div key={e.id} className="p-4 flex flex-col gap-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-foreground text-sm">{e.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {new Date(e.date).toLocaleDateString("en-IN")}
+                  </p>
+                </div>
+                <span className="font-mono font-bold text-sm text-foreground">
+                  {inr(e.amount)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="px-2 py-0.5 bg-secondary text-[10px] rounded font-medium text-muted-foreground">
+                  {e.category}
+                </span>
+                <button
+                  onClick={() => deleteExpense(e.id)}
+                  className="text-muted-foreground hover:text-danger p-1.5"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {expenses.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No expenses recorded yet.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-const inp = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40";
+const inp = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";

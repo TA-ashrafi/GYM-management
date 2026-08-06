@@ -100,7 +100,7 @@ function Todos() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl w-full">
       <PageHeader title="Maintenance & To-Do" subtitle="Machine repairs, bills, daily operations" />
 
       {/* Add Task Form */}
@@ -109,9 +109,9 @@ function Todos() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="What needs to be done?"
-          className={inp + " w-full text-base font-medium"}
+          className="px-3 py-2.5 bg-secondary rounded-lg text-base font-medium outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full"
         />
-        <div className="grid sm:grid-cols-[1fr,140px,auto] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr,140px,auto] gap-3">
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -129,7 +129,7 @@ function Todos() {
           </select>
           <button 
             type="submit"
-            className="px-5 bg-brand text-brand-foreground rounded-lg font-semibold text-sm hover:bg-brand/90 transition cursor-pointer"
+            className="px-5 py-2.5 bg-brand text-brand-foreground rounded-lg font-semibold text-sm hover:bg-brand/90 transition cursor-pointer text-center"
           >
             Add Task
           </button>
@@ -138,7 +138,7 @@ function Todos() {
 
       {/* Open Tasks */}
       <section>
-        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Open ({open.length})</h3>
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">Open ({open.length})</h3>
         <div className="space-y-2 mb-8">
           {open.map((t) => (
             <Row
@@ -152,7 +152,7 @@ function Todos() {
         </div>
 
         {/* Completed Tasks */}
-        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Completed ({done.length})</h3>
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">Completed ({done.length})</h3>
         <div className="space-y-2 opacity-60">
           {done.map((t) => (
             <Row
@@ -173,23 +173,27 @@ function Row({ t, onToggle, onDelete }: { t: any; onToggle: () => void; onDelete
   const tone = t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent";
 
   return (
-    <div className={"p-4 bg-card border border-border rounded-xl border-l-2 flex items-center gap-3 " + tone}>
-      <input
-        type="checkbox"
-        checked={t.done}
-        onChange={onToggle}
-        className="accent-brand size-4 cursor-pointer"
-      />
-      <div className="flex-1 min-w-0">
-        <p className={"font-medium " + (t.done ? "line-through text-muted-foreground" : "")}>{t.title}</p>
-        {t.note && <p className="text-xs text-muted-foreground truncate">{t.note}</p>}
+    <div className={"p-4 bg-card border border-border rounded-xl border-l-2 flex items-center justify-between gap-3 " + tone}>
+      <div className="flex items-center gap-3 min-w-0">
+        <input
+          type="checkbox"
+          checked={t.done}
+          onChange={onToggle}
+          className="accent-brand size-4 cursor-pointer shrink-0"
+        />
+        <div className="min-w-0">
+          <p className={"font-medium text-sm sm:text-base " + (t.done ? "line-through text-muted-foreground" : "")}>{t.title}</p>
+          {t.note && <p className="text-xs text-muted-foreground truncate">{t.note}</p>}
+        </div>
       </div>
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.priority}</span>
-      <button onClick={onDelete} className="text-muted-foreground hover:text-danger">
-        <Trash2 className="size-4" />
-      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground hidden sm:inline">{t.priority}</span>
+        <button onClick={onDelete} className="text-muted-foreground hover:text-danger p-1">
+          <Trash2 className="size-4" />
+        </button>
+      </div>
     </div>
   );
 }
 
-const inp = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40";
+const inp = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";

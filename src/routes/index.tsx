@@ -322,7 +322,7 @@ function Dashboard() {
 
   const widgets: Record<WidgetId, React.ReactNode> = {
     kpi: (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <Kpi to="/members" label="Total Members" value={members.length} icon={<Users className="size-4" />} />
         <Kpi to="/members" search={{ filter: "active" }} label="Active" value={stats.active} icon={<CheckCircle2 className="size-4" />} accent="text-brand" />
         <Kpi to="/members" search={{ filter: "expiring" }} label="Expiring (7d)" value={stats.expiring} icon={<Clock className="size-4" />} accent="text-warn" />
@@ -332,7 +332,7 @@ function Dashboard() {
       </div>
     ),
     money: (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         <MoneyCard
           to="/analytics"
           label="Collected This Cycle"
@@ -361,8 +361,8 @@ function Dashboard() {
       </div>
     ),
     chart: (
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <div className="flex items-end justify-between mb-6">
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
+        <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-heading text-foreground">Footfall & Revenue</h2>
             <p className="text-xs text-muted-foreground">Last 14 days</p>
@@ -373,7 +373,7 @@ function Dashboard() {
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend} margin={{ left: -20, right: 8, top: 8, bottom: 0 }}>
+            <AreaChart data={trend} margin={{ left: -25, right: 8, top: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.5} />
@@ -403,7 +403,7 @@ function Dashboard() {
       </div>
     ),
     maintenance: (
-      <Link to="/todos" className="bg-card border border-border rounded-2xl p-6 hover:border-brand/30 transition-colors block">
+      <Link to="/todos" className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-foreground">Maintenance</h3>
           <span className="text-xs text-muted-foreground">All →</span>
@@ -436,8 +436,8 @@ function Dashboard() {
       </Link>
     ),
     ghosts: (
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <div className="flex items-end justify-between mb-4">
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
+        <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-heading text-foreground flex items-center gap-2">
               <span className="size-2 rounded-full bg-danger animate-pulse" />
@@ -454,33 +454,37 @@ function Dashboard() {
         ) : (
           <div className="divide-y divide-border">
             {ghostList.map((m) => (
-              <div key={m.id} className="py-3 flex items-center gap-4">
-                {m.photo ? (
-                  <img
-                    src={m.photo}
-                    alt={m.name}
-                    className="size-10 rounded-full object-cover ring-1 ring-border"
-                    width={40}
-                    height={40}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
-                    {m.name?.[0] ?? "?"}
+              <div key={m.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {m.photo ? (
+                    <img
+                      src={m.photo}
+                      alt={m.name}
+                      className="size-10 rounded-full object-cover ring-1 ring-border"
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
+                      {m.name?.[0] ?? "?"}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.roll_no ?? m.rollNo} · {m.plan}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{m.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.roll_no ?? m.rollNo} · {m.plan}
-                  </p>
                 </div>
-                <span className="px-2 py-1 bg-danger/10 text-danger text-[10px] rounded uppercase font-bold tracking-wider">
-                  4d+ no show
-                </span>
-                <Link to="/reminders" className="text-xs text-brand hover:underline shrink-0">
-                  Remind
-                </Link>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <span className="px-2 py-0.5 bg-danger/10 text-danger text-[9px] rounded uppercase font-bold tracking-wider">
+                    4d+ no show
+                  </span>
+                  <Link to="/reminders" className="text-xs text-brand hover:underline shrink-0">
+                    Remind
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -491,33 +495,35 @@ function Dashboard() {
       <Link
         to="/members"
         search={{ filter: "expiring" }}
-        className="bg-card border border-border rounded-2xl p-6 hover:border-brand/30 transition-colors block"
+        className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block"
       >
         <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
             const d = daysUntil(m.expiry_date ?? m.expiryDate);
             return (
-              <div key={m.id} className="flex items-center gap-3">
-                {m.photo ? (
-                  <img
-                    src={m.photo}
-                    alt={m.name}
-                    className="size-9 rounded-full object-cover ring-1 ring-border"
-                    width={36}
-                    height={36}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="size-9 rounded-full bg-brand/20 grid place-items-center text-brand font-bold text-sm">
-                    {m.name?.[0] ?? "?"}
+              <div key={m.id} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {m.photo ? (
+                    <img
+                      src={m.photo}
+                      alt={m.name}
+                      className="size-9 rounded-full object-cover ring-1 ring-border"
+                      width={36}
+                      height={36}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="size-9 rounded-full bg-brand/20 grid place-items-center text-brand font-bold text-sm">
+                      {m.name?.[0] ?? "?"}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{m.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {d < 0 ? `Expired ${-d}d ago` : d === 0 ? "Expires today" : `${d}d left`}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{m.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {d < 0 ? `Expired ${-d}d ago` : d === 0 ? "Expires today" : `${d}d left`}
-                  </p>
                 </div>
                 <button
                   onClick={(e) => {
@@ -526,7 +532,7 @@ function Dashboard() {
                     next.setDate(next.getDate() + 30);
                     gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
                   }}
-                  className="text-[10px] uppercase tracking-wider text-brand hover:underline"
+                  className="text-[10px] uppercase tracking-wider text-brand hover:underline shrink-0"
                 >
                   Renew
                 </button>
@@ -539,37 +545,37 @@ function Dashboard() {
   };
 
   return (
-    <div className="p-8 max-w-[1600px]">
+    <div className="p-4 sm:p-8 max-w-[1600px] w-full">
       <PageHeader
         title="Gym Overview"
         subtitle={`${greet}, ${settings.ownerName} 🏋️ — ${settings.gymName}`}
         actions={
-          <>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button
               onClick={() => setCustomize((v) => !v)}
-              className="px-4 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand"
+              className="px-4 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand flex-1 sm:flex-initial justify-center"
             >
               <GripVertical className="size-4" /> {customize ? "Done" : "Customize"}
             </button>
             <Link
               to="/attendance"
-              className="px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand transition"
+              className="px-5 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand transition flex-1 sm:flex-initial justify-center"
             >
               <Radio className="size-4" /> Punch In
             </Link>
             <Link
               to="/members/new"
-              className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-transform text-sm"
+              className="px-5 py-2.5 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.02] active:scale-95 transition-transform text-sm w-full sm:w-auto text-center"
             >
               + New Member
             </Link>
-          </>
+          </div>
         }
       />
 
       {customize && (
-        <div className="mb-6 p-5 bg-card border border-dashed border-brand/40 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mb-6 p-4 sm:p-5 bg-card border border-dashed border-brand/40 rounded-2xl">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
               <h3 className="font-heading text-base">Customize Dashboard</h3>
               <p className="text-xs text-muted-foreground">Drag widgets to reorder, eye-icon to show/hide</p>
@@ -581,20 +587,24 @@ function Dashboard() {
               <RotateCcw className="size-3" /> Reset
             </button>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {layout.map((w, i) => (
-              <div key={w.id} className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg">
-                <GripVertical className="size-4 text-muted-foreground" />
-                <span className="text-sm flex-1 truncate">{WIDGET_LABELS[w.id]}</span>
-                <button onClick={() => move(i, i - 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move up">
-                  ↑
-                </button>
-                <button onClick={() => move(i, i + 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move down">
-                  ↓
-                </button>
-                <button onClick={() => toggle(w.id)} className="size-7 grid place-items-center rounded hover:bg-secondary" aria-label="Toggle visibility">
-                  {w.visible ? <Eye className="size-3.5 text-brand" /> : <EyeOff className="size-3.5 text-muted-foreground" />}
-                </button>
+              <div key={w.id} className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <GripVertical className="size-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm truncate">{WIDGET_LABELS[w.id]}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => move(i, i - 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move up">
+                    ↑
+                  </button>
+                  <button onClick={() => move(i, i + 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move down">
+                    ↓
+                  </button>
+                  <button onClick={() => toggle(w.id)} className="size-7 grid place-items-center rounded hover:bg-secondary" aria-label="Toggle visibility">
+                    {w.visible ? <Eye className="size-3.5 text-brand" /> : <EyeOff className="size-3.5 text-muted-foreground" />}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -654,14 +664,14 @@ function Kpi({
     <Link
       to={to as "/"}
       search={search as never}
-      className="p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group"
+      className="p-4 sm:p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group"
     >
       <div className="flex items-center justify-between text-muted-foreground mb-2">
-        <span className="text-[10px] uppercase tracking-widest">{label}</span>
-        <span className="group-hover:text-brand transition">{icon}</span>
+        <span className="text-[10px] uppercase tracking-widest truncate">{label}</span>
+        <span className="group-hover:text-brand transition shrink-0">{icon}</span>
       </div>
-      <p className={"text-3xl font-heading " + (accent ?? "text-foreground")}>{value}</p>
-      {hint && <p className="text-[10px] text-muted-foreground mt-1">{hint}</p>}
+      <p className={"text-2xl sm:text-3xl font-heading " + (accent ?? "text-foreground")}>{value}</p>
+      {hint && <p className="text-[10px] text-muted-foreground mt-1 truncate">{hint}</p>}
     </Link>
   );
 }
@@ -693,13 +703,13 @@ function MoneyCard({
     <Link
       to={to as "/"}
       search={search as never}
-      className="p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition"
+      className="p-4 sm:p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition"
     >
-      <div className={"size-12 rounded-xl grid place-items-center " + accent}>{icon}</div>
-      <div>
-        <p className="text-xs text-muted-foreground uppercase tracking-widest">{label}</p>
-        <p className="text-2xl font-heading text-foreground mt-1">{value}</p>
-        <p className="text-[11px] text-muted-foreground">{sub}</p>
+      <div className={"size-12 rounded-xl grid place-items-center shrink-0 " + accent}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground uppercase tracking-widest truncate">{label}</p>
+        <p className="text-xl sm:text-2xl font-heading text-foreground mt-1">{value}</p>
+        <p className="text-[11px] text-muted-foreground truncate">{sub}</p>
       </div>
     </Link>
   );
