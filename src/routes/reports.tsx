@@ -265,32 +265,44 @@ function Row({ label, value, bold, accent }: {
 }
 
 /* ===================== MEMBER REPORT ===================== */
-const WORKOUT_TEMPLATES = {
-  PPL: [
-    { day: "Day 1 (Push)", items: "Flat Bench Press 4x8 · Overhead DB Press 3x10 · Incline Cable Flyes 3x12 · Overhead Tricep Extension 3x12" },
-    { day: "Day 2 (Pull)", items: "Conventional Barbell Deadlifts 3x5 · Lat Pulldown 3x10 · Dumbbell Hammer Curls 3x12 · Face Pulls 3x15" },
-    { day: "Day 3 (Legs)", items: "Barbell Back Squats 4x8 · Leg Press Machine 3x12 · Standing Calf Raises 4x15 · Lying Leg Curls 3x12" },
-    { day: "Day 4 (Push)", items: "Incline DB Press 4x10 · Military Press 3x8 · Tricep Rope Pushdowns 3x12 · Lateral Raises 4x15" },
-    { day: "Day 5 (Pull)", items: "Barbell Bent Over Rows 3x8 · Weighted Pullups 3x8 · Cable Bicep Curls 3x12 · DB Shrugs 3x12" },
-    { day: "Day 6 (Legs/Abs)", items: "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Ab Planks 3x1min" },
-  ],
-  BroSplit: [
-    { day: "Day 1 (Chest)", items: "Barbell Bench Press 4x8 · Incline DB Press 3x10 · Cable Crossover 3x15 · Weighted Dips 3x12" },
-    { day: "Day 2 (Back)", items: "Deadlift 3x5 · Lat Pulldown 4x10 · One Arm DB Row 3x10 · DB Pullovers 3x12" },
-    { day: "Day 3 (Shoulders)", items: "Overhead Press 4x8 · Lateral Raises 4x15 · Front DB Raises 3x12 · Rear Delt Flyes 3x15" },
-    { day: "Day 4 (Legs)", items: "Squats 4x10 · Hack Squats 3x12 · Hamstring Curls 3x12 · Seated Calf Raises 4x15" },
-    { day: "Day 5 (Arms)", items: "Barbell Curls 4x10 · Skullcrushers 4x12 · Hammer Curls 3x12 · Cable Tricep Extensions 3x15" },
-    { day: "Day 6 (Abs/Cardio)", items: "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)" },
-  ],
-  WeightLoss: [
-    { day: "Day 1 (Full Body)", items: "Burpees 3x15 · Jump Squats 3x20 · Pushups 3x15 · Kettlebell Swings 3x20 · Treadmill 15min" },
-    { day: "Day 2 (LISS)", items: "Low Intensity Steady State Walking/Jogging on 6% Incline - 45 Minutes" },
-    { day: "Day 3 (Core HIIT)", items: "Mountain Climbers 4x30s · Russian Twists 4x25 · Bicycle Crunches 4x20 · Planks 4x1min" },
-    { day: "Day 4 (Cardio Burn)", items: "Stationary Cycling - 30 minutes (Alternating 1min Sprint / 1min Recovery)" },
-    { day: "Day 5 (Upper/Abs)", items: "Dumbbell Thrusters 3x12 · Dumbbell Rows 3x15 · Ab Wheel Rollouts 3x12 · HIIT Rower 15min" },
-    { day: "Day 6 (Yoga Flow)", items: "Stretching & Yoga Recovery Workout - 45 Minutes (Flexibility & Joint Health)" },
-  ]
-};
+const DEFAULT_WORKOUTS = [
+  {
+    name: "Push-Pull-Legs (PPL) Split",
+    desc: "Hypertrophy 6-day split",
+    days: [
+      "Flat Bench Press 4x8 · Shoulder Press 3x10 · Cable Flyes 3x12 · Overhead Tricep Extension 3x12",
+      "Conventional Deadlift 3x5 · Lat Pulldowns 3x10 · Hammer Bicep Curls 3x12 · Face Pulls 3x15",
+      "Barbell Squats 4x8 · Leg Press 3x12 · Calf Raises 4x15 · Lying Leg Curls 3x12",
+      "Incline DB Press 4x10 · Military Press 3x8 · Tricep Pushdowns 3x12 · Lateral Raises 4x15",
+      "Bent Over Rows 3x8 · Pullups 3x8 · Cable Bicep Curls 3x12 · DB Shrugs 3x12",
+      "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Planks 3x1min"
+    ]
+  },
+  {
+    name: "Classic Bro Split",
+    desc: "Target 1 muscle group per day",
+    days: [
+      "Bench Press 4x8 · Incline DB Press 3x10 · Pec Deck Flyes 3x12 · Dips 3x12",
+      "Deadlifts 3x5 · Lat Pulldowns 4x10 · Seated Cable Rows 3x10 · DB Pullovers 3x12",
+      "Overhead Press 4x8 · Lateral Raises 4x15 · Front Raises 3x12 · Shrugs 3x15",
+      "Squats 4x10 · Leg Press 3x12 · Hamstring Curls 3x12 · Calf Raises 4x15",
+      "Barbell Curls 4x10 · Skullcrushers 4x12 · Hammer Curls 3x12 · Cable Tricep Pushdowns 3x15",
+      "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)"
+    ]
+  },
+  {
+    name: "HIIT Cardio & Abs Plan",
+    desc: "Calorie-burning steady cardio plan",
+    days: [
+      "Burpees 3x15 · Jump Squats 3x20 · Pushups 3x15 · Kettlebell Swings 3x20 · Treadmill 15min",
+      "Low Intensity Steady State Walking/Jogging on 6% Incline - 45 Minutes",
+      "Mountain Climbers 4x30s · Russian Twists 4x25 · Bicycle Crunches 4x20 · Planks 4x1min",
+      "Stationary Cycling - 30 minutes (Alternating 1min Sprint / 1min Recovery)",
+      "Dumbbell Thrusters 3x12 · Dumbbell Rows 3x15 · Ab Wheel Rollouts 3x12 · HIIT Rower 15min",
+      "Stretching & Yoga Recovery Workout - 45 Minutes (Flexibility & Joint Health)"
+    ]
+  }
+];
 
 function MemberReport() {
   const { q: initial } = Route.useSearch();
@@ -300,7 +312,8 @@ function MemberReport() {
 
   // States for Modals
   const [workoutOpen, setWorkoutOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<"PPL" | "BroSplit" | "WeightLoss">("PPL");
+  const [branchTemplates, setBranchTemplates] = useState<any[]>(DEFAULT_WORKOUTS);
+  const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number>(0);
 
   const [progressOpen, setProgressOpen] = useState(false);
   const [weight, setWeight] = useState("");
@@ -340,6 +353,24 @@ function MemberReport() {
       .order("checked_in_at", { ascending: false })
       .limit(60)
       .then(({ data }) => setAttendanceLogs(data ?? []));
+
+    // Fetch customizable branch templates dynamically from Supabase
+    const branchId = getActiveBranchId();
+    if (branchId) {
+      supabase
+        .from("branches")
+        .select("workout_templates")
+        .eq("id", branchId)
+        .single()
+        .then(({ data }) => {
+          if (data?.workout_templates && Array.isArray(data.workout_templates) && data.workout_templates.length > 0) {
+            setBranchTemplates(data.workout_templates);
+          } else {
+            setBranchTemplates(DEFAULT_WORKOUTS);
+          }
+        })
+        .catch(() => {});
+    }
   }, [m?.id]);
 
   const status = m ? memberStatus(m) : null;
@@ -393,7 +424,11 @@ function MemberReport() {
   // Handle Workout Plan save
   const handleSaveWorkout = async () => {
     if (!m) return;
-    const routine = WORKOUT_TEMPLATES[selectedTemplate];
+    const template = branchTemplates[selectedTemplateIdx];
+    const routine = template.days.map((item: string, index: number) => ({
+      day: `Day ${index + 1}`,
+      items: item
+    }));
 
     localStorage.setItem(`fs_workout_${m.id}`, JSON.stringify(routine));
 
@@ -748,18 +783,14 @@ function MemberReport() {
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2 font-bold">Select Template Preset</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    { v: "PPL", label: "PPL (Push-Pull-Legs) Split", desc: "Scientific 6-day hypertrophy split" },
-                    { v: "BroSplit", label: "Classic Bro-Split Routine", desc: "Target 1 muscle group per day" },
-                    { v: "WeightLoss", label: "HIIT Cardio & Abs Plan", desc: "Calorie-burning steady cardio plan" }
-                  ].map((temp) => (
+                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                  {branchTemplates.map((temp, index) => (
                     <button
-                      key={temp.v}
-                      onClick={() => setSelectedTemplate(temp.v as any)}
-                      className={"p-3 rounded-xl border text-left transition " + (selectedTemplate === temp.v ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                      key={index}
+                      onClick={() => setSelectedTemplateIdx(index)}
+                      className={"p-3 rounded-xl border text-left transition w-full " + (selectedTemplateIdx === index ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
                     >
-                      <p className="text-sm font-semibold text-foreground">{temp.label}</p>
+                      <p className="text-sm font-semibold text-foreground">{temp.name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{temp.desc}</p>
                     </button>
                   ))}
@@ -836,6 +867,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+// Reusable Info field
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -845,6 +877,7 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Reusable Field wrapper
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="block">
