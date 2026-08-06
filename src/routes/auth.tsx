@@ -44,6 +44,20 @@ function Auth() {
         if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
         if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
         if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); setLoading(false); return; }
+
+        // Check if the owner's email already exists in gym_owners database
+        const { data: existingOwner } = await supabase
+          .from("gym_owners")
+          .select("id")
+          .eq("email", form.email.trim().toLowerCase())
+          .maybeSingle();
+
+        if (existingOwner) {
+          toast.error("This email is already registered! Please sign in instead.", { duration: 6000 });
+          setLoading(false);
+          return;
+        }
+
         await signUp(form.email, form.password, form.name, form.phone);
         setMode("verify");
         toast.success("Verification email sent successfully!");

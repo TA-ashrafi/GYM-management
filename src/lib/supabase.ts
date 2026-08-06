@@ -42,12 +42,21 @@ export function clearActiveBranch() {
  * @returns Array of branch objects or empty array on error
  */
 export async function fetchBranches() {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("*")
-    .order("created_at", { ascending: true });
-  if (error) { console.error(error); return []; }
-  return data ?? [];
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("branches")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data ?? [];
+  } catch (err) {
+    console.error("Error in fetchBranches:", err);
+    return [];
+  }
 }
 
 // ==================== Member Queries ====================
