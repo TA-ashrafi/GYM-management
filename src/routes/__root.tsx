@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
 import { gym } from "@/lib/gym-store";
+import { useApplyTheme } from "@/lib/theme";
 
 const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
 
@@ -44,6 +45,9 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const [ready, setReady] = useState(false);
+
+  // Apply theme & preset globally at root level, ensuring perfect persistence across logins, logouts, reloads, and landing/auth screens instantly!
+  useApplyTheme();
 
   useEffect(() => {
     // Run only once on initial mount — do not re-run on tab or window switch.
@@ -118,9 +122,9 @@ function RootComponent() {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <div className="size-12 bg-brand rounded-xl grid place-items-center mx-auto mb-3">
-              <span className="text-xl font-heading text-brand-foreground">FS</span>
+              <span className="text-xl font-heading text-brand-foreground font-bold">FS</span>
             </div>
-            <p className="text-muted-foreground text-sm">Loading...</p>
+            <p className="text-muted-foreground text-sm font-semibold">Loading...</p>
           </div>
         </div>
         <Toaster position="top-right" />
