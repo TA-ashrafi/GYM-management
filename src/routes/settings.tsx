@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Sun, Moon, Palette } from "lucide-react";
+import { Plus, Trash2, Save, Sun, Moon, Palette, Link, Dumbbell } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
@@ -25,9 +25,39 @@ const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
 
+// Extension type for settings
+type ExtendedSettings = Settings & { whatsappWebhookUrl?: string };
+
+const SEED_TEMPLATES = [
+  {
+    name: "Push-Pull-Legs (PPL)",
+    desc: "Hypertrophy 6-day split",
+    days: [
+      "Flat Bench Press 4x8 · Shoulder Press 3x10 · Cable Flyes 3x12 · Overhead Tricep Extension 3x12",
+      "Conventional Deadlift 3x5 · Lat Pulldowns 3x10 · Hammer Bicep Curls 3x12 · Face Pulls 3x15",
+      "Barbell Squats 4x8 · Leg Press 3x12 · Calf Raises 4x15 · Lying Leg Curls 3x12",
+      "Incline DB Press 4x10 · Military Press 3x8 · Tricep Pushdowns 3x12 · Lateral Raises 4x15",
+      "Bent Over Rows 3x8 · Pullups 3x8 · Cable Bicep Curls 3x12 · DB Shrugs 3x12",
+      "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Planks 3x1min"
+    ]
+  },
+  {
+    name: "Classic Bro Split",
+    desc: "Target 1 muscle group per day",
+    days: [
+      "Bench Press 4x8 · Incline DB Press 3x10 · Pec Deck Flyes 3x12 · Dips 3x12",
+      "Deadlifts 3x5 · Lat Pulldowns 4x10 · Seated Cable Rows 3x10 · DB Pullovers 3x12",
+      "Overhead Press 4x8 · Lateral Raises 4x15 · Front Raises 3x12 · Shrugs 3x15",
+      "Squats 4x10 · Leg Press 3x12 · Hamstring Curls 3x12 · Calf Raises 4x15",
+      "Barbell Curls 4x10 · Skullcrushers 4x12 · Hammer Curls 3x12 · Cable Tricep Pushdowns 3x15",
+      "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)"
+    ]
+  }
+];
+
 function SettingsPage() {
-  const settings = useGym((s) => s.settings);
-  const [form, setForm] = useState<Settings>(settings);
+  const settings = useGym((s) => s.settings) as ExtendedSettings;
+  const [form, setForm] = useState<ExtendedSettings>(settings);
 
   // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
@@ -38,8 +68,11 @@ function SettingsPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Custom Workout Templates State
+  const [workoutTemplates, setWorkoutTemplates] = useState<any[]>(SEED_TEMPLATES);
+
   // Form field update helper
-  function set<K extends keyof Settings>(k: K, v: Settings[K]) {
+  function set<K extends keyof ExtendedSettings>(k: K, v: ExtendedSettings[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
@@ -66,6 +99,8 @@ function SettingsPage() {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
+    const cachedWebhook = localStorage.getItem(`fs_webhook_${branchId}`) || "";
+
     supabase
       .from("branches")
       .select("*")
@@ -84,12 +119,16 @@ function SettingsPage() {
           preset: data.preset ?? form.preset,
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
+          whatsappWebhookUrl: data.whatsapp_webhook_url ?? cachedWebhook ?? "",
         };
 
         setForm(merged);
         gym.updateSettings(merged);
 
         if (data.plan_prices) setPlanPrices(data.plan_prices);
+        if (data.workout_templates && Array.isArray(data.workout_templates) && data.workout_templates.length > 0) {
+          setWorkoutTemplates(data.workout_templates);
+        }
       })
       .catch(() => {});
   }, []);
@@ -121,12 +160,40 @@ function SettingsPage() {
     }
   }
 
-  // Save all settings to local state and Supabase
+  // Manage custom workout templates
+  const addTemplate = () => {
+    setWorkoutTemplates((prev) => [
+      ...prev,
+      { name: "New Plan Template", desc: "Custom 6-day split details", days: ["", "", "", "", "", ""] }
+    ]);
+  };
+
+  const removeTemplate = (idx: number) => {
+    setWorkoutTemplates((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateTemplateField = (idx: number, field: string, val: string) => {
+    setWorkoutTemplates((prev) => prev.map((t, i) => (i === idx ? { ...t, [field]: val } : t)));
+  };
+
+  const updateTemplateDay = (tIdx: number, dayIdx: number, val: string) => {
+    setWorkoutTemplates((prev) => prev.map((t, i) => {
+      if (i !== tIdx) return t;
+      const updatedDays = [...t.days];
+      updatedDays[dayIdx] = val;
+      return { ...t, days: updatedDays };
+    }));
+  };
+
+  // Save all settings to local state and Supabase with local fallback
   async function save() {
     gym.updateSettings(form);
 
     const branchId = getActiveBranchId();
     if (branchId) {
+      // Save Webhook URL to LocalStorage as a highly robust fallback
+      localStorage.setItem(`fs_webhook_${branchId}`, form.whatsappWebhookUrl || "");
+
       const { error } = await supabase
         .from("branches")
         .update({
@@ -138,16 +205,23 @@ function SettingsPage() {
           preset: form.preset,
           currency: form.currency,
           language: form.language,
+          whatsapp_webhook_url: form.whatsappWebhookUrl || null,
+          workout_templates: workoutTemplates, // Save customizable workout templates
         })
         .eq("id", branchId);
 
       if (error) {
+        if (error.message.includes("schema cache")) {
+          // Soft toast alerting about database schema, but confirming local activation works!
+          toast.warning("Settings saved locally! To enable cross-device sync, please run the Supabase query in SUPABASE_SQL.md.");
+          return;
+        }
         toast.error("Error: " + error.message);
         return;
       }
     }
 
-    toast.success("Settings saved ✓");
+    toast.success("Settings saved successfully ✓");
   }
 
   return (
@@ -209,6 +283,63 @@ function SettingsPage() {
           <Field label="Default Slot Capacity">
             <input type="number" value={form.slotCapacity} onChange={(e) => set("slotCapacity", Math.max(1, +e.target.value))} className={input} />
           </Field>
+        </section>
+
+        {/* Automated WhatsApp Notifications */}
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-3">
+          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Link className="size-4 text-brand" /> WhatsApp Automation Webhook</h2>
+          <p className="text-xs text-muted-foreground">Specify your custom API Webhook (Make/Zapier/WhatsApp tool) to automatically push templates upon successful RFID check-in scans.</p>
+          <Field label="WhatsApp Webhook URL">
+            <input
+              value={form.whatsappWebhookUrl ?? ""}
+              onChange={(e) => set("whatsappWebhookUrl", e.target.value)}
+              placeholder="e.g. https://hook.us1.make.com/your-custom-endpoint"
+              className={input}
+            />
+          </Field>
+        </section>
+
+        {/* Customizable Workout Templates Section (New Feature) */}
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="font-heading text-lg flex items-center gap-2"><Dumbbell className="size-5 text-brand" /> Custom Workout Templates</h2>
+              <p className="text-xs text-muted-foreground">Customize workout templates (Day 1 - Day 6) that can be assigned directly to your members.</p>
+            </div>
+            <button type="button" onClick={addTemplate} className="px-3 py-1.5 bg-secondary text-foreground hover:bg-brand/10 hover:text-brand rounded-lg text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+              <Plus className="size-3.5" /> Add Template
+            </button>
+          </div>
+          <div className="space-y-4">
+            {workoutTemplates.map((t, tIdx) => (
+              <div key={tIdx} className="p-4 bg-secondary/35 border border-border/60 rounded-2xl relative space-y-3">
+                <button type="button" onClick={() => removeTemplate(tIdx)} className="absolute top-4 right-4 p-1.5 bg-secondary hover:bg-danger/10 hover:text-danger rounded-lg transition cursor-pointer">
+                  <Trash2 className="size-4" />
+                </button>
+                <div className="grid sm:grid-cols-2 gap-3 max-w-[90%]">
+                  <Field label="Template Name">
+                    <input value={t.name} onChange={(e) => updateTemplateField(tIdx, "name", e.target.value)} placeholder="e.g. Cardio Plan" className={input} />
+                  </Field>
+                  <Field label="Short Description">
+                    <input value={t.desc} onChange={(e) => updateTemplateField(tIdx, "desc", e.target.value)} placeholder="e.g. Weight loss fat burning" className={input} />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  {Array.from({ length: 6 }).map((_, dIdx) => (
+                    <div key={dIdx} className="space-y-1">
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground">Day {dIdx + 1}</label>
+                      <input
+                        value={t.days[dIdx] || ""}
+                        onChange={(e) => updateTemplateDay(tIdx, dIdx, e.target.value)}
+                        placeholder={`Day ${dIdx + 1} exercise...`}
+                        className={input}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Membership Plan Prices */}

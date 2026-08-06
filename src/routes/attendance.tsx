@@ -127,6 +127,36 @@ function Attendance() {
         type,
       });
       toast.success(type === "IN" ? `✓ ${m.name} — Punch IN` : `👋 ${m.name} — Punch OUT`);
+
+      // Trigger Automated WhatsApp Webhook dynamically (Zero-click alert feature)
+      supabase
+        .from("branches")
+        .select("whatsapp_webhook_url")
+        .eq("id", branchId)
+        .single()
+        .then(({ data }) => {
+          if (data?.whatsapp_webhook_url) {
+            try {
+              fetch(data.whatsapp_webhook_url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  member_id: m.id,
+                  name: m.name,
+                  phone: m.phone,
+                  roll_no: m.rollNo,
+                  time: new Date().toLocaleTimeString("en-IN"),
+                  date: new Date().toLocaleDateString("en-IN"),
+                  type,
+                  message: `Hi ${m.name}, welcome to Fitness Streak! Checked ${type} at ${new Date().toLocaleTimeString("en-IN")}.`
+                }),
+              });
+            } catch (e) {
+              console.error("Webhook trigger failed", e);
+            }
+          }
+        });
+
     } else {
       toast.error("Punch failed: " + error.message);
     }
