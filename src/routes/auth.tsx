@@ -6,7 +6,7 @@ import { signIn, signUp } from "@/lib/auth";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Access Gym OS — Fitness Streak" }] }),
+  head: () => ({ meta: [{ title: "Login — Gym OS" }] }),
   component: Auth,
 });
 
@@ -104,7 +104,7 @@ function Auth() {
         </Link>
 
         <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand/10 border border-brand/20 text-brand text-xs font-semibold rounded-full uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand/10 border border-brand/20 text-brand text-xs font-bold rounded-full uppercase tracking-wider">
             <Sparkles className="size-3.5" /> High Performance Gym Management
           </div>
           <h2 className="text-4xl font-heading leading-tight font-extrabold text-foreground tracking-tight">
@@ -120,7 +120,7 @@ function Auth() {
               </>
             )}
           </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-sm font-medium">
             Manage members, track physical attributes, schedule preferred time slots, accept upfront payments, and setup RFID scanning dynamically in real-time.
           </p>
         </div>
@@ -130,7 +130,7 @@ function Auth() {
 
       {/* Right Panel - Cinematic Authentication Form */}
       <div className="flex items-center justify-center p-4 sm:p-12 min-h-screen lg:col-span-7 bg-[radial-gradient(circle_at_bottom_left,rgba(var(--color-accent),0.05),transparent)]">
-        <div className="w-full max-w-md bg-card/60 backdrop-blur-md border border-border p-6 sm:p-8 rounded-3xl shadow-2xl animate-fade-in relative">
+        <div className="w-full max-w-md bg-card border border-border p-6 sm:p-8 rounded-3xl shadow-2xl animate-fade-in relative">
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
@@ -144,27 +144,27 @@ function Auth() {
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-heading font-extrabold text-foreground tracking-tight mb-1">
-            {mode === "login" ? "Welcome Back" : "Register Gym OS"}
+            {mode === "login" ? "Sign In" : "Create Account"}
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground mb-6 font-medium">
-            {mode === "login" ? "Enter your admin credentials to launch console" : "Begin your automated gym onboarding setup"}
+            {mode === "login" ? "Access your gym dashboard console" : "Begin your automated gym onboarding setup"}
           </p>
 
           {/* Cinematic Tab Toggles */}
           <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-6 border border-border/10">
             <button onClick={() => setMode("login")}
               className={"flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer " +
-                (mode === "login" ? "bg-card shadow-sm text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}>
-              Login Console
+                (mode === "login" ? "bg-card shadow-sm text-foreground font-bold animate-fade-in" : "text-muted-foreground hover:text-foreground")}>
+              Login
             </button>
             <button onClick={() => setMode("signup")}
               className={"flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer " +
-                (mode === "signup" ? "bg-card shadow-sm text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}>
-              Onboard Sign Up
+                (mode === "signup" ? "bg-card shadow-sm text-foreground font-bold animate-fade-in" : "text-muted-foreground hover:text-foreground")}>
+              Sign Up
             </button>
           </div>
 
-          <form onSubmit={submit} className="space-y-4" autoComplete="off">
+          <form onSubmit={submit} className="space-y-4">
             {/* Sign Up Fields */}
             {mode === "signup" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -176,7 +176,6 @@ function Auth() {
                       value={form.name}
                       onChange={(e) => set("name", e.target.value)}
                       placeholder="Your full name"
-                      autoComplete="off"
                       className={inp + " pl-10"}
                       required
                     />
@@ -190,7 +189,6 @@ function Auth() {
                       value={form.phone}
                       onChange={(e) => set("phone", e.target.value)}
                       placeholder="+91 9000000000"
-                      autoComplete="off"
                       className={inp + " pl-10"}
                     />
                   </div>
@@ -208,7 +206,6 @@ function Auth() {
                   value={form.email}
                   onChange={(e) => set("email", e.target.value)}
                   placeholder="you@example.com"
-                  autoComplete="off"
                   className={inp + " pl-10"}
                   required
                 />
@@ -225,7 +222,6 @@ function Auth() {
                   value={form.password}
                   onChange={(e) => set("password", e.target.value)}
                   placeholder="••••••••"
-                  autoComplete="new-password"
                   className={inp + " pl-10 pr-10"}
                   required
                 />
@@ -273,7 +269,6 @@ function Auth() {
                     value={form.confirmPassword}
                     onChange={(e) => set("confirmPassword", e.target.value)}
                     placeholder="••••••••"
-                    autoComplete="new-password"
                     className={inp + " pl-10"}
                     required
                   />
@@ -289,7 +284,7 @@ function Auth() {
             >
               {loading
                 ? "Please wait..."
-                : mode === "login" ? "Sign In console →" : "Onboard Gym OS 💪"}
+                : mode === "login" ? "Sign In →" : "Sign Up 💪"}
             </button>
           </form>
 
