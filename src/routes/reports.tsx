@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Printer, Search, ChevronLeft, ChevronRight, Calendar, User, ShieldCheck } from "lucide-react";
+import { Printer, Search, ChevronLeft, ChevronRight, Calendar, User, ShieldCheck, Dumbbell, LineChart as ChartIcon, Plus, Save, Trash2, X, PlusCircle } from "lucide-react";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
 import { memberStatus, daysUntil, daysSince, money } from "@/lib/gym-store";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Reports — Fitness Streak" }] }),
@@ -27,8 +29,8 @@ function Reports() {
   return (
     <div className="p-4 sm:p-8 max-w-5xl w-full">
       <PageHeader
-        title="Reports"
-        subtitle="Monthly gym summary + individual member reports"
+        title="Reports & Analytics Console"
+        subtitle="Monthly gym summary + member diet and exercise profiles"
       />
 
       {/* Tabs */}
@@ -45,7 +47,7 @@ function Reports() {
           className={"px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
             (tab === "member" ? "bg-card shadow text-foreground" : "text-muted-foreground")}
         >
-          Member Report
+          Member Progress OS
         </button>
       </div>
 
@@ -95,7 +97,7 @@ function MonthlyReport() {
 
   const memberRevenue = payments.reduce((a, p) => a + (p.amount ?? 0), 0);
 
-  // Store profit = (sell - cost) × qty — cost products table se (fixing profit-only requested calculation)
+  // Store profit = (sell - cost) × qty
   const storeRevenue = useMemo(() => {
     return sales.reduce((total: number, sale: any) => {
       const items = Array.isArray(sale.items) ? sale.items : [];
@@ -253,7 +255,7 @@ function Row({ label, value, bold, accent }: {
   label: string; value: string; bold?: boolean; accent?: string;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-1">
       <span className={"text-sm " + (bold ? "font-semibold text-foreground" : "text-muted-foreground")}>{label}</span>
       <span className={"text-sm " + (bold ? "font-semibold " : "") + (accent ?? "text-foreground")}>
         {value}
@@ -263,14 +265,57 @@ function Row({ label, value, bold, accent }: {
 }
 
 /* ===================== MEMBER REPORT ===================== */
+const WORKOUT_TEMPLATES = {
+  PPL: [
+    { day: "Day 1 (Push)", items: "Flat Bench Press 4x8 · Overhead DB Press 3x10 · Incline Cable Flyes 3x12 · Overhead Tricep Extension 3x12" },
+    { day: "Day 2 (Pull)", items: "Conventional Barbell Deadlifts 3x5 · Lat Pulldown 3x10 · Dumbbell Hammer Curls 3x12 · Face Pulls 3x15" },
+    { day: "Day 3 (Legs)", items: "Barbell Back Squats 4x8 · Leg Press Machine 3x12 · Standing Calf Raises 4x15 · Lying Leg Curls 3x12" },
+    { day: "Day 4 (Push)", items: "Incline DB Press 4x10 · Military Press 3x8 · Tricep Rope Pushdowns 3x12 · Lateral Raises 4x15" },
+    { day: "Day 5 (Pull)", items: "Barbell Bent Over Rows 3x8 · Weighted Pullups 3x8 · Cable Bicep Curls 3x12 · DB Shrugs 3x12" },
+    { day: "Day 6 (Legs/Abs)", items: "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Ab Planks 3x1min" },
+  ],
+  BroSplit: [
+    { day: "Day 1 (Chest)", items: "Barbell Bench Press 4x8 · Incline DB Press 3x10 · Cable Crossover 3x15 · Weighted Dips 3x12" },
+    { day: "Day 2 (Back)", items: "Deadlift 3x5 · Lat Pulldown 4x10 · One Arm DB Row 3x10 · DB Pullovers 3x12" },
+    { day: "Day 3 (Shoulders)", items: "Overhead Press 4x8 · Lateral Raises 4x15 · Front DB Raises 3x12 · Rear Delt Flyes 3x15" },
+    { day: "Day 4 (Legs)", items: "Squats 4x10 · Hack Squats 3x12 · Hamstring Curls 3x12 · Seated Calf Raises 4x15" },
+    { day: "Day 5 (Arms)", items: "Barbell Curls 4x10 · Skullcrushers 4x12 · Hammer Curls 3x12 · Cable Tricep Extensions 3x15" },
+    { day: "Day 6 (Abs/Cardio)", items: "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)" },
+  ],
+  WeightLoss: [
+    { day: "Day 1 (Full Body)", items: "Burpees 3x15 · Jump Squats 3x20 · Pushups 3x15 · Kettlebell Swings 3x20 · Treadmill 15min" },
+    { day: "Day 2 (LISS)", items: "Low Intensity Steady State Walking/Jogging on 6% Incline - 45 Minutes" },
+    { day: "Day 3 (Core HIIT)", items: "Mountain Climbers 4x30s · Russian Twists 4x25 · Bicycle Crunches 4x20 · Planks 4x1min" },
+    { day: "Day 4 (Cardio Burn)", items: "Stationary Cycling - 30 minutes (Alternating 1min Sprint / 1min Recovery)" },
+    { day: "Day 5 (Upper/Abs)", items: "Dumbbell Thrusters 3x12 · Dumbbell Rows 3x15 · Ab Wheel Rollouts 3x12 · HIIT Rower 15min" },
+    { day: "Day 6 (Yoga Flow)", items: "Stretching & Yoga Recovery Workout - 45 Minutes (Flexibility & Joint Health)" },
+  ]
+};
+
 function MemberReport() {
   const { q: initial } = Route.useSearch();
   const [q, setQ] = useState(initial ?? "");
   const [members, setMembers] = useState<any[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
-  useEffect(() => {
+  // States for Modals
+  const [workoutOpen, setWorkoutOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<"PPL" | "BroSplit" | "WeightLoss">("PPL");
+
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [weight, setWeight] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
+  const [muscleMass, setMuscleMass] = useState("");
+  const [chest, setChest] = useState("");
+  const [biceps, setBiceps] = useState("");
+  const [waist, setWaist] = useState("");
+
+  const loadData = () => {
     fetchMembers().then((data) => setMembers(data || []));
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const matches = q
@@ -330,6 +375,63 @@ function MemberReport() {
     }, {});
   }, [attendanceLogs]);
 
+  // Handle Workout Plan save
+  const handleSaveWorkout = async () => {
+    if (!m) return;
+    const routine = WORKOUT_TEMPLATES[selectedTemplate];
+
+    const { error } = await supabase
+      .from("members")
+      .update({ workout_routine: routine })
+      .eq("id", m.id);
+
+    if (!error) {
+      toast.success("Workout Routine builder updated successfully!");
+      loadData();
+      setWorkoutOpen(false);
+    } else {
+      toast.error(error.message);
+    }
+  };
+
+  // Handle Progress entry save
+  const handleSaveProgress = async () => {
+    if (!m) return;
+    if (!weight) { toast.error("Weight is required"); return; }
+
+    const newLog = {
+      date: new Date().toLocaleDateString("en-IN"),
+      weight: +weight,
+      body_fat: bodyFat ? +bodyFat : null,
+      muscle_mass: muscleMass ? +muscleMass : null,
+      chest: chest ? +chest : null,
+      biceps: biceps ? +biceps : null,
+      waist: waist ? +waist : null,
+    };
+
+    const existingLogs = Array.isArray(m.progress_logs) ? m.progress_logs : [];
+    const updatedLogs = [...existingLogs, newLog].slice(-100); // keep last 100 entries
+
+    const { error } = await supabase
+      .from("members")
+      .update({ progress_logs: updatedLogs })
+      .eq("id", m.id);
+
+    if (!error) {
+      toast.success("Physical Progress assessment recorded! 📉");
+      setWeight("");
+      setBodyFat("");
+      setMuscleMass("");
+      setChest("");
+      setBiceps("");
+      setWaist("");
+      loadData();
+      setProgressOpen(false);
+    } else {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <>
       <div className="bg-card border border-border rounded-2xl p-4 mb-6 no-print">
@@ -352,10 +454,24 @@ function MemberReport() {
 
       {m && diet ? (
         <article className="bg-card border border-border rounded-2xl p-4 sm:p-8 print:bg-white print:text-black space-y-6">
-          <div className="flex justify-end no-print mb-2">
+          <div className="flex justify-between items-center no-print mb-2 flex-wrap gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setWorkoutOpen(true)}
+                className="px-4 py-2 bg-brand text-brand-foreground rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition"
+              >
+                <Dumbbell className="size-4" /> Assign Workout Plan
+              </button>
+              <button
+                onClick={() => setProgressOpen(true)}
+                className="px-4 py-2 bg-secondary text-foreground border border-border rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition"
+              >
+                <PlusCircle className="size-4" /> Add Progress Log
+              </button>
+            </div>
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 bg-brand text-brand-foreground rounded-xl text-sm font-semibold inline-flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-secondary border border-border text-foreground rounded-xl text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
             >
               <Printer className="size-4" /> Print Report
             </button>
@@ -418,6 +534,72 @@ function MemberReport() {
               <Info label="Target Calories" value={`${diet.targetKcal} kcal/day`} />
               <Info label="Medical" value={m.medical || "None reported"} />
             </div>
+          </Block>
+
+          {/* Member's Assigned 6-Day Workout Routine */}
+          <Block title="Assigned 6-Day Workout Routine">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {Array.isArray(m.workout_routine) && m.workout_routine.length > 0 ? (
+                m.workout_routine.map((w: any, index: number) => (
+                  <div key={index} className="p-4 bg-secondary/30 border border-border/40 rounded-xl flex flex-col gap-1.5">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-brand">{w.day || `Day ${index + 1}`}</span>
+                    <p className="text-xs text-foreground font-medium leading-relaxed">{w.items || "Rest Day / Active Stretching"}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-8 text-center bg-secondary/20 border border-dashed border-border rounded-xl text-sm text-muted-foreground">
+                  No exercise plan assigned yet. Click the "Assign Workout Plan" button above to template a premium routine instantly!
+                </div>
+              )}
+            </div>
+          </Block>
+
+          {/* Member's Physical Progress Line Charts */}
+          <Block title="Physical Progress Progression Chart (Last 10 entries)">
+            {Array.isArray(m.progress_logs) && m.progress_logs.length > 0 ? (
+              <div className="space-y-6">
+                {/* Weight and Muscle progression */}
+                <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Weight & Muscle Progression (kg)</span>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={m.progress_logs.slice(-10)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <Tooltip contentStyle={tt} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Line type="monotone" name="Weight (kg)" dataKey="weight" stroke="var(--color-brand)" strokeWidth={2.5} />
+                        <Line type="monotone" name="Muscle Mass (kg)" dataKey="muscle_mass" stroke="var(--color-accent)" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Body Fat & Chest/Waist dimensions */}
+                <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Body Fat % and Core Dimensions (inches)</span>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={m.progress_logs.slice(-10)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <Tooltip contentStyle={tt} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Line type="monotone" name="Body Fat %" dataKey="body_fat" stroke="var(--color-danger)" strokeWidth={2} />
+                        <Line type="monotone" name="Chest (in)" dataKey="chest" stroke="var(--color-warn)" strokeWidth={1.5} />
+                        <Line type="monotone" name="Waist (in)" dataKey="waist" stroke="var(--color-info)" strokeWidth={1.5} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center bg-secondary/20 border border-dashed border-border rounded-xl text-sm text-muted-foreground">
+                No progress evaluations recorded yet. Log measurements to generate progression lines automatically!
+              </div>
+            )}
           </Block>
 
           <Block title="Membership & Payments">
@@ -515,9 +697,102 @@ function MemberReport() {
           Start typing to search for a member...
         </div>
       )}
+
+      {/* Assign Workout Plan Modal */}
+      {workoutOpen && m && (
+        <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={() => setWorkoutOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <button onClick={() => setWorkoutOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="size-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <Dumbbell className="size-6 text-brand" />
+              <div>
+                <h3 className="font-heading text-lg text-foreground">Assign Workout Plan</h3>
+                <p className="text-xs text-muted-foreground">Assign workout routine template for {m.name}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2 font-bold">Select Template Preset</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { v: "PPL", label: "PPL (Push-Pull-Legs) Split", desc: "Scientific 6-day hypertrophy split" },
+                    { v: "BroSplit", label: "Classic Bro-Split Routine", desc: "Target 1 muscle group per day" },
+                    { v: "WeightLoss", label: "HIIT Cardio & Abs Plan", desc: "Calorie-burning steady cardio plan" }
+                  ].map((temp) => (
+                    <button
+                      key={temp.v}
+                      onClick={() => setSelectedTemplate(temp.v as any)}
+                      className={"p-3 rounded-xl border text-left transition " + (selectedTemplate === temp.v ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                    >
+                      <p className="text-sm font-semibold text-foreground">{temp.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{temp.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setWorkoutOpen(false)} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+                <button onClick={handleSaveWorkout} className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                  <Save className="size-4" /> Save Routine
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Progress Logs Modal */}
+      {progressOpen && m && (
+        <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={() => setProgressOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-2xl relative">
+            <button onClick={() => setProgressOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="size-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <ChartIcon className="size-6 text-brand" />
+              <div>
+                <h3 className="font-heading text-lg text-foreground">Log Physical Assessment</h3>
+                <p className="text-xs text-muted-foreground">Log weight, fat %, and muscular measurements for {m.name}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Weight (kg) *">
+                  <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="70.5" className={input_field} required />
+                </Field>
+                <Field label="Body Fat %">
+                  <input type="number" step="0.1" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} placeholder="15.2" className={input_field} />
+                </Field>
+                <Field label="Muscle Mass (kg)">
+                  <input type="number" step="0.1" value={muscleMass} onChange={(e) => setMuscleMass(e.target.value)} placeholder="58.1" className={input_field} />
+                </Field>
+                <Field label="Chest (inches)">
+                  <input type="number" step="0.1" value={chest} onChange={(e) => setChest(e.target.value)} placeholder="39.5" className={input_field} />
+                </Field>
+                <Field label="Biceps (inches)">
+                  <input type="number" step="0.1" value={biceps} onChange={(e) => setBiceps(e.target.value)} placeholder="14.2" className={input_field} />
+                </Field>
+                <Field label="Waist (inches)">
+                  <input type="number" step="0.1" value={waist} onChange={(e) => setWaist(e.target.value)} placeholder="31.2" className={input_field} />
+                </Field>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setProgressOpen(false)} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+                <button onClick={handleSaveProgress} className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                  <Save className="size-4" /> Save Progress Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
+const input_field = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -536,6 +811,22 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="block">
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+const tt = {
+  background: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "8px",
+  fontSize: "12px",
+};
 
 function computeDiet(m: any) {
   const weight = m.weightKg ?? m.weight_kg ?? 70;

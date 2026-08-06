@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Sun, Moon, Palette } from "lucide-react";
+import { Plus, Trash2, Save, Sun, Moon, Palette, Link } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
@@ -25,9 +25,12 @@ const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
 
+// Extension type for settings
+type ExtendedSettings = Settings & { whatsappWebhookUrl?: string };
+
 function SettingsPage() {
-  const settings = useGym((s) => s.settings);
-  const [form, setForm] = useState<Settings>(settings);
+  const settings = useGym((s) => s.settings) as ExtendedSettings;
+  const [form, setForm] = useState<ExtendedSettings>(settings);
 
   // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
@@ -39,7 +42,7 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false);
 
   // Form field update helper
-  function set<K extends keyof Settings>(k: K, v: Settings[K]) {
+  function set<K extends keyof ExtendedSettings>(k: K, v: ExtendedSettings[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
@@ -84,6 +87,7 @@ function SettingsPage() {
           preset: data.preset ?? form.preset,
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
+          whatsappWebhookUrl: data.whatsapp_webhook_url ?? form.whatsappWebhookUrl ?? "",
         };
 
         setForm(merged);
@@ -138,6 +142,7 @@ function SettingsPage() {
           preset: form.preset,
           currency: form.currency,
           language: form.language,
+          whatsapp_webhook_url: form.whatsappWebhookUrl || null,
         })
         .eq("id", branchId);
 
@@ -208,6 +213,20 @@ function SettingsPage() {
           </Field>
           <Field label="Default Slot Capacity">
             <input type="number" value={form.slotCapacity} onChange={(e) => set("slotCapacity", Math.max(1, +e.target.value))} className={input} />
+          </Field>
+        </section>
+
+        {/* Automated WhatsApp Notifications */}
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-3">
+          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Link className="size-4 text-brand" /> WhatsApp Automation Webhook</h2>
+          <p className="text-xs text-muted-foreground">Specify your custom API Webhook (Make/Zapier/WhatsApp tool) to automatically push templates upon successful RFID check-in scans.</p>
+          <Field label="WhatsApp Webhook URL">
+            <input
+              value={form.whatsappWebhookUrl ?? ""}
+              onChange={(e) => set("whatsappWebhookUrl", e.target.value)}
+              placeholder="e.g. https://hook.us1.make.com/your-custom-endpoint"
+              className={input}
+            />
           </Field>
         </section>
 
