@@ -8,6 +8,7 @@ import appCss from "../styles.css?url";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
+import { gym } from "@/lib/gym-store";
 
 const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
 
@@ -75,6 +76,20 @@ function RootComponent() {
           setReady(true);
           return;
         }
+      }
+
+      // Synchronize active branch settings and theme on load so appearance stays persisted
+      const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
+      if (currentBranch) {
+        gym.updateSettings({
+          gymName: currentBranch.gym_name ?? "Fitness Streak",
+          theme: currentBranch.theme ?? "dark",
+          preset: currentBranch.preset ?? "lime",
+          slotDurationMin: currentBranch.slot_duration_min ?? 60,
+          slotCapacity: currentBranch.slot_capacity ?? 20,
+          currency: currentBranch.currency ?? "INR",
+          language: currentBranch.language ?? "hinglish",
+        });
       }
 
       const isPublic = PUBLIC_PATHS.includes(pathname);

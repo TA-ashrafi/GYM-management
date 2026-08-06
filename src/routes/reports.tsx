@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Printer, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Printer, Search, ChevronLeft, ChevronRight, Calendar, User, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
 import { memberStatus, daysUntil, daysSince, money } from "@/lib/gym-store";
@@ -25,7 +25,7 @@ function Reports() {
   const [tab, setTab] = useState<"monthly" | "member">("monthly");
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl w-full">
       <PageHeader
         title="Reports"
         subtitle="Monthly gym summary + individual member reports"
@@ -35,14 +35,14 @@ function Reports() {
       <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-6 no-print w-fit">
         <button
           onClick={() => setTab("monthly")}
-          className={"px-4 py-2 rounded-lg text-sm font-medium transition " +
+          className={"px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
             (tab === "monthly" ? "bg-card shadow text-foreground" : "text-muted-foreground")}
         >
           Monthly Report
         </button>
         <button
           onClick={() => setTab("member")}
-          className={"px-4 py-2 rounded-lg text-sm font-medium transition " +
+          className={"px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
             (tab === "member" ? "bg-card shadow text-foreground" : "text-muted-foreground")}
         >
           Member Report
@@ -61,6 +61,7 @@ function MonthlyReport() {
   const [sales, setSales] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [newMembers, setNewMembers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { start, end } = getMonthRange(monthOffset);
@@ -81,17 +82,39 @@ function MonthlyReport() {
       supabase.from("sales").select("*").eq("branch_id", branchId).gte("created_at", s).lte("created_at", eStr),
       supabase.from("expenses").select("*").eq("branch_id", branchId).gte("date", s).lte("date", eStr),
       supabase.from("members").select("*").eq("branch_id", branchId).gte("created_at", s).lte("created_at", eStr),
-    ]).then(([p, sa, ex, m]) => {
+      supabase.from("products").select("id, cost, price").eq("branch_id", branchId),
+    ]).then(([p, sa, ex, m, pr]) => {
       setPayments(p.data ?? []);
       setSales(sa.data ?? []);
       setExpenses(ex.data ?? []);
       setNewMembers(m.data ?? []);
+      setProducts(pr.data ?? []);
       setLoading(false);
     });
   }, [monthOffset]);
 
   const memberRevenue = payments.reduce((a, p) => a + (p.amount ?? 0), 0);
-  const storeRevenue = sales.reduce((a, s) => a + (s.total ?? 0), 0);
+
+  // Store profit = (sell - cost) × qty — cost products table se (fixing profit-only requested calculation)
+  const storeRevenue = useMemo(() => {
+    return sales.reduce((total: number, sale: any) => {
+      const items = Array.isArray(sale.items) ? sale.items : [];
+      if (items.length === 0) return total + (sale.total ?? 0);
+
+      return (
+        total +
+        items.reduce((sum: number, item: any) => {
+          const productId = item.productId ?? item.product_id;
+          const product = products.find((p: any) => p.id === productId);
+          const cost = product?.cost ?? item.cost ?? 0;
+          const sellPrice = item.price ?? 0;
+          const qty = item.qty ?? item.quantity ?? 1;
+          return sum + (sellPrice - cost) * qty;
+        }, 0)
+      );
+    }, 0);
+  }, [sales, products]);
+
   const totalRevenue = memberRevenue + storeRevenue;
 
   const expCats = ["Rent", "Electricity", "Water", "Equipment", "Staff", "Other"];
@@ -106,26 +129,26 @@ function MonthlyReport() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6 no-print">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center justify-between mb-6 no-print flex-wrap gap-3">
+        <div className="flex items-center gap-4 flex-1 min-w-[240px]">
           <button
             onClick={() => setMonthOffset((o) => o - 1)}
-            className="size-9 bg-secondary rounded-lg grid place-items-center hover:bg-brand/10 hover:text-brand"
+            className="size-9 bg-secondary rounded-lg grid place-items-center hover:bg-brand/10 hover:text-brand cursor-pointer"
           >
             <ChevronLeft className="size-5" />
           </button>
-          <h2 className="text-xl font-heading flex-1 text-center">{monthLabel}</h2>
+          <h2 className="text-lg sm:text-xl font-heading flex-1 text-center font-bold">{monthLabel}</h2>
           <button
             onClick={() => setMonthOffset((o) => o + 1)}
             disabled={monthOffset >= 0}
-            className="size-9 bg-secondary rounded-lg grid place-items-center hover:bg-brand/10 hover:text-brand disabled:opacity-30"
+            className="size-9 bg-secondary rounded-lg grid place-items-center hover:bg-brand/10 hover:text-brand disabled:opacity-30 cursor-pointer"
           >
             <ChevronRight className="size-5" />
           </button>
         </div>
         <button
           onClick={() => window.print()}
-          className="ml-4 flex items-center gap-2 px-4 py-2 bg-secondary text-foreground rounded-xl text-sm hover:bg-brand/10 hover:text-brand"
+          className="flex items-center gap-2 px-4 py-2 bg-secondary text-foreground rounded-xl text-sm hover:bg-brand/10 hover:text-brand cursor-pointer"
         >
           <Printer className="size-4" /> Print
         </button>
@@ -136,19 +159,19 @@ function MonthlyReport() {
       ) : (
         <div className="space-y-6">
           {/* Revenue */}
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h3 className="font-heading text-lg mb-4 text-brand">Revenue</h3>
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
+            <h3 className="font-heading text-lg mb-4 text-brand">Revenue (Collected This Cycle)</h3>
             <div className="space-y-3">
-              <Row label="Member Fees" value={money(memberRevenue)} />
-              <Row label="Supplement Store" value={money(storeRevenue)} />
+              <Row label="Member Fees / Renewals" value={money(memberRevenue)} />
+              <Row label="Supplement Store (Estimated Profit Only)" value={money(storeRevenue)} />
               <div className="border-t border-border pt-3">
-                <Row label="Total Revenue" value={money(totalRevenue)} bold />
+                <Row label="Total Revenue (Cycle Profits)" value={money(totalRevenue)} bold />
               </div>
             </div>
           </div>
 
           {/* Expenses */}
-          <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
             <h3 className="font-heading text-lg mb-4 text-danger">Expenses</h3>
             {expByCat.length === 0 ? (
               <p className="text-sm text-muted-foreground">No expenses this month</p>
@@ -165,7 +188,7 @@ function MonthlyReport() {
           </div>
 
           {/* Net Profit */}
-          <div className={"bg-card border rounded-2xl p-6 " + (netProfit >= 0 ? "border-brand/40" : "border-danger/40")}>
+          <div className={"bg-card border rounded-2xl p-4 sm:p-6 " + (netProfit >= 0 ? "border-brand/40" : "border-danger/40")}>
             <h3 className="font-heading text-lg mb-4">Net Profit</h3>
             <div className="space-y-3">
               <Row label="Total Revenue" value={money(totalRevenue)} />
@@ -182,7 +205,7 @@ function MonthlyReport() {
           </div>
 
           {/* New Members */}
-          <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
             <h3 className="font-heading text-lg mb-4">New Members This Month</h3>
             {newMembers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No new members this month</p>
@@ -191,7 +214,7 @@ function MonthlyReport() {
                 {newMembers.map((m) => (
                   <div key={m.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
-                      <p className="font-medium text-sm">{m.name}</p>
+                      <p className="font-medium text-sm text-foreground">{m.name}</p>
                       <p className="text-xs text-muted-foreground">{m.roll_no ?? m.rollNo} · {m.plan}</p>
                     </div>
                     <span className="text-brand font-semibold text-sm">{money(m.fee_amount ?? m.feeAmount ?? 0)}</span>
@@ -203,18 +226,18 @@ function MonthlyReport() {
 
           {/* Payment History */}
           {payments.length > 0 && (
-            <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
               <h3 className="font-heading text-lg mb-4">Payment History</h3>
               <div className="space-y-2">
                 {payments.map((p) => (
                   <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{p.note ?? "Payment"}</p>
+                      <p className="text-sm font-medium text-foreground">{p.note ?? "Payment"}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(p.payment_date).toLocaleDateString("en-IN")} · {p.plan}
                       </p>
                     </div>
-                    <span className="text-brand font-semibold">{money(p.amount)}</span>
+                    <span className="text-brand font-semibold text-sm">{money(p.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -328,33 +351,39 @@ function MemberReport() {
       </div>
 
       {m && diet ? (
-        <article className="bg-card border border-border rounded-2xl p-8 print:bg-white print:text-black space-y-6">
+        <article className="bg-card border border-border rounded-2xl p-4 sm:p-8 print:bg-white print:text-black space-y-6">
           <div className="flex justify-end no-print mb-2">
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 bg-brand text-brand-foreground rounded-xl text-sm font-semibold inline-flex items-center gap-2"
+              className="px-4 py-2 bg-brand text-brand-foreground rounded-xl text-sm font-semibold inline-flex items-center gap-2 cursor-pointer"
             >
               <Printer className="size-4" /> Print Report
             </button>
           </div>
 
-          <header className="flex items-center gap-6 pb-6 border-b border-border">
-            <img
-              src={m.photo}
-              alt={m.name}
-              className="size-28 rounded-2xl object-cover ring-2 ring-brand"
-              width={112}
-              height={112}
-            />
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Complete Member Report</p>
-              <h2 className="text-3xl font-heading mt-1">{m.name}</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+          <header className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pb-6 border-b border-border">
+            {m.photo ? (
+              <img
+                src={m.photo}
+                alt={m.name}
+                className="size-24 sm:size-28 rounded-2xl object-cover ring-2 ring-brand"
+                width={112}
+                height={112}
+              />
+            ) : (
+              <div className="size-24 sm:size-28 rounded-2xl bg-brand/20 grid place-items-center text-brand font-bold text-3xl">
+                {m.name?.[0]}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Complete Member Report</p>
+              <h2 className="text-2xl sm:text-3xl font-heading mt-1 text-foreground">{m.name}</h2>
+              <p className="text-sm text-muted-foreground mt-1 truncate">
                 {m.rollNo ?? m.roll_no} · RFID {m.rfid} · {m.phone}
               </p>
-              {m.email && <p className="text-xs text-muted-foreground">{m.email}</p>}
+              {m.email && <p className="text-xs text-muted-foreground mt-0.5 truncate">{m.email}</p>}
               <span
-                className={`inline-block mt-2 px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider ${
+                className={`inline-block mt-2 px-2.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wider ${
                   status === "active"
                     ? "bg-brand/10 text-brand"
                     : status === "expiring"
@@ -392,12 +421,12 @@ function MemberReport() {
           </Block>
 
           <Block title="Membership & Payments">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-5 bg-secondary/40 rounded-xl">
-                <p className="text-2xl font-heading">{m.plan}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 sm:p-5 bg-secondary/40 rounded-xl">
+                <p className="text-xl sm:text-2xl font-heading text-foreground">{m.plan}</p>
                 <p className="text-sm mt-1">
                   Fee: {money(m.feeAmount ?? m.fee_amount)} ·{" "}
-                  {(m.feePaid ?? m.fee_paid) ? <span className="text-brand">Paid</span> : <span className="text-danger">Pending</span>}
+                  {(m.feePaid ?? m.fee_paid) ? <span className="text-brand font-semibold">Paid</span> : <span className="text-danger font-bold">Pending</span>}
                 </p>
                 <p className="text-sm mt-1 text-muted-foreground">
                   Expiry: {new Date(m.expiryDate ?? m.expiry_date).toLocaleDateString("en-IN")} ·{" "}
@@ -406,8 +435,8 @@ function MemberReport() {
                     : `Expired ${-daysUntil(m.expiryDate ?? m.expiry_date)}d ago`}
                 </p>
               </div>
-              <div className="p-5 bg-secondary/40 rounded-xl">
-                <p className="text-2xl font-heading">{attendanceLogs.length} visits</p>
+              <div className="p-4 sm:p-5 bg-secondary/40 rounded-xl">
+                <p className="text-xl sm:text-2xl font-heading text-foreground">{attendanceLogs.length} visits</p>
                 <p className="text-sm mt-1 text-muted-foreground">
                   Last seen: {attendanceLogs[0] ? `${daysSince(attendanceLogs[0].checked_in_at)}d ago` : "Never"}
                 </p>
@@ -416,7 +445,7 @@ function MemberReport() {
           </Block>
 
           <Block title="Attendance Heatmap (last 30 days)">
-            <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5 mt-4">
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 mt-2">
               {last30.map((day) => {
                 const data = dayMap[day];
                 const present = !!data?.in;
@@ -438,11 +467,11 @@ function MemberReport() {
           </Block>
 
           <Block title="Punch-in History (last 30 days)">
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-              {punchHistory.length === 0 && <p className="text-muted-foreground">No punch-in records found.</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+              {punchHistory.length === 0 && <p className="text-muted-foreground p-2">No punch-in records found.</p>}
               {punchHistory.map(([day, times]) => (
                 <div key={day} className="p-3 bg-secondary/40 rounded-lg">
-                  <p className="font-semibold">
+                  <p className="font-semibold text-foreground">
                     {new Date(day).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
                   </p>
                   <p className="text-muted-foreground mt-1">
@@ -457,7 +486,7 @@ function MemberReport() {
           </Block>
 
           <Block title="Personalized Diet Plan">
-            <div className="grid md:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <Info label="Protein" value={`${diet.protein} g`} />
               <Info label="Carbs" value={`${diet.carbs} g`} />
               <Info label="Fats" value={`${diet.fats} g`} />
@@ -465,9 +494,9 @@ function MemberReport() {
             </div>
             <div className="space-y-2 text-sm">
               {diet.meals.map((meal: any) => (
-                <div key={meal.name} className="flex items-start gap-3 p-3 bg-secondary/40 rounded-lg">
-                  <span className="text-[10px] uppercase tracking-widest text-brand w-24 shrink-0">{meal.name}</span>
-                  <span className="text-foreground">{meal.items}</span>
+                <div key={meal.name} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3 p-3 bg-secondary/40 rounded-lg">
+                  <span className="text-[10px] uppercase tracking-widest text-brand w-24 shrink-0 font-bold">{meal.name}</span>
+                  <span className="text-foreground text-xs sm:text-sm">{meal.items}</span>
                 </div>
               ))}
             </div>
@@ -493,7 +522,7 @@ function MemberReport() {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">{title}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-semibold">{title}</p>
       {children}
     </section>
   );
@@ -502,8 +531,8 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium mt-0.5">{value}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{label}</p>
+      <p className="text-xs sm:text-sm font-medium mt-0.5 text-foreground">{value}</p>
     </div>
   );
 }

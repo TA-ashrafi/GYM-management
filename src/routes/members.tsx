@@ -1,10 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Search, Trash2, Star, RefreshCw, Phone, User, Calendar, ShieldCheck } from "lucide-react";
+import { Search, Trash2, Star, RefreshCw, Phone, User, Calendar, ShieldCheck, X, Save, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
-import { useGym, daysUntil, money, generateSlots } from "@/lib/gym-store";
+import { useGym, daysUntil, money, generateSlots, type PlanType } from "@/lib/gym-store";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
 
 function statusOf(m: any): "active" | "expiring" | "expired" {
@@ -48,11 +48,14 @@ const statusStyles = {
   expired: "bg-danger/10 text-danger border border-danger/20",
 } as const;
 
+const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
+
 function MembersPage() {
   const navSearch = Route.useSearch();
   const navigate = Route.useNavigate();
   const [members, setMembers] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [renewingMember, setRenewingMember] = useState<any | null>(null);
   const settings = useGym((s) => s.settings);
   const slots = generateSlots(settings.shifts, settings.slotDurationMin);
   const [q, setQ] = useState("");
@@ -60,7 +63,7 @@ function MembersPage() {
   const filter = navSearch.filter ?? "all";
   const setFilter = (f: typeof filter) => navigate({ search: { filter: f } });
 
-  useEffect(() => {
+  const loadMembersData = () => {
     fetchMembers().then(setMembers);
 
     const branchId = getActiveBranchId();
@@ -76,70 +79,16 @@ function MembersPage() {
       .eq("branch_id", branchId)
       .gte("checked_in_at", fourDaysAgo.toISOString())
       .then(({ data }) => setRecentLogs(data ?? []));
+  };
+
+  useEffect(() => {
+    loadMembersData();
   }, []);
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete ${name}?`)) return;
     const { error } = await supabase.from("members").delete().eq("id", id);
     if (!error) setMembers((prev) => prev.filter((m) => m.id !== id));
-  }
-
-  async function handleRenew(m: any) {
-    const plan = m.plan as "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
-    const DAYS: Record<string, number> = {
-      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
-    };
-
-    const expiryRaw = m.expiryDate ?? m.expiry_date;
-    const baseDate = new Date(expiryRaw) > new Date()
-      ? new Date(expiryRaw)
-      : new Date();
-
-    const newExpiry = new Date(baseDate);
-    newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
-
-    const amount = m.feeAmount ?? m.fee_amount ?? 0;
-
-    const confirmed = confirm(
-      `Renew ${m.name}'s ${plan} plan?\n` +
-      `New expiry: ${newExpiry.toLocaleDateString("en-IN")}`
-    );
-    if (!confirmed) return;
-
-    const { error } = await supabase
-      .from("members")
-      .update({
-        expiry_date: newExpiry.toISOString(),
-        fee_paid: true,
-      })
-      .eq("id", m.id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    const branchId = getActiveBranchId();
-    if (branchId) {
-      const { error: payError } = await supabase.from("payments").insert({
-        branch_id: branchId,
-        member_id: m.id,
-        amount,
-        plan: m.plan,
-        payment_date: new Date().toISOString(),
-        note: "Plan renewal",
-      });
-      if (payError) console.error("Payment insert error:", payError);
-    }
-
-    setMembers((prev) =>
-      prev.map((x) =>
-        x.id === m.id
-          ? { ...x, expiryDate: newExpiry.toISOString(), feePaid: true }
-          : x
-      )
-    );
-    toast.success(`${m.name}'s plan renewed successfully! ✓`);
   }
 
   const recentMemberIds = new Set(recentLogs.map((l: any) => l.member_id));
@@ -214,14 +163,14 @@ function MembersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                <th className="px-6 py-3 font-medium">Member</th>
-                <th className="px-4 py-3 font-medium">Roll / RFID</th>
-                <th className="px-4 py-3 font-medium">Plan</th>
-                <th className="px-4 py-3 font-medium">Fee</th>
-                <th className="px-4 py-3 font-medium">Expiry</th>
-                <th className="px-4 py-3 font-medium">Slot</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+                <th className="px-6 py-3">Member</th>
+                <th className="px-4 py-3">Roll / RFID</th>
+                <th className="px-4 py-3">Plan</th>
+                <th className="px-4 py-3">Fee</th>
+                <th className="px-4 py-3">Expiry</th>
+                <th className="px-4 py-3">Slot</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -329,7 +278,7 @@ function MembersPage() {
                           R
                         </Link>
                         <button
-                          onClick={() => handleRenew(m)}
+                          onClick={() => setRenewingMember(m)}
                           className="size-8 rounded-md bg-secondary hover:bg-brand/10 hover:text-brand grid place-items-center transition cursor-pointer"
                           title="Renew Plan"
                         >
@@ -476,7 +425,7 @@ function MembersPage() {
                       Report
                     </Link>
                     <button
-                      onClick={() => handleRenew(m)}
+                      onClick={() => setRenewingMember(m)}
                       className="p-1.5 rounded-lg bg-secondary text-brand hover:bg-brand/10 transition cursor-pointer"
                       title="Renew Plan"
                     >
@@ -501,6 +450,175 @@ function MembersPage() {
                 : "No members match your search criteria."}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Plan Renewal Modal */}
+      {renewingMember && (
+        <RenewModal
+          member={renewingMember}
+          onClose={() => setRenewingMember(null)}
+          onRenewed={() => {
+            loadMembersData();
+            setRenewingMember(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Reusable Renewal Modal directly embedded to avoid circular dependencies
+function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () => void; onRenewed: () => void }) {
+  const [plan, setPlan] = useState<PlanType>(member.plan as PlanType || "Monthly");
+  const [planPrices, setPlanPrices] = useState<Record<PlanType, number>>({
+    Monthly: 1500,
+    Quarterly: 4000,
+    HalfYearly: 7500,
+    Yearly: 13000,
+  });
+  const [feeAmount, setFeeAmount] = useState<number>(1500);
+  const [feePaid, setFeePaid] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const branchId = getActiveBranchId();
+    if (!branchId) return;
+
+    supabase
+      .from("branches")
+      .select("plan_prices")
+      .eq("id", branchId)
+      .single()
+      .then(({ data }) => {
+        if (data?.plan_prices) {
+          setPlanPrices(data.plan_prices);
+          setFeeAmount(data.plan_prices[plan] ?? 1500);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setFeeAmount(planPrices[plan] ?? 0);
+  }, [plan, planPrices]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const DAYS: Record<string, number> = {
+      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
+    };
+
+    const expiryRaw = member.expiry_date ?? member.expiryDate;
+    const baseDate = new Date(expiryRaw) > new Date()
+      ? new Date(expiryRaw)
+      : new Date();
+
+    const newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
+
+    const { error } = await supabase
+      .from("members")
+      .update({
+        plan,
+        expiry_date: newExpiry.toISOString(),
+        fee_amount: feeAmount,
+        fee_paid: feePaid,
+      })
+      .eq("id", member.id);
+
+    if (error) {
+      toast.error("Failed to renew: " + error.message);
+      setSaving(false);
+      return;
+    }
+
+    const branchId = getActiveBranchId();
+    if (branchId && feePaid) {
+      const { error: payError } = await supabase.from("payments").insert({
+        branch_id: branchId,
+        member_id: member.id,
+        amount: feeAmount,
+        plan: plan,
+        payment_date: new Date().toISOString(),
+        note: `Plan renewal: ${plan}`,
+      });
+      if (payError) console.error("Payment insert error:", payError);
+    }
+
+    toast.success(`${member.name}'s plan renewed successfully! ✓`);
+    onRenewed();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+          <X className="size-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="size-10 bg-brand/10 text-brand rounded-xl grid place-items-center">
+            <CreditCard className="size-5" />
+          </div>
+          <div>
+            <h3 className="font-heading text-lg text-foreground">Renew Plan</h3>
+            <p className="text-xs text-muted-foreground">Select plan for {member.name}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Select Plan</label>
+            <div className="grid grid-cols-2 gap-2">
+              {PLAN_ORDER.map((p) => (
+                <button
+                  type="button"
+                  key={p}
+                  onClick={() => setPlan(p)}
+                  className={"p-3 rounded-xl border text-left transition " + (plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                >
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p}</p>
+                  <p className="text-base font-heading mt-0.5">₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Fee Amount (INR)</label>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-bold">₹</span>
+              <input
+                type="number"
+                value={feeAmount}
+                onChange={(e) => setFeeAmount(+e.target.value)}
+                className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40"
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
+            <input
+              type="checkbox"
+              checked={feePaid}
+              onChange={(e) => setFeePaid(e.target.checked)}
+              className="accent-brand size-4"
+            />
+            <span>Mark Fee as Paid Upfront</span>
+          </label>
+
+          <div className="flex gap-2 pt-2">
+            <button onClick={onClose} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+            >
+              <Save className="size-4" /> {saving ? "Renewing..." : "Renew Plan"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

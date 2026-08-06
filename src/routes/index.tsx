@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users, TrendingUp, AlertTriangle, Wallet, CheckCircle2,
-  Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw,
+  Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
@@ -10,9 +10,10 @@ import {
 import { PageHeader } from "@/components/AppShell";
 import {
   useGym, daysUntil, money, gym,
-  DEFAULT_LAYOUT, type WidgetId,
+  DEFAULT_LAYOUT, type WidgetId, type PlanType
 } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,6 +34,8 @@ const WIDGET_LABELS: Record<WidgetId, string> = {
   expiring: "Expiring Members",
 };
 
+const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
+
 function Dashboard() {
   const [members, setMembers] = useState<any[]>([]);
   const [todayLogs, setTodayLogs] = useState<any[]>([]);
@@ -43,6 +46,7 @@ function Dashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [storeSales, setStoreSales] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [renewingMember, setRenewingMember] = useState<any | null>(null);
 
   const [cycleStart] = useState(() => {
     const d = new Date();
@@ -51,7 +55,7 @@ function Dashboard() {
     return d;
   });
 
-  useEffect(() => {
+  const fetchDashboardData = () => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
@@ -105,13 +109,13 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Monthly expenses — month start se
+    // Monthly expenses — date field ke gte se (fixing 0 entries bug)
     supabase
       .from("expenses")
       .select("*")
       .eq("branch_id", branchId)
-      .gte("created_at", cycleStart.toISOString())
-      .order("created_at", { ascending: false })
+      .gte("date", cycleStart.toISOString())
+      .order("date", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
     Promise.all([
@@ -151,6 +155,13 @@ function Dashboard() {
       setPayments([...payData, ...extraPayments]);
       setStoreSales(salesData);
     });
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    const branchId = getActiveBranchId();
+    if (!branchId) return;
 
     const channel = supabase
       .channel("dashboard-realtime")
@@ -492,11 +503,7 @@ function Dashboard() {
       </div>
     ),
     expiring: (
-      <Link
-        to="/members"
-        search={{ filter: "expiring" }}
-        className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block"
-      >
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 block">
         <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
@@ -528,11 +535,9 @@ function Dashboard() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    const next = new Date();
-                    next.setDate(next.getDate() + 30);
-                    gym.updateMember(m.id, { expiryDate: next.toISOString(), feePaid: true });
+                    setRenewingMember(m);
                   }}
-                  className="text-[10px] uppercase tracking-wider text-brand hover:underline shrink-0"
+                  className="text-[10px] uppercase tracking-wider text-brand hover:underline shrink-0 cursor-pointer"
                 >
                   Renew
                 </button>
@@ -540,7 +545,7 @@ function Dashboard() {
             );
           })}
         </div>
-      </Link>
+      </div>
     ),
   };
 
@@ -638,6 +643,175 @@ function Dashboard() {
               {widgets[w.id]}
             </div>
           ))}
+      </div>
+
+      {/* Beautiful Plan Renewal Modal */}
+      {renewingMember && (
+        <RenewModal
+          member={renewingMember}
+          onClose={() => setRenewingMember(null)}
+          onRenewed={() => {
+            fetchDashboardData();
+            setRenewingMember(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Reusable Plan Renewal Modal Component
+export function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () => void; onRenewed: () => void }) {
+  const [plan, setPlan] = useState<PlanType>(member.plan as PlanType || "Monthly");
+  const [planPrices, setPlanPrices] = useState<Record<PlanType, number>>({
+    Monthly: 1500,
+    Quarterly: 4000,
+    HalfYearly: 7500,
+    Yearly: 13000,
+  });
+  const [feeAmount, setFeeAmount] = useState<number>(1500);
+  const [feePaid, setFeePaid] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const branchId = getActiveBranchId();
+    if (!branchId) return;
+
+    supabase
+      .from("branches")
+      .select("plan_prices")
+      .eq("id", branchId)
+      .single()
+      .then(({ data }) => {
+        if (data?.plan_prices) {
+          setPlanPrices(data.plan_prices);
+          setFeeAmount(data.plan_prices[plan] ?? 1500);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setFeeAmount(planPrices[plan] ?? 0);
+  }, [plan, planPrices]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const DAYS: Record<string, number> = {
+      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
+    };
+
+    const expiryRaw = member.expiry_date ?? member.expiryDate;
+    const baseDate = new Date(expiryRaw) > new Date()
+      ? new Date(expiryRaw)
+      : new Date();
+
+    const newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
+
+    const { error } = await supabase
+      .from("members")
+      .update({
+        plan,
+        expiry_date: newExpiry.toISOString(),
+        fee_amount: feeAmount,
+        fee_paid: feePaid,
+      })
+      .eq("id", member.id);
+
+    if (error) {
+      toast.error("Failed to renew: " + error.message);
+      setSaving(false);
+      return;
+    }
+
+    const branchId = getActiveBranchId();
+    if (branchId && feePaid) {
+      const { error: payError } = await supabase.from("payments").insert({
+        branch_id: branchId,
+        member_id: member.id,
+        amount: feeAmount,
+        plan: plan,
+        payment_date: new Date().toISOString(),
+        note: `Plan renewal: ${plan}`,
+      });
+      if (payError) console.error("Payment insert error:", payError);
+    }
+
+    toast.success(`${member.name}'s plan renewed successfully! ✓`);
+    onRenewed();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+          <X className="size-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="size-10 bg-brand/10 text-brand rounded-xl grid place-items-center">
+            <CreditCard className="size-5" />
+          </div>
+          <div>
+            <h3 className="font-heading text-lg text-foreground">Renew Plan</h3>
+            <p className="text-xs text-muted-foreground">Select plan for {member.name}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Select Plan</label>
+            <div className="grid grid-cols-2 gap-2">
+              {PLAN_ORDER.map((p) => (
+                <button
+                  type="button"
+                  key={p}
+                  onClick={() => setPlan(p)}
+                  className={"p-3 rounded-xl border text-left transition " + (plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                >
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p}</p>
+                  <p className="text-base font-heading mt-0.5">₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Fee Amount (INR)</label>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-bold">₹</span>
+              <input
+                type="number"
+                value={feeAmount}
+                onChange={(e) => setFeeAmount(+e.target.value)}
+                className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40"
+              />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
+            <input
+              type="checkbox"
+              checked={feePaid}
+              onChange={(e) => setFeePaid(e.target.checked)}
+              className="accent-brand size-4"
+            />
+            <span>Mark Fee as Paid Upfront</span>
+          </label>
+
+          <div className="flex gap-2 pt-2">
+            <button onClick={onClose} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+            >
+              <Save className="size-4" /> {saving ? "Renewing..." : "Renew Plan"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
