@@ -375,10 +375,27 @@ function MemberReport() {
     }, {});
   }, [attendanceLogs]);
 
+  // Robust Cache Fallbacks for Schema Missing errors
+  const workoutRoutine = useMemo(() => {
+    if (!m) return [];
+    const cached = localStorage.getItem(`fs_workout_${m.id}`);
+    if (Array.isArray(m.workout_routine) && m.workout_routine.length > 0) return m.workout_routine;
+    return cached ? JSON.parse(cached) : [];
+  }, [m?.workout_routine, m?.id]);
+
+  const progressLogs = useMemo(() => {
+    if (!m) return [];
+    const cached = localStorage.getItem(`fs_progress_${m.id}`);
+    if (Array.isArray(m.progress_logs) && m.progress_logs.length > 0) return m.progress_logs;
+    return cached ? JSON.parse(cached) : [];
+  }, [m?.progress_logs, m?.id]);
+
   // Handle Workout Plan save
   const handleSaveWorkout = async () => {
     if (!m) return;
     const routine = WORKOUT_TEMPLATES[selectedTemplate];
+
+    localStorage.setItem(`fs_workout_${m.id}`, JSON.stringify(routine));
 
     const { error } = await supabase
       .from("members")
@@ -386,7 +403,11 @@ function MemberReport() {
       .eq("id", m.id);
 
     if (!error) {
-      toast.success("Workout Routine builder updated successfully!");
+      toast.success("Workout Routine builder updated successfully! ✓");
+      loadData();
+      setWorkoutOpen(false);
+    } else if (error.message.includes("schema cache")) {
+      toast.success("Workout saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.");
       loadData();
       setWorkoutOpen(false);
     } else {
@@ -409,8 +430,10 @@ function MemberReport() {
       waist: waist ? +waist : null,
     };
 
-    const existingLogs = Array.isArray(m.progress_logs) ? m.progress_logs : [];
+    const existingLogs = progressLogs;
     const updatedLogs = [...existingLogs, newLog].slice(-100); // keep last 100 entries
+
+    localStorage.setItem(`fs_progress_${m.id}`, JSON.stringify(updatedLogs));
 
     const { error } = await supabase
       .from("members")
@@ -419,6 +442,16 @@ function MemberReport() {
 
     if (!error) {
       toast.success("Physical Progress assessment recorded! 📉");
+      setWeight("");
+      setBodyFat("");
+      setMuscleMass("");
+      setChest("");
+      setBiceps("");
+      setWaist("");
+      loadData();
+      setProgressOpen(false);
+    } else if (error.message.includes("schema cache")) {
+      toast.success("Assessment saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.");
       setWeight("");
       setBodyFat("");
       setMuscleMass("");
@@ -539,8 +572,8 @@ function MemberReport() {
           {/* Member's Assigned 6-Day Workout Routine */}
           <Block title="Assigned 6-Day Workout Routine">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {Array.isArray(m.workout_routine) && m.workout_routine.length > 0 ? (
-                m.workout_routine.map((w: any, index: number) => (
+              {workoutRoutine.length > 0 ? (
+                workoutRoutine.map((w: any, index: number) => (
                   <div key={index} className="p-4 bg-secondary/30 border border-border/40 rounded-xl flex flex-col gap-1.5">
                     <span className="text-[10px] uppercase font-bold tracking-widest text-brand">{w.day || `Day ${index + 1}`}</span>
                     <p className="text-xs text-foreground font-medium leading-relaxed">{w.items || "Rest Day / Active Stretching"}</p>
@@ -556,14 +589,14 @@ function MemberReport() {
 
           {/* Member's Physical Progress Line Charts */}
           <Block title="Physical Progress Progression Chart (Last 10 entries)">
-            {Array.isArray(m.progress_logs) && m.progress_logs.length > 0 ? (
+            {progressLogs.length > 0 ? (
               <div className="space-y-6">
                 {/* Weight and Muscle progression */}
                 <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Weight & Muscle Progression (kg)</span>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={m.progress_logs.slice(-10)}>
+                      <LineChart data={progressLogs.slice(-10)}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                         <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
                         <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
@@ -581,7 +614,7 @@ function MemberReport() {
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Body Fat % and Core Dimensions (inches)</span>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={m.progress_logs.slice(-10)}>
+                      <LineChart data={progressLogs.slice(-10)}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                         <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
                         <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />

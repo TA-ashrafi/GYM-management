@@ -69,6 +69,8 @@ function SettingsPage() {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
+    const cachedWebhook = localStorage.getItem(`fs_webhook_${branchId}`) || "";
+
     supabase
       .from("branches")
       .select("*")
@@ -87,7 +89,7 @@ function SettingsPage() {
           preset: data.preset ?? form.preset,
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
-          whatsappWebhookUrl: data.whatsapp_webhook_url ?? form.whatsappWebhookUrl ?? "",
+          whatsappWebhookUrl: data.whatsapp_webhook_url ?? cachedWebhook ?? "",
         };
 
         setForm(merged);
@@ -125,12 +127,15 @@ function SettingsPage() {
     }
   }
 
-  // Save all settings to local state and Supabase
+  // Save all settings to local state and Supabase with local fallback
   async function save() {
     gym.updateSettings(form);
 
     const branchId = getActiveBranchId();
     if (branchId) {
+      // Save Webhook URL to LocalStorage as a highly robust fallback
+      localStorage.setItem(`fs_webhook_${branchId}`, form.whatsappWebhookUrl || "");
+
       const { error } = await supabase
         .from("branches")
         .update({
@@ -147,12 +152,17 @@ function SettingsPage() {
         .eq("id", branchId);
 
       if (error) {
+        if (error.message.includes("schema cache")) {
+          // Soft toast alerting about database schema, but confirming local activation works!
+          toast.warning("Settings saved locally! To enable cross-device sync, please run the Supabase query in SUPABASE_SQL.md.");
+          return;
+        }
         toast.error("Error: " + error.message);
         return;
       }
     }
 
-    toast.success("Settings saved ✓");
+    toast.success("Settings saved successfully ✓");
   }
 
   return (
