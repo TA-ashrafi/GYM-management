@@ -64,22 +64,19 @@ function RootComponent() {
       const branches = await fetchBranches();
 
       if (branches.length === 0) {
+        localStorage.removeItem("fs_active_branch"); // Safe cleanup
+        gym.reset(); // Wipe any old cached records
         if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
         setReady(true);
         return;
       }
 
       const activeBranchId = getActiveBranchId();
-      const validBranch = branches.find((b: any) => b.id === activeBranchId);
+      let validBranch = branches.find((b: any) => b.id === activeBranchId);
 
-      if (!validBranch) {
-        if (branches.length === 1) {
-          setActiveBranchId(branches[0].id);
-        } else {
-          if (pathname !== "/branches") router.navigate({ to: "/branches" });
-          setReady(true);
-          return;
-        }
+      if (!validBranch && branches.length > 0) {
+        setActiveBranchId(branches[0].id);
+        validBranch = branches[0];
       }
 
       // Synchronize active branch settings and theme on load so appearance stays persisted
@@ -105,11 +102,25 @@ function RootComponent() {
 
     checkAuth();
 
+    // Track user session changes to prevent profile cross-leakage on same browser
+    let currentUserId = "";
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) currentUserId = session.user.id;
+    });
+
     // Listen only for authentication events (login/logout), not tab switching.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         localStorage.removeItem("fs_active_branch");
+        gym.reset();
         router.navigate({ to: "/landing" });
+      } else if (event === "SIGNED_IN" && session?.user) {
+        if (currentUserId && currentUserId !== session.user.id) {
+          localStorage.removeItem("fs_active_branch");
+          gym.reset();
+          window.location.reload();
+        }
+        currentUserId = session.user.id;
       }
     });
 
