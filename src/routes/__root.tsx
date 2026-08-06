@@ -18,7 +18,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fitness Streak — Gym OS" },
+      { title: "Gym OS — Premium Fitness streak" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -120,11 +120,12 @@ function RootComponent() {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="size-12 bg-brand rounded-xl grid place-items-center mx-auto mb-3">
-              <span className="text-xl font-heading text-brand-foreground font-bold">FS</span>
+          <div className="text-center relative">
+            {/* Highly customized premium pulsing GYM OS logo loader */}
+            <div className="size-20 bg-brand rounded-2xl grid place-items-center mx-auto mb-4 shadow-[0_0_40px_-4px_var(--color-brand)] animate-bounce">
+              <span className="text-lg font-heading text-brand-foreground font-extrabold tracking-tighter">GYM OS</span>
             </div>
-            <p className="text-muted-foreground text-sm font-semibold">Loading...</p>
+            <p className="text-muted-foreground text-xs font-bold tracking-widest uppercase animate-pulse">Loading System...</p>
           </div>
         </div>
         <Toaster position="top-right" />
