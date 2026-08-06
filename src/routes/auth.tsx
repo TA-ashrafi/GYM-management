@@ -50,28 +50,50 @@ function Auth() {
       }
     } catch (err: any) {
       console.error("Auth action failed:", err);
-      let errMsg = "Something went wrong";
+
+      // Extract the most detailed message possible from the error object
+      let errMsg = "";
       if (err) {
         if (typeof err === "string") {
           errMsg = err;
-        } else if (err.message) {
-          errMsg = err.message;
-        } else if (err.error_description) {
-          errMsg = err.error_description;
         } else {
-          try {
-            const str = JSON.stringify(err);
-            if (str && str !== "{}") {
-              errMsg = str;
-            } else {
-              errMsg = err.toString();
+          // Check standard properties first
+          const parts: string[] = [];
+          if (err.message) parts.push(err.message);
+          if (err.error_description) parts.push(err.error_description);
+          if (err.details) parts.push(err.details);
+          if (err.hint) parts.push(err.hint);
+          if (err.code) parts.push(`Code: ${err.code}`);
+
+          if (parts.length > 0) {
+            errMsg = parts.join(" | ");
+          } else {
+            // Fallback for objects where properties might be non-enumerable or custom
+            try {
+              const keys = Object.getOwnPropertyNames(err);
+              const extracted: string[] = [];
+              for (const key of keys) {
+                if (err[key] && typeof err[key] !== "function") {
+                  extracted.push(`${key}: ${JSON.stringify(err[key])}`);
+                }
+              }
+              if (extracted.length > 0) {
+                errMsg = extracted.join(", ");
+              } else {
+                errMsg = err.toString();
+              }
+            } catch (e) {
+              errMsg = String(err);
             }
-          } catch (e) {
-            errMsg = err.toString() || "Something went wrong";
           }
         }
       }
-      toast.error(errMsg);
+
+      if (!errMsg || errMsg === "[object Object]" || errMsg === "{}") {
+        errMsg = "Registration Error: Please check SMTP settings or credentials";
+      }
+
+      toast.error(errMsg, { duration: 8000 });
     }
     setLoading(false);
   }
