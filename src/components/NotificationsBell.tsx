@@ -190,7 +190,7 @@ export function NotificationsBell() {
       {/* Bell Button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative size-10 rounded-xl bg-card border border-border hover:border-brand/40 grid place-items-center transition"
+        className="relative size-10 rounded-xl bg-card border border-border hover:border-brand/40 grid place-items-center transition cursor-pointer"
         aria-label="Notifications"
       >
         <Bell className="size-4 text-foreground" />
@@ -201,9 +201,9 @@ export function NotificationsBell() {
         )}
       </button>
 
-      {/* Dropdown Panel */}
+      {/* Dropdown Panel - Fixed mobile overflow using dynamic responsive width classes */}
       {open && (
-        <div className="absolute right-0 mt-2 w-[360px] max-h-[70vh] overflow-hidden bg-popover border border-border rounded-2xl shadow-2xl z-50 flex flex-col">
+        <div className="absolute -right-2 sm:right-0 mt-2 w-[calc(100vw-32px)] sm:w-[360px] max-h-[70vh] overflow-hidden bg-popover border border-border rounded-2xl shadow-2xl z-50 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div>
@@ -216,7 +216,7 @@ export function NotificationsBell() {
                   setDismissed(new Set(notifs.map((n) => n.id)));
                   setOpen(false);
                 }}
-                className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand"
+                className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand cursor-pointer"
               >
                 Clear All
               </button>
@@ -233,7 +233,7 @@ export function NotificationsBell() {
 
             {Object.entries(grouped).map(([type, list]) => (
               <div key={type}>
-                <div className="px-4 py-2 text-[10px] uppercase tracking-widest text-muted-foreground bg-secondary/30">
+                <div className="px-4 py-2 text-[10px] uppercase tracking-widest text-muted-foreground bg-secondary/30 font-bold">
                   {type === "expiry" ? "Membership Expiry" :
                    type === "ghost" ? "Scan Bypass / Ghosts" :
                    type === "dues" ? "Pending Dues" :
@@ -259,12 +259,12 @@ export function NotificationsBell() {
                         onClick={() => setOpen(false)}
                         className="flex-1 min-w-0"
                       >
-                        <p className="text-sm font-medium truncate">{n.title}</p>
+                        <p className="text-sm font-medium truncate text-foreground">{n.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{n.desc}</p>
                       </Link>
                       <button
                         onClick={() => setDismissed((prev) => new Set([...prev, n.id]))}
-                        className="size-6 rounded grid place-items-center hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
+                        className="size-6 rounded grid place-items-center hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                       >
                         <X className="size-3" />
                       </button>

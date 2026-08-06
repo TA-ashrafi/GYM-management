@@ -109,12 +109,11 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Monthly expenses — date field ke gte se (fixing 0 entries bug)
+    // Fetch ALL expenses for active branch so total is computed correctly (resolving total calculated expense total issue)
     supabase
       .from("expenses")
       .select("*")
       .eq("branch_id", branchId)
-      .gte("date", cycleStart.toISOString())
       .order("date", { ascending: false })
       .then(({ data }) => setExpenses(data ?? []));
 
@@ -188,6 +187,9 @@ function Dashboard() {
   const layout = settings.dashboardLayout?.length ? settings.dashboardLayout : DEFAULT_LAYOUT;
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
+
+  const designStyle = useGym((s) => s.settings.designStyle) || "glass";
+  const cardStyle = designStyle === "glass" ? "style-glass" : designStyle === "neo" ? "style-neo" : "style-classic";
 
   // Store profit = (sell - cost) × qty — cost products table se
   const storeRevenue = useMemo(() => {
@@ -363,16 +365,16 @@ function Dashboard() {
         />
         <MoneyCard
           to="/expenses"
-          label="Monthly Expenses"
+          label="Total Expenses"
           value={money(stats.expenseTotal)}
-          sub={`${expenses.length} entries`}
+          sub={`${expenses.length} entries recorded`}
           tone="muted"
           icon={<Wallet className="size-5" />}
         />
       </div>
     ),
     chart: (
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
+      <div className={`border border-border rounded-2xl p-4 sm:p-6 ${cardStyle}`}>
         <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-heading text-foreground">Footfall & Revenue</h2>
@@ -414,7 +416,7 @@ function Dashboard() {
       </div>
     ),
     maintenance: (
-      <Link to="/todos" className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block">
+      <Link to="/todos" className={`border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block ${cardStyle}`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-foreground">Maintenance</h3>
           <span className="text-xs text-muted-foreground">All →</span>
@@ -447,7 +449,7 @@ function Dashboard() {
       </Link>
     ),
     ghosts: (
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
+      <div className={`border border-border rounded-2xl p-4 sm:p-6 ${cardStyle}`}>
         <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-heading text-foreground flex items-center gap-2">
@@ -503,7 +505,7 @@ function Dashboard() {
       </div>
     ),
     expiring: (
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 block">
+      <div className={`border border-border rounded-2xl p-4 sm:p-6 block ${cardStyle}`}>
         <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
@@ -834,11 +836,13 @@ function Kpi({
   accent?: string;
   hint?: string;
 }) {
+  const designStyle = useGym((s) => s.settings.designStyle) || "glass";
+  const cardStyle = designStyle === "glass" ? "style-glass" : designStyle === "neo" ? "style-neo" : "style-classic";
   return (
     <Link
       to={to as "/"}
       search={search as never}
-      className="p-4 sm:p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group"
+      className={`p-4 sm:p-5 border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group ${cardStyle}`}
     >
       <div className="flex items-center justify-between text-muted-foreground mb-2">
         <span className="text-[10px] uppercase tracking-widest truncate">{label}</span>
@@ -873,11 +877,14 @@ function MoneyCard({
       : tone === "danger"
         ? "text-danger bg-danger/10"
         : "text-muted-foreground bg-secondary";
+
+  const designStyle = useGym((s) => s.settings.designStyle) || "glass";
+  const cardStyle = designStyle === "glass" ? "style-glass" : designStyle === "neo" ? "style-neo" : "style-classic";
   return (
     <Link
       to={to as "/"}
       search={search as never}
-      className="p-4 sm:p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition"
+      className={`p-4 sm:p-6 border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition ${cardStyle}`}
     >
       <div className={"size-12 rounded-xl grid place-items-center shrink-0 " + accent}>{icon}</div>
       <div className="min-w-0">

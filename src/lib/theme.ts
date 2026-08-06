@@ -2,19 +2,15 @@ import { useEffect } from "react";
 import { useGym } from "@/lib/gym-store";
 
 /**
- * Custom hook to apply the current theme and color preset to the DOM.
+ * Custom hook to apply the current theme, color preset, and design style to the DOM.
  * 
  * This hook synchronizes the application's theme state with the HTML element's
  * classes and data attributes, ensuring the correct visual theme is applied.
- * 
- * @remarks
- * - Removes existing "dark" and "light" classes before adding the current theme
- * - Sets the "data-preset" attribute for color scheme customization
- * - Runs automatically when theme or preset values change
  */
 export function useApplyTheme() {
   const theme = useGym((s) => s.settings.theme);
   const preset = useGym((s) => s.settings.preset);
+  const designStyle = useGym((s) => s.settings.designStyle) || "glass";
   
   useEffect(() => {
     // Guard against server-side rendering
@@ -28,7 +24,8 @@ export function useApplyTheme() {
     // Apply the current theme class
     html.classList.add(theme);
     
-    // Set the preset attribute for color scheme
+    // Set attributes for color scheme and design style (glass, neo, classic)
     html.setAttribute("data-preset", preset);
-  }, [theme, preset]);
+    html.setAttribute("data-design-style", designStyle);
+  }, [theme, preset, designStyle]);
 }
