@@ -250,7 +250,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="size-8 bg-brand/10 text-brand rounded-lg grid place-items-center text-[10px] font-bold shrink-0">
               {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="font-bold text-xs text-foreground truncate">
                 {currentUser?.user_metadata?.name || "Gym Owner"}
               </p>
@@ -259,13 +259,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="size-8 rounded-lg bg-card border border-border/80 hover:bg-danger/10 hover:text-danger grid place-items-center cursor-pointer transition shrink-0"
-            title="Log out"
-          >
-            <LogOut className="size-4" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => gym.updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
+              className="size-8 rounded-lg bg-card border border-border/80 hover:border-brand/40 grid place-items-center cursor-pointer transition"
+              title="Toggle theme"
+            >
+              {settings.theme === "dark" ? <Sun className="size-4 text-muted-foreground hover:text-foreground" /> : <Moon className="size-4 text-muted-foreground hover:text-foreground" />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="size-8 rounded-lg bg-card border border-border/80 hover:bg-danger/10 hover:text-danger grid place-items-center cursor-pointer transition"
+              title="Log out"
+            >
+              <LogOut className="size-4 text-muted-foreground hover:text-danger" />
+            </button>
+          </div>
         </div>
       </aside>
 

@@ -72,13 +72,17 @@ function Dashboard() {
       .eq("branch_id", branchId)
       .then(({ data }) => setProducts(data ?? []));
 
-    const today = new Date().toISOString().split("T")[0];
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
     supabase
       .from("attendance_logs")
       .select("*")
       .eq("branch_id", branchId)
-      .gte("checked_in_at", today + "T00:00:00")
-      .lte("checked_in_at", today + "T23:59:59")
+      .gte("checked_in_at", startOfToday.toISOString())
+      .lte("checked_in_at", endOfToday.toISOString())
       .then(({ data }) => setTodayLogs(data ?? []));
 
     const chartStart = new Date();
