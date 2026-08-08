@@ -420,10 +420,10 @@ function Dashboard() {
       <Link to="/todos" className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-foreground">Maintenance</h3>
-          <span className="text-xs text-muted-foreground">All →</span>
+          <span className="text-xs text-muted-foreground">All</span>
         </div>
         <div className="space-y-2">
-          {openTodos.length === 0 && <p className="text-sm text-muted-foreground">All caught up 🎉</p>}
+          {openTodos.length === 0 && <p className="text-sm text-muted-foreground">All caught up</p>}
           {openTodos.map((t) => (
             <div
               key={t.id}
@@ -464,7 +464,7 @@ function Dashboard() {
           </Link>
         </div>
         {ghostList.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular. 💪</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular.</p>
         ) : (
           <div className="divide-y divide-border">
             {ghostList.map((m) => (
@@ -556,7 +556,7 @@ function Dashboard() {
     <div className="p-4 sm:p-8 max-w-[1600px] w-full">
       <PageHeader
         title="Gym Overview"
-        subtitle={`${greet}, ${settings.ownerName} 🏋️ — ${settings.gymName}`}
+        subtitle={`${greet}, ${settings.ownerName} — ${settings.gymName}`}
         actions={
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <button
@@ -741,7 +741,7 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
       if (payError) console.error("Payment insert error:", payError);
     }
 
-    toast.success(`${member.name}'s plan renewed successfully! ✓`);
+    toast.success(`${member.name}'s plan renewed successfully.`);
     onRenewed();
     onClose();
   };
