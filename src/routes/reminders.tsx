@@ -131,59 +131,61 @@ function RemindersPage() {
 
       {/* Members Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary/40">
-            <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
-              <th className="px-4 py-3">Member</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.length === 0 && (
-              <tr><td colSpan={4} className="text-center py-12 text-muted-foreground">No members in this category</td></tr>
-            )}
-            {list.map((m) => {
-              const last = m.attendance[0];
-              const link = waLink(m.phone, msgFor(m));
-              const wasSent = sent.has(m.id);
-              return (
-                <tr key={m.id} className="border-t border-border hover:bg-secondary/30">
-                  <td className="px-4 py-3 flex items-center gap-3">
-                    <img src={m.photo} alt={m.name} className="size-9 rounded-full object-cover ring-1 ring-border" />
-                    <div>
-                      <p className="font-medium">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.rollNo}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{m.phone}</td>
-                  <td className="px-4 py-3 text-xs">
-                    {bucket === "ghost" && <span className="text-danger">No-show {last ? daysSince(last) : "30+"}d</span>}
-                    {bucket === "expiring" && <span className="text-warn">{daysUntil(m.expiryDate)}d left</span>}
-                    {bucket === "expired" && <span className="text-danger">Expired {Math.abs(daysUntil(m.expiryDate))}d ago</span>}
-                    {bucket === "unpaid" && <span className="text-warn">{money(m.feeAmount)} pending</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex gap-2">
-                      <a href={`tel:${m.phone.replace(/[^\d+]/g, "")}`}
-                        className="size-9 grid place-items-center rounded-lg bg-secondary hover:bg-brand/10 hover:text-brand"
-                        aria-label="Call">
-                        <Phone className="size-4" />
-                      </a>
-                      <a href={link} target="_blank" rel="noopener noreferrer"
-                        onClick={() => setSent((s) => new Set(s).add(m.id))}
-                        className={"px-3 h-9 inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold " + (wasSent ? "bg-brand/20 text-brand" : "bg-[#25D366] text-white hover:opacity-90")}>
-                        {wasSent ? <Check className="size-3.5" /> : <MessageCircle className="size-3.5" />}
-                        WhatsApp
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/40">
+              <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3">Member</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.length === 0 && (
+                <tr><td colSpan={4} className="text-center py-12 text-muted-foreground">No members in this category</td></tr>
+              )}
+              {list.map((m) => {
+                const last = m.attendance[0];
+                const link = waLink(m.phone, msgFor(m));
+                const wasSent = sent.has(m.id);
+                return (
+                  <tr key={m.id} className="border-t border-border hover:bg-secondary/30">
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <img src={m.photo} alt={m.name} className="size-9 rounded-full object-cover ring-1 ring-border" />
+                      <div>
+                        <p className="font-medium">{m.name}</p>
+                        <p className="text-xs text-muted-foreground">{m.rollNo}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{m.phone}</td>
+                    <td className="px-4 py-3 text-xs">
+                      {bucket === "ghost" && <span className="text-danger">No-show {last ? daysSince(last) : "30+"}d</span>}
+                      {bucket === "expiring" && <span className="text-warn">{daysUntil(m.expiryDate)}d left</span>}
+                      {bucket === "expired" && <span className="text-danger">Expired {Math.abs(daysUntil(m.expiryDate))}d ago</span>}
+                      {bucket === "unpaid" && <span className="text-warn">{money(m.feeAmount)} pending</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex gap-2 justify-end">
+                        <a href={`tel:${m.phone.replace(/[^\d+]/g, "")}`}
+                          className="size-9 grid place-items-center rounded-lg bg-secondary hover:bg-brand/10 hover:text-brand"
+                          aria-label="Call">
+                          <Phone className="size-4" />
+                        </a>
+                        <a href={link} target="_blank" rel="noopener noreferrer"
+                          onClick={() => setSent((s) => new Set(s).add(m.id))}
+                          className={"px-3 h-9 inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold shrink-0 " + (wasSent ? "bg-brand/20 text-brand" : "bg-[#25D366] text-white hover:opacity-90")}>
+                          {wasSent ? <Check className="size-3.5" /> : <MessageCircle className="size-3.5" />}
+                          WhatsApp
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">

@@ -29,58 +29,35 @@ function Attendance() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize: fetch members, today's logs, and setup realtime subscription
+  // References to keep state values up-to-date in async callbacks (eliminating React stale closure issues)
+  const membersRef = useRef<Member[]>([]);
+  const todayLogsRef = useRef<any[]>([]);
+  const doPunchRef = useRef<any>(null);
+
   useEffect(() => {
-    inputRef.current?.focus();
+    membersRef.current = members;
+  }, [members]);
 
-    const branchId = getActiveBranchId();
-    if (!branchId) {
-      setLoading(false);
-      return;
-    }
+  useEffect(() => {
+    todayLogsRef.current = todayLogs;
+  }, [todayLogs]);
 
-    fetchMembers().then((data) => {
-      setMembers(data || []);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+  // Helper to retrieve members current punch status dynamically
+  const getLatestMemberStatus = useCallback((memberId: string): PunchStatus => {
+    const logs = todayLogsRef.current
+      .filter((l) => l.member_id === memberId)
+      .sort((a: any, b: any) =>
+        new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime()
+      );
 
-    const today = new Date().toISOString().split("T")[0];
-    supabase
-      .from("attendance_logs")
-      .select("*")
-      .eq("branch_id", branchId)
-      .gte("checked_in_at", today + "T00:00:00")
-      .lte("checked_in_at", today + "T23:59:59")
-      .order("checked_in_at", { ascending: true })
-      .then(({ data, error }) => {
-        if (error) console.error("Error fetching logs:", error);
-        else setTodayLogs(data ?? []);
-      });
-
-    // Realtime subscription for new attendance logs for this branch
-    const channel = supabase
-      .channel("attendance-rt")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "attendance_logs" },
-        (payload) => {
-          const row = payload.new as any;
-          if (row.branch_id === branchId) {
-            setTodayLogs((prev) => [...prev, row]);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    return {
+      count: logs.length,
+      in: logs[0]?.checked_in_at,
+      out: logs[1]?.checked_in_at,
     };
   }, []);
 
-  // Get current punch status for a member
+  // Standard React getMemberStatus for synchronous list rendering
   const getMemberStatus = useCallback((memberId: string): PunchStatus => {
     const logs = todayLogs
       .filter((l) => l.member_id === memberId)
@@ -95,7 +72,7 @@ function Attendance() {
     };
   }, [todayLogs]);
 
-  // Process punch for a member
+  // Process punch for a member (flexible and asynchronous execution helper)
   const doPunch = async (m: Member) => {
     const branchId = getActiveBranchId();
     if (!branchId) {
@@ -103,7 +80,7 @@ function Attendance() {
       return;
     }
 
-    const st = getMemberStatus(m.id);
+    const st = getLatestMemberStatus(m.id);
     if (st.count >= 2) {
       toast.error(`${m.name} — Already punched IN & OUT today (maximum 2 punches allowed)`);
       return;
@@ -161,6 +138,100 @@ function Attendance() {
       toast.error("Punch failed: " + error.message);
     }
   };
+
+  useEffect(() => {
+    doPunchRef.current = doPunch;
+  }, [doPunch]);
+
+  // Initialize: fetch members, today's logs, and setup realtime subscription
+  useEffect(() => {
+    inputRef.current?.focus();
+
+    const branchId = getActiveBranchId();
+    if (!branchId) {
+      setLoading(false);
+      return;
+    }
+
+    fetchMembers().then((data) => {
+      setMembers(data || []);
+      membersRef.current = data || [];
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+
+    // Solve local time shifting / India timezone bugs by using clients start & end of today formatted in proper UTC ISO format
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    supabase
+      .from("attendance_logs")
+      .select("*")
+      .eq("branch_id", branchId)
+      .gte("checked_in_at", startOfToday.toISOString())
+      .lte("checked_in_at", endOfToday.toISOString())
+      .order("checked_in_at", { ascending: true })
+      .then(({ data, error }) => {
+        if (error) console.error("Error fetching logs:", error);
+        else setTodayLogs(data ?? []);
+      });
+
+    // Realtime subscription for new attendance logs for this branch
+    const logsChannel = supabase
+      .channel("attendance-rt")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "attendance_logs" },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.branch_id === branchId) {
+            setTodayLogs((prev) => [...prev, row]);
+          }
+        }
+      )
+      .subscribe();
+
+    // Realtime subscription for physical RFID hardware scans (rfid_pending table)
+    const rfidChannel = supabase
+      .channel("rfid-pending-rt")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "rfid_pending" },
+        async (payload) => {
+          const row = payload.new as any;
+          if (row.branch_id === branchId && !row.claimed) {
+            // Claim scan instantly to prevent multiple triggers
+            await supabase
+              .from("rfid_pending")
+              .update({ claimed: true })
+              .eq("id", row.id);
+
+            const scannedUid = row.uid?.trim().toLowerCase();
+            const matchedMember = membersRef.current.find(
+              (m) => m.rfid?.trim().toLowerCase() === scannedUid
+            );
+
+            if (matchedMember) {
+              if (doPunchRef.current) {
+                doPunchRef.current(matchedMember);
+              }
+            } else {
+              toast.error(`Physical card scanned but not assigned to any member: "${row.uid}"`);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(logsChannel);
+      supabase.removeChannel(rfidChannel);
+    };
+  }, []);
 
   // Handle RFID/Card submission
   const punch = (e: React.FormEvent) => {
