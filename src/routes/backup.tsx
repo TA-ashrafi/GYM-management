@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/AppShell";
 import { useGym, gym, memberStatus, daysUntil, money } from "@/lib/gym-store";
 
 export const Route = createFileRoute("/backup")({
-  head: () => ({ meta: [{ title: "Backup & Export — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Backup & Export — ALPHA FITNESS" }] }),
   component: BackupPage,
 });
 

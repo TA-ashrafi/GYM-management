@@ -7,7 +7,7 @@ import { daysSince, type Member } from "@/lib/gym-store";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/attendance")({
-  head: () => ({ meta: [{ title: "Attendance — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Attendance — ALPHA FITNESS" }] }),
   component: Attendance,
 });
 
@@ -148,7 +148,7 @@ function Attendance() {
                   time: new Date().toLocaleTimeString("en-IN"),
                   date: new Date().toLocaleDateString("en-IN"),
                   type,
-                  message: `Hi ${m.name}, welcome to Fitness Streak! Checked ${type} at ${new Date().toLocaleTimeString("en-IN")}.`
+                  message: `Hi ${m.name}, welcome to ALPHA FITNESS! Checked ${type} at ${new Date().toLocaleTimeString("en-IN")}.`
                 }),
               });
             } catch (e) {

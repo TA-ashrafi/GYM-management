@@ -7,7 +7,7 @@ import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMod
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Settings — ALPHA FITNESS" }] }),
   component: SettingsPage,
 });
 
@@ -21,6 +21,7 @@ const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
   { v: "lime", label: "Stealth Lime", swatch: "oklch(0.94 0.21 113)" },
   { v: "red", label: "Power Red", swatch: "oklch(0.62 0.24 25)" },
   { v: "blue", label: "Electric Blue", swatch: "oklch(0.6 0.2 255)" },
+  { v: "gold", label: "Golden Metallic", swatch: "oklch(0.82 0.13 85)" },
 ];
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
@@ -388,12 +389,12 @@ function SettingsPage() {
                 </div>
               </Field>
               <Field label="Color Preset">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PRESETS.map((p) => (
                     <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
                       className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
                       <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
-                      <span className="text-sm font-semibold">{p.label}</span>
+                      <span className="text-[11px] sm:text-xs font-semibold">{p.label}</span>
                     </button>
                   ))}
                 </div>

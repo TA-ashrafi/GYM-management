@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/AppShell";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/todos")({
-  head: () => ({ meta: [{ title: "To-Do — IronSync" }] }),
+  head: () => ({ meta: [{ title: "To-Do — ALPHA FITNESS" }] }),
   component: Todos,
 });
 

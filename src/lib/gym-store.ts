@@ -76,7 +76,7 @@ export type Sale = {
 };
 
 export type ThemeMode = "dark" | "light";
-export type ThemePreset = "lime" | "red" | "blue";
+export type ThemePreset = "lime" | "red" | "blue" | "gold";
 export type DesignStyle = "glass" | "neo" | "classic";
 
 export type WidgetId = "kpi" | "money" | "chart" | "maintenance" | "ghosts" | "expiring";
@@ -145,7 +145,7 @@ export const DEFAULT_LAYOUT: DashboardWidget[] = [
 ];
 
 const DEFAULT_SETTINGS: Settings = {
-  gymName: "Fitness Streak",
+  gymName: "ALPHA FITNESS",
   ownerName: "Owner",
   language: "hinglish",
   currency: "INR",

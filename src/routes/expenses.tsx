@@ -7,7 +7,7 @@ import { inr } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/expenses")({
-  head: () => ({ meta: [{ title: "Expenses — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Expenses — ALPHA FITNESS" }] }),
   component: Expenses,
 });
 

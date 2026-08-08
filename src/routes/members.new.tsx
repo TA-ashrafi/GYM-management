@@ -18,7 +18,7 @@ const PHOTOS = [m1, m2, m3, m4, m5, m6];
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
 
 export const Route = createFileRoute("/members/new")({
-  head: () => ({ meta: [{ title: "Add Member — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Add Member — ALPHA FITNESS" }] }),
   component: NewMember,
 });
 

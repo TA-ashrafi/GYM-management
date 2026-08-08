@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/AppShell";
 import { useGym, memberStatus, daysUntil, daysSince, money } from "@/lib/gym-store";
 
 export const Route = createFileRoute("/reminders")({
-  head: () => ({ meta: [{ title: "WhatsApp Reminders — IronSync" }] }),
+  head: () => ({ meta: [{ title: "WhatsApp Reminders — ALPHA FITNESS" }] }),
   component: RemindersPage,
 });
 

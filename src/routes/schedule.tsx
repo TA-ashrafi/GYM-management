@@ -6,7 +6,7 @@ import { fetchMembers } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/schedule")({
-  head: () => ({ meta: [{ title: "Time Slots — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Time Slots — ALPHA FITNESS" }] }),
   component: Schedule,
 });
 

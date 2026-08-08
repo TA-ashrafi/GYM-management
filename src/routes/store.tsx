@@ -7,7 +7,7 @@ import { money, type Product, type SaleItem } from "@/lib/gym-store";
 import { supabase, fetchMembers, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/store")({
-  head: () => ({ meta: [{ title: "Supplement Store — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Supplement Store — ALPHA FITNESS" }] }),
   component: StorePage,
 });
 
