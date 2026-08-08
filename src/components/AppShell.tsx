@@ -195,7 +195,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="font-heading text-base tracking-tight text-foreground leading-none truncate uppercase font-bold" title={settings.gymName}>
                 {settings.gymName}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">Gym OS</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">ALPHA FITNESS</div>
             </div>
           </Link>
           <button

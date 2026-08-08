@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/branches")({
-  head: () => ({ meta: [{ title: "Branches — Fitness Streak" }] }),
+  head: () => ({ meta: [{ title: "Branches — ALPHA FITNESS" }] }),
   component: Branches,
 });
 

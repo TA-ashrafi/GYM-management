@@ -5,7 +5,7 @@ import { supabase, setActiveBranchId } from "@/lib/supabase";
 import { Building2, Landmark, CheckCircle2, Phone, MapPin, ArrowRight, Dumbbell } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Setup — Gym OS" }] }),
+  head: () => ({ meta: [{ title: "Setup — ALPHA FITNESS" }] }),
   component: Onboarding,
 });
 
@@ -85,7 +85,7 @@ function Onboarding() {
                 <input
                   value={form.gymName}
                   onChange={(e) => set("gymName", e.target.value)}
-                  placeholder="e.g. Fitness Streak"
+                  placeholder="e.g. ALPHA FITNESS"
                   className={inp + " pl-10"}
                   required
                 />
@@ -133,7 +133,7 @@ function Onboarding() {
               disabled={loading}
               className="w-full py-3.5 bg-brand text-brand-foreground rounded-xl font-bold hover:scale-[1.01] active:scale-95 transition shadow-[0_4px_24px_rgba(var(--color-brand),0.3)] cursor-pointer mt-4"
             >
-              {loading ? "Initializing..." : "Launch Gym OS Console ⚡"}
+              {loading ? "Initializing..." : "Launch ALPHA FITNESS Console ⚡"}
             </button>
             
             {!search?.skipChoice && (
@@ -156,7 +156,7 @@ function Onboarding() {
       <div className="w-full max-w-3xl animate-fade-in">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand/10 border border-brand/20 text-brand text-xs font-bold rounded-full uppercase tracking-wider mb-4 animate-pulse">
-            ⚡ Welcome to Gym OS
+            ⚡ Welcome to ALPHA FITNESS
           </div>
           <h1 className="text-3xl sm:text-5xl font-heading font-extrabold text-foreground tracking-tight">Onboard Your Gym</h1>
           <p className="text-muted-foreground text-sm sm:text-base mt-2 font-medium">Choose how you plan to manage your gym network</p>

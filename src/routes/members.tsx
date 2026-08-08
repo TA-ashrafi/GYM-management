@@ -23,7 +23,7 @@ function planBadge(plan: string) {
 
 export const Route = createFileRoute("/members")({
   head: () => ({
-    meta: [{ title: "Members — Fitness Streak" }],
+    meta: [{ title: "Members — ALPHA FITNESS" }],
   }),
   validateSearch: (s: Record<string, unknown>) =>
     z.object({

@@ -5,7 +5,7 @@ import { useGym } from "@/lib/gym-store";
 import { fetchMembers } from "@/lib/supabase";
 
 export const Route = createFileRoute("/tools")({
-  head: () => ({ meta: [{ title: "Fitness Tools — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Fitness Tools — ALPHA FITNESS" }] }),
   component: Tools,
 });
 

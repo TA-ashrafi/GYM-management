@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/AppShell";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/analytics")({
-  head: () => ({ meta: [{ title: "Analytics — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Analytics — ALPHA FITNESS" }] }),
   component: Analytics,
 });
 

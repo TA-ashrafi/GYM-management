@@ -9,7 +9,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports — Fitness Streak" }] }),
+  head: () => ({ meta: [{ title: "Reports — ALPHA FITNESS" }] }),
   validateSearch: (s: Record<string, unknown>) =>
     z.object({ q: z.string().optional() }).parse(s),
   component: Reports,

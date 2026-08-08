@@ -18,7 +18,7 @@ import {
 import { PageHeader } from "@/components/AppShell";
 
 export const Route = createFileRoute("/help")({
-  head: () => ({ meta: [{ title: "Help & Support — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Help & Support — ALPHA FITNESS" }] }),
   component: HelpPage,
 });
 
@@ -61,7 +61,7 @@ function HelpPage() {
 
     // Forward to WhatsApp support
     const text = encodeURIComponent(
-      `IronSync Support Query\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+      `ALPHA FITNESS Support Query\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
     );
     window.open(`${SUPPORT.waLink}?text=${text}`, "_blank");
 
@@ -120,7 +120,7 @@ function HelpPage() {
             icon={Instagram}
             title="Instagram"
             subtitle="Updates & tutorials"
-            value="@ironsync"
+            value="@alpha_fitness_os"
             href={SUPPORT.instagram}
             accent="text-pink-500 bg-pink-500/10 border-pink-500/20"
             cta="Follow us"
@@ -134,7 +134,7 @@ function HelpPage() {
           </div>
           <h3 className="font-heading text-lg mb-1">Head Office</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            IronSync Support Center
+            ALPHA FITNESS Support Center
           </p>
           <div className="space-y-3 text-sm">
             <div className="flex gap-3">

@@ -188,3 +188,64 @@ html[data-preset="blue"] {
   .no-print { display: none !important; }
   body { background: white !important; color: black !important; }
 }
+
+/* Custom Cinematic Keyframes and Utility Styles */
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-shine {
+  animation: shine 3s ease-in-out infinite;
+}
+
+.text-shadow-embossed {
+  text-shadow:
+    -1px -1px 0 rgba(255, 255, 255, 0.15),  /* top-left highlight */
+    1px 1px 0 rgba(0, 0, 0, 0.9),          /* bottom-right shadow */
+    0px 2px 4px rgba(0, 0, 0, 0.9);         /* deep shadow */
+}
+
+/* Golden Gradient Preset Style overrides */
+html[data-preset="gold"] {
+  --primary: oklch(0.82 0.13 85);
+  --primary-foreground: oklch(0.12 0.005 270);
+  --brand: oklch(0.82 0.13 85);
+  --brand-foreground: oklch(0.12 0.005 270);
+  --ring: oklch(0.82 0.13 85);
+  --chart-1: oklch(0.82 0.13 85);
+  --chart-2: oklch(0.62 0.18 255);
+  --chart-3: oklch(0.74 0.17 60);
+  --chart-4: oklch(0.62 0.22 25);
+  --chart-5: oklch(0.78 0.14 180);
+  --sidebar-primary: oklch(0.82 0.13 85);
+  --sidebar-primary-foreground: oklch(0.12 0.005 270);
+  --sidebar-ring: oklch(0.82 0.13 85);
+}
+
+/* Interactive Cursor Glow Element style */
+.custom-cursor-glow {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--color-brand), 0.04) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  mix-blend-mode: screen;
+}

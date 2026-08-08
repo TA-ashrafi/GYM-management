@@ -18,7 +18,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Gym OS — Premium Fitness streak" },
+      { title: "ALPHA FITNESS — Premium Fitness streak" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -45,9 +45,18 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [coords, setCoords] = useState({ x: -100, y: -100 });
 
   // Apply theme & preset globally at root level, ensuring perfect persistence across logins, logouts, reloads, and landing/auth screens instantly!
   useApplyTheme();
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      setCoords({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
 
   useEffect(() => {
     // Run only once on initial mount — do not re-run on tab or window switch.
@@ -83,7 +92,7 @@ function RootComponent() {
       const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
       if (currentBranch) {
         gym.updateSettings({
-          gymName: currentBranch.gym_name ?? "Fitness Streak",
+          gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
           theme: currentBranch.theme ?? "dark",
           preset: currentBranch.preset ?? "lime",
           slotDurationMin: currentBranch.slot_duration_min ?? 60,
@@ -130,13 +139,32 @@ function RootComponent() {
   if (!ready) {
     return (
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center relative">
-            {/* Highly customized premium pulsing GYM OS logo loader */}
-            <div className="size-20 bg-brand rounded-2xl grid place-items-center mx-auto mb-4 shadow-[0_0_40px_-4px_var(--color-brand)] animate-bounce">
-              <span className="text-lg font-heading text-brand-foreground font-extrabold tracking-tighter">GYM OS</span>
+        <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden select-none">
+          {/* Subtle dark grid background texture */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:30px_30px]" />
+
+          <div className="text-center relative z-10 space-y-6">
+            <div className="relative inline-block px-8 py-6 rounded-[24px] bg-zinc-900/50 border border-zinc-800 shadow-3xl backdrop-blur-md overflow-hidden group">
+              {/* Sliding shine streak animation */}
+              <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60 animate-shine" />
+
+              {/* Embossed high-contrast text */}
+              <h1 className="text-4xl sm:text-5xl font-heading font-black tracking-widest text-white uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] shadow-inner text-shadow-embossed select-none">
+                ALPHA FITNESS
+              </h1>
+
+              <div className="h-[2px] w-24 bg-brand/40 mx-auto my-3 rounded-full relative overflow-hidden">
+                <div className="absolute inset-0 bg-brand animate-ping opacity-60" />
+              </div>
+
+              <p className="text-[10px] text-brand font-black uppercase tracking-[0.3em]">
+                YOUR GYM OPERATING SYSTEM
+              </p>
             </div>
-            <p className="text-muted-foreground text-xs font-bold tracking-widest uppercase animate-pulse">Loading System...</p>
+
+            <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase animate-pulse">
+              Securing Session...
+            </p>
           </div>
         </div>
         <Toaster position="top-right" />
@@ -150,6 +178,12 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {isPublic ? <Outlet /> : <AppShell><Outlet /></AppShell>}
       <Toaster position="top-right" />
+
+      {/* Interactive cursor glow trail */}
+      <div
+        className="custom-cursor-glow hidden sm:block"
+        style={{ left: `${coords.x}px`, top: `${coords.y}px` }}
+      />
     </QueryClientProvider>
   );
 }

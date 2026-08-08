@@ -5,7 +5,7 @@ import { Dumbbell, Lock, User } from "lucide-react";
 import { login, isLoggedIn } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Owner Login — IronSync" }] }),
+  head: () => ({ meta: [{ title: "Owner Login — ALPHA FITNESS" }] }),
   component: LoginPage,
 });
 
@@ -40,7 +40,7 @@ function LoginPage() {
           </div>
           <div>
             <div className="font-heading text-xl leading-none">IRONSYNC</div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-1">Gym OS</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mt-1">ALPHA FITNESS</div>
           </div>
         </Link>
         <div>
@@ -53,7 +53,7 @@ function LoginPage() {
             RFID attendance, WhatsApp reminders, POS, analytics — all in one dashboard.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} IronSync</div>
+        <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} ALPHA FITNESS</div>
       </div>
 
       {/* Right Panel - Login Form */}
