@@ -87,9 +87,9 @@ function MarketingPortal() {
       <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
-            <img src={logo2} alt="Alpha Fitness Logo" className="h-8 object-contain" />
+            {/* <img src={logo2} alt="Alpha Fitness Logo" className="h-8 object-contain" /> */}
             <div>
-              <div className="font-heading text-lg font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
+              <div className="text-2xl font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
               <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">Your Gym Operating System</div>
             </div>
           </Link>
@@ -134,7 +134,7 @@ function MarketingPortal() {
       {/* SECTION 2: HERO */}
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
         <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
-        <img src={pose1} alt="Athlete back detail" className="absolute right-[2%] bottom-[-2%] h-[91vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
+        <img src={pose1} alt="Athlete back detail" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-20">
           <div className="grid lg:grid-cols-12 gap-12">
@@ -531,9 +531,9 @@ function MarketingPortal() {
         <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10 relative z-10 text-left">
           <div className="md:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              <img src={logo2} alt="Alpha Logo" className="h-8 object-contain" />
+              {/* <img src={logo2} alt="Alpha Logo" className="h-8 object-contain" /> */}
               <div>
-                <div className="font-heading text-lg font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
+                <div className="text-2xl font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
                 <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">Your Gym Operating System</div>
               </div>
             </Link>
