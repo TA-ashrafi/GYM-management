@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import logoPng from "@/assets/logo.png";
 
 // Load athlete photos safely
-import image1 from "@/assets/image1.png";
+import image_2_png from "@/assets/image_2_png.png";
 import m3 from "@/assets/m3.jpg";
 import m4 from "@/assets/m4.jpg";
 import m5 from "@/assets/m5.jpg";
