@@ -7,6 +7,8 @@ import { signIn, signUp } from "@/lib/auth";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 import logoPng from "@/assets/logo.png";
 import m2 from "@/assets/m2.jpg";
+import { FireSparksOverlay } from "@/components/FireSparksOverlay";
+import { SmokeOverlay } from "@/components/SmokeOverlay";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Access Portal — ALPHA FITNESS" }] }),
@@ -189,6 +191,10 @@ function Auth() {
 
   return (
     <div className="min-h-screen w-full bg-[#070707] text-[#f4f4f2] grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden relative select-none">
+
+      {/* Dynamic atmospheric fire sparks and smoke drift overlays */}
+      <FireSparksOverlay intensity={35} color="red" speed={0.8} />
+      <SmokeOverlay intensity={14} color="dark" speed={0.4} />
 
       {/* LEFT PANEL: High Contrast Full-Bleed Athlete Photo */}
       <div className="hidden lg:flex relative h-full w-full overflow-hidden bg-black select-none z-0">
