@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   Users, TrendingUp, AlertTriangle, Wallet, CheckCircle2,
-  Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save
+  Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save,
+  Dumbbell, MessageCircle, ShoppingBag, BarChart3, FileText, Zap, ArrowRight, Check, Star, Shield, Award, Flame, Menu
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
@@ -14,16 +15,574 @@ import {
 } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 import { toast } from "sonner";
+import logoPng from "@/assets/logo.png";
+
+// Load athlete photos safely
+import m2 from "@/assets/m2.jpg";
+import m3 from "@/assets/m3.jpg";
+import m4 from "@/assets/m4.jpg";
+import m5 from "@/assets/m5.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — ALPHA FITNESS" },
-      { name: "description", content: "Real-time overview of your gym: members, dues, attendance, expenses." },
+      { title: "ALPHA FITNESS — Your GYM Operating System" },
+      { name: "description", content: "RFID attendance, ghost detection, WhatsApp reminders, supplement POS, analytics — the complete OS for modern gym networks." },
+      { property: "og:title", content: "ALPHA FITNESS — Your GYM Operating System" },
+      { property: "og:description", content: "Eliminate scan bypass. Track every member, every transaction, and every check-in with high-end analytics." },
     ],
   }),
-  component: Dashboard,
+  component: Home,
 });
+
+function Home() {
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#070707] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="size-12 bg-[#ed3434]/10 rounded-lg border border-[#ed3434]/30 grid place-items-center animate-pulse mx-auto">
+            <Dumbbell className="size-6 text-[#ed3434]" />
+          </div>
+          <p className="text-[10px] text-[#8d8d8d] uppercase tracking-[0.2em] font-bold">ALPHA FITNESS</p>
+        </div>
+      </div>
+    );
+  }
+
+  return user ? <Dashboard /> : <MarketingPortal />;
+}
+
+/* =========================================================================
+   MARKETING PORTAL (12 SECTIONS, PREMIUM DARK THEME, NO UNICODE EMOJIS)
+   ========================================================================= */
+
+function MarketingPortal() {
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
+
+      {/* Background radial effects */}
+      <div className="absolute top-0 left-0 right-0 h-[800px] bg-[radial-gradient(circle_at_top,rgba(237,52,52,0.08),transparent_70%)] pointer-events-none z-0" />
+      <div className="absolute top-1/3 left-1/4 size-[500px] bg-[#ed3434]/5 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-1/4 right-1/4 size-[600px] bg-[#ed3434]/3 rounded-full blur-[140px] pointer-events-none z-0" />
+
+      {/* SECTION 1: Fixed Nav Bar */}
+      <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
+        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
+            <img src={logoPng} alt="Alpha Fitness Logo" className="h-8 object-contain" />
+            <div>
+              <div className="font-heading text-lg font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
+              <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">Your Gym Operating System</div>
+            </div>
+          </Link>
+
+          <nav className="hidden lg:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-[#8d8d8d]">
+            <a href="#home" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Home</a>
+            <a href="#features" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Features</a>
+            <a href="#testimonials" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Testimonials</a>
+            <a href="#pricing" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Pricing</a>
+            <a href="#contact" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Contact</a>
+          </nav>
+
+          <div className="hidden lg:flex items-center gap-4">
+            <Link to="/auth" search={{ mode: "login" }} className="text-xs font-bold uppercase tracking-widest text-[#8d8d8d] hover:text-white transition">
+              Login
+            </Link>
+            <Link to="/auth" search={{ mode: "signup" }} className="px-5 py-2.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-extrabold uppercase tracking-widest transition shadow-[0_4px_15px_rgba(237,52,52,0.2)]">
+              Sign Up
+            </Link>
+          </div>
+
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="lg:hidden size-10 rounded border border-[#242424] bg-[#101010] text-white grid place-items-center cursor-pointer">
+            <Menu className="size-5" />
+          </button>
+        </div>
+
+        {/* Mobile Dropdown Panel */}
+        {mobileMenu && (
+          <div className="lg:hidden absolute top-20 left-0 right-0 bg-[#101010] border-b border-[#242424] p-6 flex flex-col gap-4 animate-fade-in z-50">
+            <a href="#home" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Home</a>
+            <a href="#features" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Features</a>
+            <a href="#testimonials" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Testimonials</a>
+            <a href="#pricing" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Pricing</a>
+            <a href="#contact" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Contact</a>
+            <div className="h-px bg-[#242424] my-2" />
+            <Link to="/auth" search={{ mode: "login" }} className="text-xs font-bold uppercase tracking-widest text-center py-2 border border-[#242424] rounded-lg">Login</Link>
+            <Link to="/auth" search={{ mode: "signup" }} className="text-xs font-bold uppercase tracking-widest text-center py-2 bg-[#ed3434] text-white rounded-lg">Sign Up</Link>
+          </div>
+        )}
+      </header>
+
+      {/* SECTION 2: HERO */}
+      <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
+        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
+        <img src={m5} alt="Athlete back detail" className="absolute right-[2%] bottom-[-2%] h-[91vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-20">
+          <div className="grid lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-8 space-y-6 text-left">
+              <div className="inline-flex items-center gap-2">
+                <span className="w-10 h-px bg-[#ed3434]" />
+                <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
+              </div>
+              <h1 className="text-white uppercase leading-[0.82] tracking-tighter select-none" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+                <span className="text-[#ed3434]">B</span>uild<br />
+                <span className="text-[#ed3434]">Y</span>our<br />
+                <span className="text-[#ed3434]">A</span>lpha
+              </h1>
+              <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
+                Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-6 pt-4">
+                <Link to="/auth" search={{ mode: "signup" }} className="cta group">
+                  Explore Training
+                  <span className="size-[74px] rounded-full border border-[#ed3434] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ed3434] group-hover:text-white text-[#ed3434] font-black text-xl">
+                    ↗
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Far Left social rail */}
+        <div className="absolute left-6 bottom-1/4 flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
+          <a href="#" className="hover:text-white transition">IN</a>
+          <a href="#" className="hover:text-white transition">IG</a>
+          <a href="#" className="hover:text-white transition">FB</a>
+        </div>
+
+        {/* Bottom Left scroll text */}
+        <div className="absolute left-6 bottom-6 flex items-center gap-2 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+          <span className="size-2 rounded-full bg-[#ed3434] block animate-ping" />
+          <span>Scroll to discover</span>
+        </div>
+      </section>
+
+      {/* SECTION 3: Marquee strip */}
+      <div className="marquee border-y border-[#242424] py-4 bg-[#0a0a0a]">
+        <div className="marquee-track text-[#8d8d8d] font-heading text-xl uppercase tracking-wider flex gap-8">
+          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
+          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
+          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
+          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
+        </div>
+      </div>
+
+      {/* SECTION 4: CONSOLE */}
+      <section className="py-24 max-w-7xl mx-auto px-6" id="features">
+        <div className="grid lg:grid-cols-12 gap-8 items-start mb-16">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">High-Performance Gym Management ERP</div>
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+              Control Your Gym Network Like A <span className="text-[#ed3434]">Sovereign</span>
+            </h2>
+            <p className="text-[#8d8d8d] text-sm sm:text-base max-w-2xl leading-relaxed">
+              Eliminate fingerprint bypass completely. ALPHA FITNESS provides direct real-time RFID integration, zero-click automated WhatsApp alerts, high-margin supplement POS software, and instant multi-branch profit P&L calculations.
+            </p>
+            <div className="flex gap-4 pt-4">
+              <Link to="/auth" search={{ mode: "login" }} className="px-6 py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition">
+                Launch Console Dashboard
+              </Link>
+              <a href="#pricing" className="px-6 py-3.5 bg-[#101010] border border-[#242424] hover:border-[#ed3434]/40 text-[#f4f4f2] rounded-lg text-xs font-bold uppercase tracking-widest transition">
+                Explore Features
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard mock card */}
+        <div className="bg-[#101010] border border-[#242424] rounded-2xl p-6 sm:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-[#242424] pb-4">
+            <div className="flex items-center gap-2">
+              <span className="size-2 bg-[#ed3434] rounded-full animate-ping" />
+              <span className="text-[10px] uppercase tracking-widest text-[#8d8d8d] font-bold">REAL-TIME MONITOR</span>
+            </div>
+            <span className="px-3 py-1 bg-[#ed3434]/10 border border-[#ed3434]/20 rounded-full text-[9px] text-[#ed3434] font-extrabold uppercase tracking-wider">
+              CONSOLE READY
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Active Roster", value: "382", desc: "active members" },
+              { label: "Check-ins Today", value: "114", desc: "scanned logs" },
+              { label: "Bypass Flagged", value: "0", desc: "perfect regular rosters" },
+              { label: "Monthly Revenue", value: "₹2.48L", desc: "net collected profits" },
+            ].map((kpi) => (
+              <div key={kpi.label} className="p-4 bg-[#070707] border border-[#242424] rounded-xl text-left">
+                <span className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">{kpi.label}</span>
+                <p className="text-2xl sm:text-3xl font-heading font-black text-white mt-1 uppercase">{kpi.value}</p>
+                <span className="text-[9px] text-[#ed3434] uppercase font-bold tracking-wider mt-2 block">{kpi.desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Bar chart mockup */}
+          <div className="pt-4 space-y-2">
+            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block">LIVE FOOTFALL TREND 6AM–10PM</span>
+            <div className="flex items-end gap-2 h-24 pt-4 border-t border-[#242424]">
+              {[25, 40, 55, 70, 85, 95, 80, 45, 30, 50, 75, 90, 65, 35].map((val, idx) => (
+                <div key={idx} className="flex-1 bg-gradient-to-t from-[#ed3434]/40 to-[#ed3434] rounded-t" style={{ height: `${val}%` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 5: ABOUT "Built Different" */}
+      <section className="py-24 bg-[#101010] border-y border-[#242424]">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="logo-card bg-radial bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] flex items-center justify-center p-8 relative">
+            <img src={logoPng} alt="Alpha Standard Logo" className="w-1/2 object-contain opacity-75" />
+            <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6">The Alpha Standard</span>
+          </div>
+          <div className="space-y-6 text-left">
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Built Different</div>
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+              BUILT DIFFERENT
+            </h2>
+            <p className="text-[#8d8d8d] text-sm leading-relaxed">
+              ALPHA FITNESS is a cohesive operations engine developed to bring absolute efficiency, clarity, and design beauty to gym management. Every feature from real-time member records to supplement store profit margins functions offline-first.
+            </p>
+            <div className="stats grid grid-cols-3 gap-4 pt-4 border-t border-[#242424]">
+              {[
+                { no: "01", text: "Mindset" },
+                { no: "02", text: "Strength" },
+                { no: "03", text: "Results" }
+              ].map((x) => (
+                <div key={x.no}>
+                  <strong className="font-heading text-3xl font-black text-white">{x.no}</strong>
+                  <small className="block text-[9px] text-[#8d8d8d] uppercase tracking-widest mt-1">{x.text}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 6: PROGRAMS */}
+      <section className="py-24 max-w-7xl mx-auto px-6 text-center">
+        <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Choose Your Path</div>
+          <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+            TRAIN WITH PURPOSE
+          </h2>
+          <p className="text-[#8d8d8d] text-sm sm:text-base">
+            Focused programs built to improve strength, physique, and overall operational performance.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            { num: "01", name: "Strength", desc: "Progressive training built around compound movements, controlled volume and serious strength gains." },
+            { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
+            { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
+          ].map((program) => (
+            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between">
+              <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
+              <div className="z-10 mt-12 space-y-3">
+                <h3 className="font-heading text-2xl font-bold text-white uppercase">{program.name}</h3>
+                <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-[240px]">{program.desc}</p>
+              </div>
+              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10">↗ View program</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION 7: PERFORMANCE */}
+      <section className="py-24 bg-[#101010] border-y border-[#242424]">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[420px]">
+            <img src={m4} alt="Barbell training detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+          </div>
+          <div className="space-y-6 text-left">
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+              DISCIPLINE CREATES POWER
+            </h2>
+            <p className="text-[#8d8d8d] text-sm leading-relaxed">
+              Motivation gets you started. Discipline keeps you moving. At ALPHA FITNESS, we build systems that turn effort into a stronger body and a stronger mindset.
+            </p>
+            <div className="bullets grid grid-cols-2 gap-4 pt-4 border-t border-[#242424]">
+              {[
+                { num: "01", title: "Progressive", desc: "Train with a plan that evolves with you." },
+                { num: "02", title: "Focused", desc: "Remove distractions. Attack the work." },
+                { num: "03", title: "Measurable", desc: "Track the numbers. Own the progress." },
+                { num: "04", title: "Relentless", desc: "Show up when it matters most." }
+              ].map((b) => (
+                <div key={b.num} className="space-y-1">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider block">{b.num} — {b.title}</span>
+                  <p className="text-[11px] text-[#8d8d8d] leading-relaxed">{b.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 8: FEATURES */}
+      <section className="py-24 max-w-7xl mx-auto px-6 text-center" id="features-grid">
+        <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">High Performance Suite</div>
+          <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+            Engineered To Drive Operational Velocity
+          </h2>
+          <p className="text-[#8d8d8d] text-sm sm:text-base">
+            All modules compile instantly, run offline-first, and store data securely with Supabase database integrations.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { num: "01", name: "RFID Attendance", desc: "Equip members with secure RFID access cards. Detect scan mismatches instantly and eliminate fingerprint bypass." },
+            { num: "02", name: "Ghost Detection", desc: "Identify active members who have not checked in for over 4 days. Intervene proactively to reduce churn." },
+            { num: "03", name: "WhatsApp Integration", desc: "Dispatch automatic reminders for plan expirations, unpaid dues, and birthdays directly with a single click." },
+            { num: "04", name: "Advanced CRM Console", desc: "Manage detailed member profiles, medical records, physical progression metrics, and emergency contacts easily." },
+            { num: "05", name: "Supplement POS Tracker", desc: "Track protein powder sales, snacks, and gear inventory with automated cost-margin profit logs built right into the platform." },
+            { num: "06", name: "Deep Real-Time Analytics", desc: "Visualize hourly footfall peaks, active member counts, and monthly sales trends on live interactive dashboards." },
+            { num: "07", name: "Expenses & Cash Flow P&L", desc: "Monitor recurring expenses like rent, staff salaries, and utility bills. Auto-generate comprehensive monthly net income reports." },
+            { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
+            { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
+          ].map((f) => (
+            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px]">
+              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest">{f.num}</span>
+              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2">{f.name}</h3>
+              <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION 9: TESTIMONIALS */}
+      <section className="py-24 bg-[#101010] border-y border-[#242424]" id="testimonials">
+        <div className="max-w-7xl mx-auto px-6 text-left">
+          <div className="max-w-2xl space-y-4 mb-16">
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Owner Endorsements</div>
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+              Loved By Modern Gym Owners
+            </h2>
+            <p className="text-[#8d8d8d] text-sm">
+              See how actual athletic clubs and fitness complexes use ALPHA FITNESS to optimize staff time slots, reclaim lost membership revenues, and drive retail supplement store inventory profits.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {[
+              {
+                quote: "ALPHA FITNESS completely revamped how we track member entries. Our fingerprint scanner had 30% bypass, but RFID solved it instantly.",
+                author: "Rajesh Kumar",
+                role: "Owner, Iron Legacy Gym"
+              },
+              {
+                quote: "The monthly P&L and supplement profit tracking are unmatched. I can see my actual margins with zero manual math.",
+                author: "Vikram Malhotra",
+                role: "Director, Alpha Zone Club"
+              }
+            ].map((q) => (
+              <div key={q.author} className="p-8 bg-[#070707] border border-[#242424] rounded-2xl relative text-left">
+                <span className="absolute top-4 right-4 text-[#ed3434] text-5xl font-heading leading-none select-none font-bold">“</span>
+                <p className="text-xs sm:text-sm text-[#8d8d8d] italic leading-relaxed font-medium relative z-10">
+                  {q.quote}
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="size-8 rounded-full bg-[#ed3434]/10 text-[#ed3434] grid place-items-center font-bold text-xs uppercase">
+                    {q.author[0]}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">{q.author}</p>
+                    <p className="text-[10px] text-[#8d8d8d] font-semibold uppercase tracking-wider">{q.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 10: PRICING */}
+      <section className="py-24 max-w-7xl mx-auto px-6 text-center" id="pricing">
+        <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Fair Enterprise Pricing</div>
+          <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
+            Select Your System Tier
+          </h2>
+          <p className="text-[#8d8d8d] text-sm sm:text-base">
+            Choose a plan that fits your facility. Scale branches and features as your community expands.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 items-stretch">
+          {[
+            {
+              name: "Bronze Plan",
+              price: "1,500",
+              period: "month",
+              desc: "Essential features for managing a single-location gym.",
+              features: ["Up to 200 members active", "RFID Scanner Integration", "Daily Attendance Logger", "Standard Dashboard Reports", "Email Sign-In Authentication"],
+              cta: "Get Started",
+              popular: false
+            },
+            {
+              name: "Silver Pro Plan",
+              price: "4,000",
+              period: "quarter",
+              desc: "Complete operational control with automated reminders.",
+              features: ["Unlimited Active Members", "RFID Attendance + Live Sync", "Automated WhatsApp Webhooks", "Ghost Detection & Churn Alert", "Full Supplement POS Console", "A4 PDF Report Generation"],
+              cta: "Go Pro",
+              popular: true
+            },
+            {
+              name: "Gold Executive Plan",
+              price: "13,000",
+              period: "year",
+              desc: "Ultimate performance tier with multi-branch management.",
+              features: ["All Silver Pro features", "Multi-Branch Network Support", "Physical Measurement Progress", "Custom 6-Day Workout Builder", "Advanced Cash Flow P&L Reports", "Dedicated Developer Support"],
+              cta: "Join the Elite",
+              popular: false
+            }
+          ].map((p) => (
+            <div
+              key={p.name}
+              className={
+                "p-8 sm:p-10 rounded-2xl border flex flex-col justify-between text-left transition-all duration-300 relative overflow-hidden " +
+                (p.popular
+                  ? "border-[#ed3434] bg-gradient-to-br from-[#ed3434]/5 via-[#101010] to-[#101010] shadow-[0_10px_30px_rgba(237,52,52,0.15)] scale-[1.02]"
+                  : "border-[#242424] bg-[#101010]/50")
+              }
+            >
+              {p.popular && (
+                <div className="absolute top-4 right-4 px-3 py-1 bg-[#ed3434] text-white text-[8px] font-black uppercase tracking-widest rounded-full">
+                  POPULAR CHOICE
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs uppercase tracking-widest text-[#8d8d8d] font-extrabold">{p.name}</p>
+                <div className="mt-4 flex items-baseline gap-1 text-white">
+                  <span className="text-4xl sm:text-5xl font-heading font-black">₹{p.price}</span>
+                  <span className="text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">/{p.period}</span>
+                </div>
+                <p className="mt-3 text-xs text-[#8d8d8d] font-medium leading-relaxed">{p.desc}</p>
+
+                <div className="my-8 border-t border-[#242424]" />
+
+                <ul className="space-y-3">
+                  {p.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#8d8d8d] font-semibold">
+                      <Check className="size-4 text-[#ed3434] shrink-0 mt-0.5" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-8">
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className={
+                    "w-full py-3.5 rounded-lg font-bold text-xs uppercase tracking-widest transition-all duration-300 block text-center " +
+                    (p.popular
+                      ? "bg-[#ed3434] text-white hover:scale-[1.02] shadow-[0_4px_15px_rgba(237,52,52,0.3)]"
+                      : "bg-[#202020] text-[#f4f4f2] hover:bg-[#252525] border border-[#242424]")
+                  }
+                >
+                  {p.cta}
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION 11: QUOTE band */}
+      <section className="py-20 bg-[#ed3434] text-[#070707] text-center">
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="font-heading text-3xl sm:text-6xl font-black text-[#070707] uppercase tracking-tight max-w-[950px] mx-auto leading-none">
+            "THE BODY ACHIEVES WHAT THE MIND REFUSES TO QUIT."
+          </p>
+          <small className="block mt-4 font-bold tracking-[0.25em] text-xs uppercase text-[#070707]/70">ALPHA FITNESS / THE STANDARD</small>
+        </div>
+      </section>
+
+      {/* SECTION 12: FOOTER */}
+      <footer className="bg-[#050505] border-t border-[#242424] relative overflow-hidden" id="contact">
+        <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10 relative z-10 text-left">
+          <div className="md:col-span-2 space-y-4">
+            <Link to="/" className="flex items-center gap-3">
+              <img src={logoPng} alt="Alpha Logo" className="h-8 object-contain" />
+              <div>
+                <div className="font-heading text-lg font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
+                <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">Your Gym Operating System</div>
+              </div>
+            </Link>
+            <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-sm font-medium">
+              A premium, comprehensive digital console managing RFID attendance logging, physical progress progressions, crowd-control time shifts, and supplement retail sales.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-white font-bold">Navigation</p>
+            <ul className="space-y-2 text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">
+              <li><a href="#features" className="hover:text-white transition-colors">System Features</a></li>
+              <li><a href="#testimonials" className="hover:text-white transition-colors">Owner Testimonials</a></li>
+              <li><a href="#pricing" className="hover:text-white transition-colors">Pricing Structure</a></li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-white font-bold">Administrator</p>
+            <ul className="space-y-2 text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">
+              <li><Link to="/auth" search={{ mode: "login" }} className="hover:text-white transition-colors">Access Console</Link></li>
+              <li><Link to="/auth" search={{ mode: "signup" }} className="hover:text-white transition-colors">Register Account</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Big low-opacity background title typography positioned properly to avoid overlap */}
+        <div className="relative border-t border-[#202020] py-8 z-10 bg-black/90">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-[#4f4f4f] font-bold uppercase tracking-wider">
+            <div>© 2026 ALPHA FITNESS. ALL RIGHTS RESERVED.</div>
+            <div className="flex gap-4">
+              <span>Tahseen Ashrafi</span>
+              <span>•</span>
+              <Link to="/auth" search={{ mode: "login" }} className="hover:text-white transition-colors">Sign In Portal</Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 text-[10vw] font-black text-white/[0.012] tracking-tighter select-none font-heading text-center w-full leading-none pointer-events-none uppercase z-0">
+          ALPHA FITNESS
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+/* =========================================================================
+   AUTHENTICATED INTERACTIVE DASHBOARD
+   ========================================================================= */
 
 const WIDGET_LABELS: Record<WidgetId, string> = {
   kpi: "KPI Cards",
@@ -65,7 +624,6 @@ function Dashboard() {
       .eq("branch_id", branchId)
       .then(({ data }) => setMembers(data ?? []));
 
-    // Products — cost lookup ke liye
     supabase
       .from("products")
       .select("id, cost, price")
@@ -113,7 +671,6 @@ function Dashboard() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setTodos(data ?? []));
 
-    // Fetch ALL expenses for active branch so total is computed correctly (resolving total calculated expense total issue)
     supabase
       .from("expenses")
       .select("*")
@@ -192,7 +749,6 @@ function Dashboard() {
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
-  // Store profit = (sell - cost) × qty — cost products table se
   const storeRevenue = useMemo(() => {
     return storeSales.reduce((total: number, sale: any) => {
       const items = Array.isArray(sale.items) ? sale.items : [];
@@ -610,7 +1166,7 @@ function Dashboard() {
                     ↓
                   </button>
                   <button onClick={() => toggle(w.id)} className="size-7 grid place-items-center rounded hover:bg-secondary" aria-label="Toggle visibility">
-                    {w.visible ? <Eye className="size-3.5 text-brand" /> : <EyeOff className="size-3.5 text-muted-foreground" />}
+                    {w.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
                   </button>
                 </div>
               </div>
@@ -648,7 +1204,6 @@ function Dashboard() {
           ))}
       </div>
 
-      {/* Beautiful Plan Renewal Modal */}
       {renewingMember && (
         <RenewModal
           member={renewingMember}

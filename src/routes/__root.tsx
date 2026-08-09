@@ -11,7 +11,7 @@ import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@
 import { gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 
-const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
+const PUBLIC_PATHS = ["/", "/auth", "/landing", "/login", "/onboarding"];
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -24,7 +24,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" },
     ],
   }),
   shellComponent: RootShell,
