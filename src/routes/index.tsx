@@ -8,20 +8,20 @@ import {
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { PageHeader } from "@/components/AppShell";
+import { AppShell, PageHeader } from "@/components/AppShell";
 import {
   useGym, daysUntil, money, gym,
   DEFAULT_LAYOUT, type WidgetId, type PlanType
 } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 import { toast } from "sonner";
-import logoPng from "@/assets/logo.png";
+import logo2 from "@/assets/logo2.png";
 
 // Load athlete photos safely
-import image_2_png from "@/assets/image_2_png.png";
-import m3 from "@/assets/m3.jpg";
-import m4 from "@/assets/m4.jpg";
-import m5 from "@/assets/m5.jpg";
+// import image_2_png from "@/assets/image_2_png.png";
+// import m3 from "@/assets/m3.jpg";
+import grip from "@/assets/grip.jpg";
+import pose1 from "@/assets/pose1.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,7 +65,7 @@ function Home() {
     );
   }
 
-  return user ? <Dashboard /> : <MarketingPortal />;
+  return user ? <AppShell><Dashboard /></AppShell> : <MarketingPortal />;
 }
 
 /* =========================================================================
@@ -87,7 +87,7 @@ function MarketingPortal() {
       <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
-            <img src={logoPng} alt="Alpha Fitness Logo" className="h-8 object-contain" />
+            <img src={logo2} alt="Alpha Fitness Logo" className="h-8 object-contain" />
             <div>
               <div className="font-heading text-lg font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
               <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">Your Gym Operating System</div>
@@ -134,7 +134,7 @@ function MarketingPortal() {
       {/* SECTION 2: HERO */}
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
         <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
-        <img src={m5} alt="Athlete back detail" className="absolute right-[2%] bottom-[-2%] h-[91vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
+        <img src={pose1} alt="Athlete back detail" className="absolute right-[2%] bottom-[-2%] h-[91vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-20">
           <div className="grid lg:grid-cols-12 gap-12">
@@ -253,7 +253,7 @@ function MarketingPortal() {
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="logo-card bg-radial bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] flex items-center justify-center p-8 relative">
-            <img src={logoPng} alt="Alpha Standard Logo" className="w-1/2 object-contain opacity-75" />
+            <img src={logo2} alt="Alpha Standard Logo" className="w-1/2 object-contain" />
             <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6">The Alpha Standard</span>
           </div>
           <div className="space-y-6 text-left">
@@ -314,7 +314,7 @@ function MarketingPortal() {
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="rounded-2xl border border-[#242424] overflow-hidden h-[420px]">
-            <img src={m4} alt="Barbell training detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+            <img src={grip} alt="Barbell training detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
@@ -531,7 +531,7 @@ function MarketingPortal() {
         <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10 relative z-10 text-left">
           <div className="md:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              <img src={logoPng} alt="Alpha Logo" className="h-8 object-contain" />
+              <img src={logo2} alt="Alpha Logo" className="h-8 object-contain" />
               <div>
                 <div className="font-heading text-lg font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
                 <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">Your Gym Operating System</div>
