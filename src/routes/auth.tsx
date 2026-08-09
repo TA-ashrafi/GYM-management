@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Dumbbell, Mail, Lock, User, Phone, Eye, EyeOff, Chrome, ArrowLeft, Building2, ShieldCheck, Trophy, Sparkles } from "lucide-react";
+import { Dumbbell, Mail, Lock, User, Phone, Eye, EyeOff, Chrome, ArrowLeft, Building2, ShieldCheck, Trophy, Sparkles, KeyRound } from "lucide-react";
 import { signIn, signUp } from "@/lib/auth";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 import logoPng from "@/assets/logo.png";
@@ -24,6 +24,12 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
+  // OTP Authentication state
+  const [authMethod, setAuthMethod] = useState<"password" | "otp">("password");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -35,13 +41,15 @@ function Auth() {
     rememberMe: true
   });
 
-  // Directly adjust mode based on search parameters instantly
   useEffect(() => {
     if (search.mode === "signup") {
       setMode("signup");
     } else {
       setMode("login");
     }
+    // Reset OTP states on mode toggles
+    setOtpSent(false);
+    setOtpCode("");
   }, [search.mode]);
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -79,6 +87,65 @@ function Auth() {
       toast.error(err.message || "An authentication error occurred.");
     }
     setLoading(false);
+  }
+
+  // Handle OTP dispatch from Supabase Auth
+  async function handleSendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.email.trim()) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: form.email.trim(),
+        options: {
+          emailRedirectTo: window.location.origin + "/auth",
+        }
+      });
+      if (error) throw error;
+      setOtpSent(true);
+      toast.success("OTP verification code sent to your email.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send OTP code.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  // Handle OTP verification on Supabase Auth
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otpCode.trim()) {
+      toast.error("Please enter the 6-digit OTP code");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: form.email.trim(),
+        token: otpCode.trim(),
+        type: "email"
+      });
+      if (error) throw error;
+
+      toast.success("OTP verified. Access authorized.");
+
+      const branches = await fetchBranches();
+      if (branches.length === 0) {
+        nav({ to: "/onboarding" });
+      } else {
+        const activeBranchId = getActiveBranchId();
+        const valid = branches.find((b: any) => b.id === activeBranchId);
+        if (!valid) setActiveBranchId(branches[0].id);
+        nav({ to: "/" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP code.");
+    } finally {
+      setOtpLoading(false);
+    }
   }
 
   async function handleGoogleLogin() {
@@ -202,184 +269,286 @@ function Auth() {
             </p>
           </div>
 
-          <form onSubmit={submit} className="space-y-4">
-            {mode === "signup" ? (
-              <div className="space-y-4 animate-fade-in">
-                {/* Two Column Name & Gym Name */}
-                <div className="grid grid-cols-2 gap-3">
+          {/* Mode Switcher */}
+          <div className="flex gap-1 bg-[#070707] rounded-xl p-1 border border-[#242424]">
+            <button onClick={() => { setMode("login"); setAuthMethod("password"); }}
+              className={"flex-1 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer uppercase tracking-wider " +
+                (mode === "login" ? "bg-[#101010] shadow-sm text-white font-bold" : "text-[#8d8d8d] hover:text-white")}>
+              Login
+            </button>
+            <button onClick={() => { setMode("signup"); setAuthMethod("password"); }}
+              className={"flex-1 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer uppercase tracking-wider " +
+                (mode === "signup" ? "bg-[#101010] shadow-sm text-white font-bold" : "text-[#8d8d8d] hover:text-white")}>
+              Sign Up
+            </button>
+          </div>
+
+          {/* Login-only method switcher (Password vs OTP) */}
+          {mode === "login" && (
+            <div className="flex gap-1 bg-[#070707]/60 rounded-lg p-0.5 border border-[#242424]/40">
+              <button
+                type="button"
+                onClick={() => { setAuthMethod("password"); setOtpSent(false); }}
+                className={"flex-1 py-1 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " + (authMethod === "password" ? "bg-[#ed3434]/15 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
+              >
+                Password Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMethod("otp"); setOtpSent(false); }}
+                className={"flex-1 py-1 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " + (authMethod === "otp" ? "bg-[#ed3434]/15 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
+              >
+                OTP Verification
+              </button>
+            </div>
+          )}
+
+          {/* Conditional Form Render based on authMethod and mode */}
+          {mode === "login" && authMethod === "otp" ? (
+            <div className="space-y-4 animate-fade-in">
+              {!otpSent ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
-                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Owner Name *</label>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Email Address *</label>
                     <div className="relative">
-                      <User className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                       <input
-                        value={form.name}
-                        onChange={(e) => set("name", e.target.value)}
-                        placeholder="Owner Name"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => set("email", e.target.value)}
+                        placeholder="you@example.com"
                         className={inp + " pl-10"}
                         required
                       />
                     </div>
                   </div>
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white font-extrabold rounded-lg transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(237,52,52,0.25)] hover:scale-[1.01]"
+                  >
+                    {otpLoading ? "Sending OTP..." : "Send OTP Verification Code"}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
                   <div>
-                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Gym Name *</label>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">6-Digit Verification Code *</label>
                     <div className="relative">
-                      <Building2 className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <KeyRound className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                       <input
-                        value={form.gymName}
-                        onChange={(e) => set("gymName", e.target.value)}
-                        placeholder="Gym Name"
+                        type="text"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        placeholder="e.g. 123456"
+                        className={inp + " pl-10 text-center tracking-[0.5em] font-bold text-lg"}
+                        required
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#8d8d8d] mt-2 font-semibold uppercase tracking-wider text-center">
+                      Code sent to <span className="text-[#ed3434]">{form.email}</span>. Please check your inbox.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOtpSent(false)}
+                      className="py-3 bg-[#202020] border border-[#242424] text-white text-xs font-bold rounded-lg uppercase tracking-wider"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={otpLoading}
+                      className="py-3 bg-[#ed3434] hover:bg-[#ff4b4b] text-white text-xs font-bold rounded-lg uppercase tracking-wider shadow-[0_4px_15px_rgba(237,52,52,0.25)]"
+                    >
+                      {otpLoading ? "Verifying..." : "Verify & Login"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={submit} className="space-y-4">
+              {mode === "signup" ? (
+                <div className="space-y-4 animate-fade-in">
+                  {/* Two Column Name & Gym Name */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Owner Name *</label>
+                      <div className="relative">
+                        <User className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                        <input
+                          value={form.name}
+                          onChange={(e) => set("name", e.target.value)}
+                          placeholder="Owner Name"
+                          className={inp + " pl-10"}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Gym Name *</label>
+                      <div className="relative">
+                        <Building2 className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                        <input
+                          value={form.gymName}
+                          onChange={(e) => set("gymName", e.target.value)}
+                          placeholder="Gym Name"
+                          className={inp + " pl-10"}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Email, Phone, Password */}
+                  <div>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Work Email *</label>
+                    <div className="relative">
+                      <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => set("email", e.target.value)}
+                        placeholder="work@gym.com"
                         className={inp + " pl-10"}
                         required
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* Email, Phone, Password */}
-                <div>
-                  <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Work Email *</label>
-                  <div className="relative">
-                    <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => set("email", e.target.value)}
-                      placeholder="work@gym.com"
-                      className={inp + " pl-10"}
-                      required
-                    />
+                  <div>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Phone Number</label>
+                    <div className="relative">
+                      <Phone className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <input
+                        value={form.phone}
+                        onChange={(e) => set("phone", e.target.value)}
+                        placeholder="+91 90000 00000"
+                        className={inp + " pl-10"}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Phone Number</label>
-                  <div className="relative">
-                    <Phone className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
-                    <input
-                      value={form.phone}
-                      onChange={(e) => set("phone", e.target.value)}
-                      placeholder="+91 90000 00000"
-                      className={inp + " pl-10"}
-                    />
+                  <div>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Choose Password *</label>
+                    <div className="relative">
+                      <Lock className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={form.password}
+                        onChange={(e) => set("password", e.target.value)}
+                        placeholder="••••••••"
+                        className={inp + " pl-10 pr-10"}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8d8d8d] hover:text-white cursor-pointer bg-transparent border-0"
+                      >
+                        {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Choose Password *</label>
-                  <div className="relative">
-                    <Lock className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
-                    <input
-                      type={showPass ? "text" : "password"}
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                      placeholder="••••••••"
-                      className={inp + " pl-10 pr-10"}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8d8d8d] hover:text-white cursor-pointer bg-transparent border-0"
-                    >
-                      {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <label className="flex items-start gap-2.5 text-xs text-[#8d8d8d] cursor-pointer py-1 font-semibold uppercase tracking-wider text-[10px]">
-                  <input
-                    type="checkbox"
-                    checked={form.terms}
-                    onChange={(e) => set("terms", e.target.checked)}
-                    className="accent-[#ed3434] size-4 mt-0.5"
-                  />
-                  <span>I accept terms & conditions</span>
-                </label>
-              </div>
-            ) : (
-              <div className="space-y-4 animate-fade-in">
-                {/* Email / Username */}
-                <div>
-                  <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Email or Username *</label>
-                  <div className="relative">
-                    <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => set("email", e.target.value)}
-                      placeholder="admin"
-                      className={inp + " pl-10"}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Password *</label>
-                  <div className="relative">
-                    <Lock className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
-                    <input
-                      type={showPass ? "text" : "password"}
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                      placeholder="••••••••"
-                      className={inp + " pl-10 pr-10"}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8d8d8d] hover:text-white cursor-pointer bg-transparent border-0"
-                    >
-                      {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Remember me + Forgot password */}
-                <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-[#8d8d8d]">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-start gap-2.5 text-xs text-[#8d8d8d] cursor-pointer py-1 font-semibold uppercase tracking-wider text-[10px]">
                     <input
                       type="checkbox"
-                      checked={form.rememberMe}
-                      onChange={(e) => set("rememberMe", e.target.checked)}
-                      className="accent-[#ed3434] size-4"
+                      checked={form.terms}
+                      onChange={(e) => set("terms", e.target.checked)}
+                      className="accent-[#ed3434] size-4 mt-0.5"
                     />
-                    <span>Remember Me</span>
+                    <span>I accept terms & conditions</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!form.email) {
-                        toast.error("Please enter your email address first");
-                        return;
-                      }
-                      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
-                        redirectTo: window.location.origin + "/auth",
-                      });
-                      if (!error) toast.success("Password reset link sent to your email.");
-                      else toast.error(error.message);
-                    }}
-                    className="text-[#ed3434] hover:underline font-bold bg-transparent border-0 cursor-pointer"
-                  >
-                    Forgot Password?
-                  </button>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4 animate-fade-in">
+                  {/* Email / Username */}
+                  <div>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Email or Username *</label>
+                    <div className="relative">
+                      <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => set("email", e.target.value)}
+                        placeholder="admin"
+                        className={inp + " pl-10"}
+                        required
+                      />
+                    </div>
+                  </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white font-extrabold rounded-lg transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(237,52,52,0.25)] hover:scale-[1.01] active:scale-[0.99]"
-            >
-              {loading
-                ? "Authorizing..."
-                : mode === "login" ? "Login to Console" : "Create My Console"}
-            </button>
-          </form>
+                  {/* Password */}
+                  <div>
+                    <label className="text-[9px] uppercase tracking-[0.22em] text-[#8d8d8d] block mb-1 font-bold">Password *</label>
+                    <div className="relative">
+                      <Lock className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={form.password}
+                        onChange={(e) => set("password", e.target.value)}
+                        placeholder="••••••••"
+                        className={inp + " pl-10 pr-10"}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8d8d8d] hover:text-white cursor-pointer bg-transparent border-0"
+                      >
+                        {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Remember me + Forgot password */}
+                  <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-[#8d8d8d]">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.rememberMe}
+                        onChange={(e) => set("rememberMe", e.target.checked)}
+                        className="accent-[#ed3434] size-4"
+                      />
+                      <span>Remember Me</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!form.email) {
+                          toast.error("Please enter your email address first");
+                          return;
+                        }
+                        const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+                          redirectTo: window.location.origin + "/auth",
+                        });
+                        if (!error) toast.success("Password reset link sent to your email.");
+                        else toast.error(error.message);
+                      }}
+                      className="text-[#ed3434] hover:underline font-bold bg-transparent border-0 cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white font-extrabold rounded-lg transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-xs shadow-[0_4px_15px_rgba(237,52,52,0.25)] hover:scale-[1.01] active:scale-[0.99]"
+              >
+                {loading
+                  ? "Authorizing..."
+                  : mode === "login" ? "Login to Console" : "Create My Console"}
+              </button>
+            </form>
+          )}
 
           {/* Divider "or" */}
           <div className="relative flex items-center justify-center select-none">

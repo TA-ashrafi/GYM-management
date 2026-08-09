@@ -8,7 +8,7 @@ import {
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { PageHeader } from "@/components/AppShell";
+import { AppShell, PageHeader } from "@/components/AppShell";
 import {
   useGym, daysUntil, money, gym,
   DEFAULT_LAYOUT, type WidgetId, type PlanType
@@ -65,7 +65,7 @@ function Home() {
     );
   }
 
-  return user ? <Dashboard /> : <MarketingPortal />;
+  return user ? <AppShell><Dashboard /></AppShell> : <MarketingPortal />;
 }
 
 /* =========================================================================
