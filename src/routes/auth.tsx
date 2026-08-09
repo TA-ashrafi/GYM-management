@@ -239,12 +239,12 @@ function Auth() {
 
             {/* LOGO ONLY */}
             <div className="flex justify-center mb-4">
-              <img src={logoPng} alt="Alpha Fitness" className="h-11 object-contain" />
+              <img src={logoPng} alt="Alpha Fitness" className="h-20 object-contain drop-shadow-[0_5px_8px_rgba(0,0,0,0.45)]" />
             </div>
 
             {/* Title */}
             <div className="text-center mb-4">
-              <h1 className="text-xl sm:text-3xl font-heading font-black text-white uppercase tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-heading font-bold text-white uppercase tracking-tight">
                 {mode === "login" ? (
                   <>WELCOME <span className="text-[#ed3434]">BACK</span></>
                 ) : (
