@@ -134,11 +134,42 @@ function MarketingPortal() {
         )}
       </header>
 
-      {/* SECTION 2: HERO */}
+      {/* SECTION 2: HERO — Premium tilted strip with improved design */}
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
-        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
+        {/* Premium tilted geometric strip — improved with better visibility and depth */}
+        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] pointer-events-none z-0 hidden lg:block" style={{ transform: 'skewX(-12deg)' }}>
+          <div className="w-full h-full relative">
+            {/* Main strip with gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#ff0000]/20 via-[#ff0000]/10 to-transparent" />
+            
+            {/* Inner glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent blur-xl" />
+            
+            {/* Vertical accent lines */}
+            <div className="absolute left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/30 to-transparent" />
+            <div className="absolute right-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/20 to-transparent" />
+            
+            {/* Diagonal light rays */}
+            <div className="absolute top-[10%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent" />
+            <div className="absolute top-[30%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/10 to-transparent" />
+            <div className="absolute top-[50%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/5 to-transparent" />
+            
+            {/* Vertical gradient edge */}
+            <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/30 to-transparent" />
+            <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/20 to-transparent" />
+            
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 opacity-[0.04]" 
+                 style={{
+                   backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
+                   backgroundSize: '32px 32px'
+                 }} 
+            />
+          </div>
+        </div>
+
         {/* Layer athlete PNG on top of text (z-20) */}
-        <img src={pose1} alt="Athlete back detail" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
+        <img src={pose1} alt="Athlete posing" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
           <div className="grid lg:grid-cols-12 gap-12">
@@ -148,19 +179,25 @@ function MarketingPortal() {
                 <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
               </div>
 
-              {/* Restructured Muscle Mastery Alpha headline with letter-spacing */}
-              <h1 className="text-white uppercase leading-[0.82] tracking-[0.14em] sm:tracking-[0.18em] select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+              {/* VARIANT 7: Vintage Strength - Old School Gym */}
+              <h1 className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none" 
+                  style={{ 
+                    fontSize: "clamp(64px, 9.5vw, 150px)",
+                    fontFamily: "'Abril Fatface', 'Georgia', serif",
+                    fontWeight: 400
+                  }}>
                 <span className="text-[#ed3434]">M</span>uscle<br />
                 Mastery<br />
                 Alpha
               </h1>
+              
               <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
                 Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
               </p>
 
               <div className="flex flex-wrap items-center gap-6 pt-4">
                 {/* LAUNCH CONSOLE DASHBOARD button redirecting directly to login */}
-                <Link to="/auth" search={{ mode: "login" }} className="cta group">
+                <Link to="/auth" search={{ mode: "login" }} className="cta group relative z-30">
                   LAUNCH CONSOLE DASHBOARD
                   <span className="size-[74px] rounded-full border border-[#ed3434] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ed3434] group-hover:text-white text-[#ed3434] font-black text-xl">
                     ↗
@@ -171,8 +208,8 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Far Left social rail with un-filled outline circular borders */}
-        <div className="absolute left-6 bottom-1/4 flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
+        {/* Far Left social rail - moved UP */}
+        <div className="absolute left-6 top-[30%] flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
           <div className="flex flex-col gap-3 border border-[#242424] rounded-full px-2.5 py-5 items-center bg-transparent">
             <a href="#" className="hover:text-white transition">IN</a>
             <a href="#" className="hover:text-white transition">IG</a>
@@ -180,8 +217,8 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Bottom Left scroll text - oriented vertically, raised bottom-12 */}
-        <div className="absolute left-10 bottom-12 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+        {/* Bottom Left scroll text - moved UP to avoid marquee overlap */}
+        <div className="absolute left-10 bottom-50 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
           <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
           <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
         </div>
@@ -295,7 +332,7 @@ function MarketingPortal() {
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="logo-card bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] overflow-hidden flex items-center justify-center relative">
             <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover opacity-60" />
-            <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6 z-10">The Alpha Standard</span>
+            {/* <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6 z-10">The Alpha Standard</span> */}
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Alpha Standard</div>
@@ -339,13 +376,13 @@ function MarketingPortal() {
             { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
             { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
           ].map((program) => (
-            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between">
+            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group">
               <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
               <div className="z-10 mt-12 space-y-3">
-                <h3 className="font-heading text-2xl font-bold text-white uppercase">{program.name}</h3>
+                <h3 className="font-heading text-2xl font-bold text-white uppercase group-hover:text-[#ed3434] transition-colors duration-300">{program.name}</h3>
                 <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-[240px]">{program.desc}</p>
               </div>
-              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10">↗ View program</span>
+              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10 group-hover:translate-x-2 transition-transform duration-300">↗ View program</span>
             </article>
           ))}
         </div>
@@ -408,9 +445,9 @@ function MarketingPortal() {
             { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
             { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
           ].map((f) => (
-            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px]">
-              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest">{f.num}</span>
-              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2">{f.name}</h3>
+            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group">
+              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest group-hover:text-[#ed3434]">{f.num}</span>
+              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2 group-hover:text-[#ed3434] transition-colors duration-300">{f.name}</h3>
               <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
             </div>
           ))}
@@ -1435,7 +1472,7 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Fee Amount (INR)</label>
+            <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1">Fee Amount (INR)</label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-bold">₹</span>
               <input
@@ -1540,7 +1577,7 @@ function MoneyCard({
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground uppercase tracking-widest truncate">{label}</p>
         <p className="text-xl sm:text-2xl font-heading text-foreground mt-1">{value}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{sub}</p>
+        <p className="text-[11px] text-[#8d8d8d] truncate">{sub}</p>
       </div>
     </Link>
   );

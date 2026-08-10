@@ -30,11 +30,16 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
   --font-heading: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* ---------- PREMIUM SEMANTIC OKLCH SYSTEM ---------- */
+/* ---------- PREMIUM SEMANTIC OKLCH SYSTEM (Default Dark) ---------- */
 :root,
 :root.dark,
 html.dark {
@@ -52,10 +57,46 @@ html.dark {
   --border: oklch(0.31 0.004 106); /* hairline border */
   --input: oklch(0.31 0.004 106);
   --ring: var(--brand);
+
+  /* Fallback Defaults (Red/Black) */
+  --brand: #EB5757;
+  --brand-gradient: linear-gradient(135deg, #000000 0%, #EB5757 100%);
+  --brand-foreground: #000000;
+  --accent: #EB5757;
+  --primary: #EB5757;
+  --primary-foreground: #000000;
+  --destructive: oklch(0.593 0.221 26.3);
+  --destructive-foreground: oklch(0.99 0 0);
+  --danger: oklch(0.593 0.221 26.3);
+  --warn: oklch(0.72 0.15 60);
+  --info: oklch(0.6 0.15 250);
 }
 
-/* ---------- PREMIUM RADICAL GRADIENTS PRESETS ---------- */
-html[data-preset="lime"] {
+/* ---------- LIGHT theme ---------- */
+html.light {
+  --background: oklch(0.98 0.003 270);
+  --foreground: oklch(0.14 0.01 270);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.14 0.01 270);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0.01 270);
+  --secondary: oklch(0.94 0.005 270);
+  --secondary-foreground: oklch(0.14 0.01 270);
+  --muted: oklch(0.93 0.005 270);
+  --muted-foreground: oklch(0.48 0.01 270);
+  --accent: oklch(0.58 0.18 255);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  --danger: oklch(0.58 0.22 25);
+  --warn: oklch(0.66 0.17 60);
+  --info: oklch(0.58 0.18 255);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 13%);
+}
+
+/* ---------- PREMIUM RADICAL GRADIENTS PRESETS WITH HIGH SPECIFICITY ---------- */
+html[data-preset="lime"], html.dark[data-preset="lime"] {
   --brand: #5cdb95;
   --brand-gradient: linear-gradient(135deg, #5cdb95 0%, #05386b 100%);
   --accent: #5cdb95;
@@ -63,15 +104,15 @@ html[data-preset="lime"] {
   --primary-foreground: #05386b;
 }
 
-html[data-preset="gold"] {
-  --brand: #DBDBDB;
+html[data-preset="gold"], html.dark[data-preset="gold"] {
+  --brand: #ADA996;
   --brand-gradient: linear-gradient(135deg, #EAEAEA 0%, #DBDBDB 30%, #F2F2F2 70%, #ADA996 100%);
   --accent: #DBDBDB;
   --primary: #DBDBDB;
   --primary-foreground: #000000;
 }
 
-html[data-preset="red"] {
+html[data-preset="red"], html.dark[data-preset="red"] {
   --brand: #EB5757;
   --brand-gradient: linear-gradient(135deg, #000000 0%, #EB5757 100%);
   --accent: #EB5757;
@@ -79,7 +120,7 @@ html[data-preset="red"] {
   --primary-foreground: #000000;
 }
 
-html[data-preset="blue"] {
+html[data-preset="blue"], html.dark[data-preset="blue"] {
   --brand: #237A57;
   --brand-gradient: linear-gradient(135deg, #237A57 0%, #093028 100%);
   --accent: #237A57;
@@ -125,7 +166,7 @@ html[data-preset="blue"] {
   }
 }
 
-/* Custom premium color and background util overrides */
+/* Custom premium color overrides for logged-in pages */
 .bg-brand-gradient {
   background: var(--brand-gradient);
 }
@@ -139,7 +180,7 @@ html[data-preset="blue"] {
 }
 
 .skew-slab {
-  background: var(--brand-gradient);
+  background: linear-gradient(135deg, #000000 0%, #EB5757 100%);
   transform: skewX(-9deg);
 }
 
