@@ -20,7 +20,7 @@ import logo2 from "@/assets/logo2.png";
 // Load athlete photos safely
 import grip from "@/assets/grip.jpg";
 import pose1 from "@/assets/pose1.png";
-import m4 from "@/assets/m4.jpg";
+import benchpress from "@/assets/benchpress.jpg";
 
 import { FireSparksOverlay } from "@/components/FireSparksOverlay";
 
@@ -327,22 +327,33 @@ function MarketingPortal() {
         </div>
       </section>
 
-      {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
+                  {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="logo-card bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] overflow-hidden flex items-center justify-center relative">
-            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover opacity-60" />
-            {/* <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6 z-10">The Alpha Standard</span> */}
+            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover grayscale opacity-60" />
+            {/* Centered Text Overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
+              <span className="text-white font-heading font-black text-4xl sm:text-5xl lg:text-6xl uppercase tracking-[0.15em] leading-none">
+                THE ALPHA
+              </span>
+              <span className="text-[#ed3434] font-heading font-black text-3xl sm:text-4xl lg:text-5xl uppercase tracking-[0.3em] mt-2">
+                STANDARD
+              </span>
+              <span className="text-white/50 font-heading font-bold text-xs sm:text-sm uppercase tracking-[0.3em] mt-4">
+                EST. STRENGTH CULTURE
+              </span>
+            </div>
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Alpha Standard</div>
-            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-5xl">
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-8xl">
               BUILT<br />DIFFERENT
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
               ALPHA FITNESS is a cohesive operations engine developed to bring absolute efficiency, clarity, and design beauty to gym management. Every feature from real-time member records to supplement store profit margins functions offline-first.
             </p>
-            <div className="stats border-t border-[#242424] pt-6 flex flex-row flex-wrap gap-8 items-center">
+            <div className="stats border-t border-[#242424] pt-9 flex flex-row flex-wrap gap-8 items-center">
               {[
                 { no: "01", text: "MINDSET" },
                 { no: "02", text: "STRENGTH" },
@@ -391,12 +402,12 @@ function MarketingPortal() {
       {/* SECTION 7: PERFORMANCE (Refactored to Portrait covered image) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[420px] mx-auto w-full relative z-10">
-            <img src={m4} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[520px] mx-auto w-full relative z-10">
+            <img src={benchpress} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
-            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-6xl space-y-1">
+            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-8xl space-y-1">
               <span>DISCIPLINE</span><br />
               <span>CREATES</span><br />
               <span className="text-[#ed3434]">POWER.</span>
