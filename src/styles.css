@@ -199,7 +199,6 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
 }
 .rise:hover {
   transform: translateY(-6px);
-  border-color: var(--brand);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
