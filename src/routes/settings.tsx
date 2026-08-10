@@ -18,10 +18,10 @@ const LANGS: { v: Settings["language"]; label: string }[] = [
   { v: "hinglish", label: "Hinglish" },
 ];
 const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
-  { v: "lime", label: "Stealth Lime", swatch: "oklch(0.94 0.21 113)" },
-  { v: "red", label: "Power Red", swatch: "oklch(0.62 0.24 25)" },
-  { v: "blue", label: "Electric Blue", swatch: "oklch(0.6 0.2 255)" },
-  { v: "gold", label: "Golden Metallic", swatch: "oklch(0.82 0.13 85)" },
+  { v: "lime", label: "Emerald Mint", swatch: "linear-gradient(135deg, #5cdb95 0%, #05386b 100%)" },
+  { v: "red", label: "Obsidian Blood", swatch: "linear-gradient(135deg, #000000 0%, #EB5757 100%)" },
+  { v: "blue", label: "Dark Moss", swatch: "linear-gradient(135deg, #237A57 0%, #093028 100%)" },
+  { v: "gold", label: "Platinum Slate", swatch: "linear-gradient(135deg, #EAEAEA 0%, #ADA996 100%)" },
 ];
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];

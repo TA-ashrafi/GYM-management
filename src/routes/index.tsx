@@ -148,8 +148,8 @@ function MarketingPortal() {
                 <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
               </div>
 
-              {/* Restructured Muscle Mastery Alpha headline */}
-              <h1 className="text-white uppercase leading-[0.82] tracking-tighter select-none font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+              {/* Restructured Muscle Mastery Alpha headline with letter-spacing */}
+              <h1 className="text-white uppercase leading-[0.82] tracking-[0.14em] sm:tracking-[0.18em] select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
                 <span className="text-[#ed3434]">M</span>uscle<br />
                 Mastery<br />
                 Alpha
@@ -180,9 +180,9 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Bottom Left scroll text - oriented vertically */}
-        <div className="absolute left-10 bottom-6 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
-          <span className="size-2 rounded-full bg-[#ed3434] block animate-pulse" />
+        {/* Bottom Left scroll text - oriented vertically, raised bottom-12 */}
+        <div className="absolute left-10 bottom-12 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+          <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
           <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
         </div>
       </section>
@@ -219,7 +219,7 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Dashboard mock card */}
+        {/* Dashboard mock card with premium charts */}
         <div className="bg-[#101010] border border-[#242424] rounded-2xl p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between border-b border-[#242424] pb-4">
             <div className="flex items-center gap-2">
@@ -246,13 +246,45 @@ function MarketingPortal() {
             ))}
           </div>
 
-          {/* Bar chart mockup */}
+          {/* Premium Area Chart Mockup */}
           <div className="pt-4 space-y-2">
-            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block">LIVE FOOTFALL TREND 6AM–10PM</span>
-            <div className="flex items-end gap-2 h-24 pt-4 border-t border-[#242424]">
-              {[25, 40, 55, 70, 85, 95, 80, 45, 30, 50, 75, 90, 65, 35].map((val, idx) => (
-                <div key={idx} className="flex-1 bg-gradient-to-t from-[#ed3434]/40 to-[#ed3434] rounded-t" style={{ height: `${val}%` }} />
-              ))}
+            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block mb-4">LIVE FOOTFALL TREND 6AM–10PM</span>
+            <div className="h-44 w-full border-t border-[#242424] pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={[
+                    { hour: "6AM", footfall: 20 },
+                    { hour: "8AM", footfall: 55 },
+                    { hour: "10AM", footfall: 80 },
+                    { hour: "12PM", footfall: 45 },
+                    { hour: "2PM", footfall: 30 },
+                    { hour: "4PM", footfall: 65 },
+                    { hour: "6PM", footfall: 95 },
+                    { hour: "8PM", footfall: 85 },
+                    { hour: "10PM", footfall: 40 }
+                  ]}
+                  margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ed3434" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#ed3434" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
+                  <XAxis dataKey="hour" stroke="#8d8d8d" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#8d8d8d" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#101010",
+                      border: "1px solid #242424",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="footfall" stroke="#ed3434" fill="url(#glow)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
