@@ -203,60 +203,6 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* Specific Red-Rise on hover for Guest Landing Page cards */
-.rise-red {
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.rise-red:hover {
-  transform: translateY(-6px);
-  border-color: #ed3434 !important;
-  box-shadow: 0 10px 30px rgba(237, 52, 52, 0.15) !important;
-}
-
-/* Custom horizontal line loader with sliding light overlay */
-.loader {
-  height: 2px;
-  width: 300px;
-  background: rgb(44, 44, 44);
-  position: relative;
-  overflow: hidden;
-}
-.loader .black_overlay {
-  background: linear-gradient(
-    87deg,
-    rgb(0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.14) 30%,
-    rgba(0, 0, 0, 0.14) 70%,
-    rgb(0, 0, 0) 100%
-  );
-  position: absolute;
-  inset: 0px;
-}
-.loader .light {
-  width: 70px;
-  height: 100%;
-  position: absolute;
-  left: -20%;
-  top: 0px;
-  background: linear-gradient(
-    87deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgb(237, 52, 52) 40%,
-    rgb(237, 52, 52) 60%,
-    rgba(0, 0, 0, 0) 100%
-  );
-  animation: light 2s infinite ease-in-out;
-}
-
-@keyframes light {
-  from {
-    left: -30%;
-  }
-  to {
-    left: 100%;
-  }
-}
-
 /* Glow ring */
 .glow-ring {
   box-shadow: 0 0 25px var(--brand);
