@@ -138,7 +138,7 @@ function MarketingPortal() {
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
         <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
         {/* Layer athlete PNG on top of text (z-20) */}
-        <img src={pose1} alt="Athlete back detail" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
+        <img src={pose1} alt="Athlete posing" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
           <div className="grid lg:grid-cols-12 gap-12">
@@ -148,8 +148,8 @@ function MarketingPortal() {
                 <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
               </div>
 
-              {/* Restructured Muscle Mastery Alpha headline with letter-spacing */}
-              <h1 className="text-white uppercase leading-[0.82] tracking-[0.14em] sm:tracking-[0.18em] select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+              {/* Reduced letter-spacing to look perfectly balanced */}
+              <h1 className="text-white uppercase leading-[0.82] tracking-tighter select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
                 <span className="text-[#ed3434]">M</span>uscle<br />
                 Mastery<br />
                 Alpha
@@ -160,7 +160,7 @@ function MarketingPortal() {
 
               <div className="flex flex-wrap items-center gap-6 pt-4">
                 {/* LAUNCH CONSOLE DASHBOARD button redirecting directly to login */}
-                <Link to="/auth" search={{ mode: "login" }} className="cta group">
+                <Link to="/auth" search={{ mode: "login" }} className="cta group relative z-30">
                   LAUNCH CONSOLE DASHBOARD
                   <span className="size-[74px] rounded-full border border-[#ed3434] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ed3434] group-hover:text-white text-[#ed3434] font-black text-xl">
                     ↗
@@ -180,8 +180,8 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Bottom Left scroll text - oriented vertically, raised bottom-12 */}
-        <div className="absolute left-10 bottom-12 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+        {/* Bottom Left scroll text - raised vertically to avoid cutting off */}
+        <div className="absolute left-10 bottom-20 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
           <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
           <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
         </div>
@@ -1435,7 +1435,7 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Fee Amount (INR)</label>
+            <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1">Fee Amount (INR)</label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-bold">₹</span>
               <input
@@ -1540,7 +1540,7 @@ function MoneyCard({
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground uppercase tracking-widest truncate">{label}</p>
         <p className="text-xl sm:text-2xl font-heading text-foreground mt-1">{value}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{sub}</p>
+        <p className="text-[11px] text-[#8d8d8d] truncate">{sub}</p>
       </div>
     </Link>
   );

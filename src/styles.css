@@ -166,7 +166,7 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   }
 }
 
-/* Custom premium color and background util overrides */
+/* Custom premium color overrides for logged-in pages */
 .bg-brand-gradient {
   background: var(--brand-gradient);
 }
@@ -180,7 +180,7 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
 }
 
 .skew-slab {
-  background: var(--brand-gradient);
+  background: linear-gradient(135deg, #000000 0%, #EB5757 100%);
   transform: skewX(-9deg);
 }
 
