@@ -20,7 +20,7 @@ import logo2 from "@/assets/logo2.png";
 // Load athlete photos safely
 import grip from "@/assets/grip.jpg";
 import pose1 from "@/assets/pose1.png";
-import m4 from "@/assets/m4.jpg";
+import benchpress from "@/assets/benchpress.jpg";
 
 import { FireSparksOverlay } from "@/components/FireSparksOverlay";
 
@@ -63,7 +63,7 @@ function Home() {
           </div>
           <p className="text-[9px] text-[#8d8d8d] uppercase tracking-[0.3em] font-bold">System Loading</p>
         </div>
-        <div className="premium-loader">
+        <div className="loader">
           <div className="light"></div>
           <div className="black_overlay"></div>
         </div>
@@ -139,9 +139,40 @@ function MarketingPortal() {
         )}
       </header>
 
-      {/* SECTION 2: HERO */}
+      {/* SECTION 2: HERO — Premium tilted strip with improved design */}
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
-        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
+        {/* Premium tilted geometric strip — improved with better visibility and depth */}
+        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] pointer-events-none z-0 hidden lg:block" style={{ transform: 'skewX(-12deg)' }}>
+          <div className="w-full h-full relative">
+            {/* Main strip with gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#ff0000]/20 via-[#ff0000]/10 to-transparent" />
+
+            {/* Inner glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent blur-xl" />
+
+            {/* Vertical accent lines */}
+            <div className="absolute left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/30 to-transparent" />
+            <div className="absolute right-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/20 to-transparent" />
+
+            {/* Diagonal light rays */}
+            <div className="absolute top-[10%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent" />
+            <div className="absolute top-[30%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/10 to-transparent" />
+            <div className="absolute top-[50%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/5 to-transparent" />
+
+            {/* Vertical gradient edge */}
+            <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/30 to-transparent" />
+            <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/20 to-transparent" />
+
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 opacity-[0.04]"
+                 style={{
+                   backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
+                   backgroundSize: '32px 32px'
+                 }}
+            />
+          </div>
+        </div>
+
         {/* Layer athlete PNG on top of text (z-20) */}
         <img src={pose1} alt="Athlete posing" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
 
@@ -153,12 +184,18 @@ function MarketingPortal() {
                 <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
               </div>
 
-              {/* Reduced letter-spacing to look perfectly balanced */}
-              <h1 className="text-white uppercase leading-[0.82] tracking-tighter select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+              {/* VARIANT 7: Vintage Strength - Old School Gym */}
+              <h1 className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none"
+                  style={{
+                    fontSize: "clamp(64px, 9.5vw, 150px)",
+                    fontFamily: "'Abril Fatface', 'Georgia', serif",
+                    fontWeight: 400
+                  }}>
                 <span className="text-[#ed3434]">M</span>uscle<br />
                 Mastery<br />
                 Alpha
               </h1>
+
               <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
                 Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
               </p>
@@ -176,8 +213,8 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Far Left social rail with un-filled outline circular borders */}
-        <div className="absolute left-6 bottom-1/4 flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
+        {/* Far Left social rail - moved UP */}
+        <div className="absolute left-6 top-[30%] flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
           <div className="flex flex-col gap-3 border border-[#242424] rounded-full px-2.5 py-5 items-center bg-transparent">
             <a href="#" className="hover:text-white transition">IN</a>
             <a href="#" className="hover:text-white transition">IG</a>
@@ -185,8 +222,8 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Bottom Left scroll text - raised vertically to avoid cutting off */}
-        <div className="absolute left-10 bottom-20 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+        {/* Bottom Left scroll text - moved UP to avoid marquee overlap */}
+        <div className="absolute left-10 bottom-50 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
           <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
           <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
         </div>
@@ -295,22 +332,33 @@ function MarketingPortal() {
         </div>
       </section>
 
-      {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
+                  {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="logo-card bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] overflow-hidden flex items-center justify-center relative">
-            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover opacity-60" />
-            <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6 z-10">The Alpha Standard</span>
+            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover grayscale opacity-60" />
+            {/* Centered Text Overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
+              <span className="text-white font-heading font-black text-4xl sm:text-5xl lg:text-6xl uppercase tracking-[0.15em] leading-none">
+                THE ALPHA
+              </span>
+              <span className="text-[#ed3434] font-heading font-black text-3xl sm:text-4xl lg:text-5xl uppercase tracking-[0.3em] mt-2">
+                STANDARD
+              </span>
+              <span className="text-white/50 font-heading font-bold text-xs sm:text-sm uppercase tracking-[0.3em] mt-4">
+                EST. STRENGTH CULTURE
+              </span>
+            </div>
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Alpha Standard</div>
-            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-5xl">
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-8xl">
               BUILT<br />DIFFERENT
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
               ALPHA FITNESS is a cohesive operations engine developed to bring absolute efficiency, clarity, and design beauty to gym management. Every feature from real-time member records to supplement store profit margins functions offline-first.
             </p>
-            <div className="stats border-t border-[#242424] pt-6 flex flex-row flex-wrap gap-8 items-center">
+            <div className="stats border-t border-[#242424] pt-9 flex flex-row flex-wrap gap-8 items-center">
               {[
                 { no: "01", text: "MINDSET" },
                 { no: "02", text: "STRENGTH" },
@@ -344,13 +392,13 @@ function MarketingPortal() {
             { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
             { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
           ].map((program) => (
-            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise-red min-h-[300px] flex flex-col justify-between">
+            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise-red min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group">
               <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
               <div className="z-10 mt-12 space-y-3">
-                <h3 className="font-heading text-2xl font-bold text-white uppercase">{program.name}</h3>
+                <h3 className="font-heading text-2xl font-bold text-white uppercase group-hover:text-[#ed3434] transition-colors duration-300">{program.name}</h3>
                 <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-[240px]">{program.desc}</p>
               </div>
-              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10">↗ View program</span>
+              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10 group-hover:translate-x-2 transition-transform duration-300">↗ View program</span>
             </article>
           ))}
         </div>
@@ -359,12 +407,12 @@ function MarketingPortal() {
       {/* SECTION 7: PERFORMANCE (Refactored to Portrait covered image) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[420px] mx-auto w-full relative z-10">
-            <img src={m4} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[520px] mx-auto w-full relative z-10">
+            <img src={benchpress} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
-            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-6xl space-y-1">
+            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-8xl space-y-1">
               <span>DISCIPLINE</span><br />
               <span>CREATES</span><br />
               <span className="text-[#ed3434]">POWER.</span>
@@ -413,9 +461,9 @@ function MarketingPortal() {
             { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
             { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
           ].map((f) => (
-            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise-red min-h-[220px]">
-              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest">{f.num}</span>
-              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2">{f.name}</h3>
+            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise-red min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group">
+              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest group-hover:text-[#ed3434]">{f.num}</span>
+              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2 group-hover:text-[#ed3434] transition-colors duration-300">{f.name}</h3>
               <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
             </div>
           ))}

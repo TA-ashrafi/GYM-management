@@ -209,19 +209,19 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
 }
 .rise-red:hover {
   transform: translateY(-6px);
-  border-color: #ed3434;
-  box-shadow: 0 10px 30px rgba(237, 52, 52, 0.15);
+  border-color: #ed3434 !important;
+  box-shadow: 0 10px 30px rgba(237, 52, 52, 0.15) !important;
 }
 
-/* Uiverse Premium Line Loader */
-.premium-loader {
+/* Custom horizontal line loader with sliding light overlay */
+.loader {
   height: 2px;
   width: 300px;
-  background: rgb(24, 24, 27);
+  background: rgb(44, 44, 44);
   position: relative;
   overflow: hidden;
 }
-.premium-loader .black_overlay {
+.loader .black_overlay {
   background: linear-gradient(
     87deg,
     rgb(0, 0, 0) 0%,
@@ -232,7 +232,7 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   position: absolute;
   inset: 0px;
 }
-.premium-loader .light {
+.loader .light {
   width: 70px;
   height: 100%;
   position: absolute;
@@ -245,10 +245,10 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
     rgb(237, 52, 52) 60%,
     rgba(0, 0, 0, 0) 100%
   );
-  animation: light-slide 2s infinite ease-in-out;
+  animation: light 2s infinite ease-in-out;
 }
 
-@keyframes light-slide {
+@keyframes light {
   from {
     left: -30%;
   }
