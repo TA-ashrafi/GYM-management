@@ -166,7 +166,7 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   }
 }
 
-/* Custom premium color overrides for logged-in pages */
+/* Custom premium color and background util overrides */
 .bg-brand-gradient {
   background: var(--brand-gradient);
 }
@@ -201,6 +201,60 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   transform: translateY(-6px);
   border-color: var(--brand);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Specific Red-Rise on hover for Guest Landing Page cards */
+.rise-red {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.rise-red:hover {
+  transform: translateY(-6px);
+  border-color: #ed3434;
+  box-shadow: 0 10px 30px rgba(237, 52, 52, 0.15);
+}
+
+/* Uiverse Premium Line Loader */
+.premium-loader {
+  height: 2px;
+  width: 300px;
+  background: rgb(24, 24, 27);
+  position: relative;
+  overflow: hidden;
+}
+.premium-loader .black_overlay {
+  background: linear-gradient(
+    87deg,
+    rgb(0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.14) 30%,
+    rgba(0, 0, 0, 0.14) 70%,
+    rgb(0, 0, 0) 100%
+  );
+  position: absolute;
+  inset: 0px;
+}
+.premium-loader .light {
+  width: 70px;
+  height: 100%;
+  position: absolute;
+  left: -20%;
+  top: 0px;
+  background: linear-gradient(
+    87deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgb(237, 52, 52) 40%,
+    rgb(237, 52, 52) 60%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  animation: light-slide 2s infinite ease-in-out;
+}
+
+@keyframes light-slide {
+  from {
+    left: -30%;
+  }
+  to {
+    left: 100%;
+  }
 }
 
 /* Glow ring */

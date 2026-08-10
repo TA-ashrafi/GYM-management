@@ -55,12 +55,17 @@ function Home() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="size-12 bg-[#ed3434]/10 rounded-lg border border-[#ed3434]/30 grid place-items-center animate-pulse mx-auto">
-            <Dumbbell className="size-6 text-[#ed3434]" />
+      <div className="min-h-screen bg-[#070707] flex flex-col items-center justify-center space-y-6">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center items-center gap-2">
+            <Dumbbell className="size-8 text-[#ed3434] animate-bounce" />
+            <span className="font-heading text-3xl font-black text-white tracking-widest">ALPHA FITNESS</span>
           </div>
-          <p className="text-[10px] text-[#8d8d8d] uppercase tracking-[0.2em] font-bold">ALPHA FITNESS</p>
+          <p className="text-[9px] text-[#8d8d8d] uppercase tracking-[0.3em] font-bold">System Loading</p>
+        </div>
+        <div className="premium-loader">
+          <div className="light"></div>
+          <div className="black_overlay"></div>
         </div>
       </div>
     );
@@ -339,7 +344,7 @@ function MarketingPortal() {
             { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
             { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
           ].map((program) => (
-            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between">
+            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise-red min-h-[300px] flex flex-col justify-between">
               <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
               <div className="z-10 mt-12 space-y-3">
                 <h3 className="font-heading text-2xl font-bold text-white uppercase">{program.name}</h3>
@@ -408,7 +413,7 @@ function MarketingPortal() {
             { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
             { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
           ].map((f) => (
-            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px]">
+            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise-red min-h-[220px]">
               <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest">{f.num}</span>
               <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2">{f.name}</h3>
               <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
