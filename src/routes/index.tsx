@@ -55,12 +55,15 @@ function Home() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="size-12 bg-[#ed3434]/10 rounded-lg border border-[#ed3434]/30 grid place-items-center animate-pulse mx-auto">
-            <Dumbbell className="size-6 text-[#ed3434]" />
-          </div>
-          <p className="text-[10px] text-[#8d8d8d] uppercase tracking-[0.2em] font-bold">ALPHA FITNESS</p>
+      <div className="min-h-screen bg-[#070707] flex items-center justify-center relative overflow-hidden select-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:30px_30px]" />
+        <div className="text-center relative z-10 space-y-3">
+          <h1 className="text-2xl sm:text-3xl font-heading font-black tracking-[0.2em] uppercase select-none animate-blue-flicker">
+            ALPHA FITNESS
+          </h1>
+          <p className="text-[#8d8d8d] text-[8px] font-black uppercase tracking-[0.4em] opacity-80">
+            YOUR GYM OPERATING SYSTEM
+          </p>
         </div>
       </div>
     );
@@ -75,9 +78,65 @@ function Home() {
 
 function MarketingPortal() {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [visibleNavbar, setVisibleNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Hide Navbar on Scroll Down, Show on Scroll Up, and Track Scroll Progress
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Calculate Scroll Progress Percentage
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        setScrollProgress((currentScrollY / totalHeight) * 100);
+      }
+
+      // Hide / Show logic
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setVisibleNavbar(false);
+      } else {
+        setVisibleNavbar(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
+
+      {/* Scroll Progress Tracker in Right Bottom Corner */}
+      <div className="fixed bottom-6 right-6 z-50 pointer-events-none select-none">
+        <div className="relative size-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-md shadow-2xl">
+          {/* Radial Progress Circle SVG */}
+          <svg className="absolute inset-0 size-full -rotate-90">
+            <circle
+              cx="28"
+              cy="28"
+              r="22"
+              className="stroke-white/5 fill-transparent"
+              strokeWidth="3"
+            />
+            <circle
+              cx="28"
+              cy="28"
+              r="22"
+              className="stroke-[#ed3434] fill-transparent transition-all duration-75"
+              strokeWidth="3"
+              strokeDasharray={`${2 * Math.PI * 22}`}
+              strokeDashoffset={`${2 * Math.PI * 22 * (1 - scrollProgress / 100)}`}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="text-[10px] font-heading font-black text-white relative z-10">
+            {Math.round(scrollProgress)}%
+          </span>
+        </div>
+      </div>
 
       {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
       <FireSparksOverlay intensity={35} color="red" speed={0.8} />
@@ -88,7 +147,7 @@ function MarketingPortal() {
       <div className="absolute bottom-1/4 right-1/4 size-[600px] bg-[#ed3434]/3 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* SECTION 1: Fixed Nav Bar */}
-      <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
+      <header className={`fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-all duration-300 ${visibleNavbar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
             <div>

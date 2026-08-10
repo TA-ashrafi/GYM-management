@@ -41,6 +41,45 @@ function Auth() {
     rememberMe: true
   });
 
+  // Client-Side Login Attempt Rate Limiting
+  const getLoginAttempts = (): { count: number; lockedUntil: number | null } => {
+    try {
+      const stored = localStorage.getItem("alpha_login_attempts");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return { count: 0, lockedUntil: null };
+  };
+
+  const incrementAttempts = () => {
+    const data = getLoginAttempts();
+    data.count += 1;
+    if (data.count >= 5) {
+      // Lock out for 24 hours (86,400,000 milliseconds)
+      data.lockedUntil = Date.now() + 86400000;
+      toast.error("Too many failed attempts. Login locked for 24 hours.");
+    } else {
+      toast.error(`Invalid login credentials. Attempt ${data.count} of 5.`);
+    }
+    localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+  };
+
+  const clearAttempts = () => {
+    localStorage.removeItem("alpha_login_attempts");
+  };
+
+  const checkLockStatus = (): boolean => {
+    const data = getLoginAttempts();
+    if (data.lockedUntil && Date.now() < data.lockedUntil) {
+      const hoursRemaining = Math.ceil((data.lockedUntil - Date.now()) / 3600000);
+      toast.error(`Login is temporarily locked. Try again in ${hoursRemaining} hours.`);
+      return true;
+    }
+    if (data.lockedUntil && Date.now() >= data.lockedUntil) {
+      clearAttempts();
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (search.mode === "signup") {
       setMode("signup");
@@ -55,10 +94,19 @@ function Auth() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "login" && checkLockStatus()) {
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "login") {
-        await signIn(form.email, form.password);
+        try {
+          await signIn(form.email, form.password);
+          clearAttempts();
+        } catch (err: any) {
+          incrementAttempts();
+          throw err;
+        }
         await new Promise((r) => setTimeout(r, 500));
         
         const branches = await fetchBranches();
