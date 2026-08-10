@@ -153,6 +153,35 @@ function Attendance() {
       return;
     }
 
+    const fetchSyncData = () => {
+      fetchMembers().then((data) => {
+        if (data) {
+          setMembers(data);
+          membersRef.current = data;
+        }
+      }).catch(console.error);
+
+      // Solve local time shifting / India timezone bugs by using clients start & end of today formatted in proper UTC ISO format
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      supabase
+        .from("attendance_logs")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("checked_in_at", startOfToday.toISOString())
+        .lte("checked_in_at", endOfToday.toISOString())
+        .order("checked_in_at", { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setTodayLogs(data);
+          }
+        });
+    };
+
+    // Initial load
     fetchMembers().then((data) => {
       setMembers(data || []);
       membersRef.current = data || [];
@@ -162,7 +191,6 @@ function Attendance() {
       setLoading(false);
     });
 
-    // Solve local time shifting / India timezone bugs by using clients start & end of today formatted in proper UTC ISO format
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
@@ -179,6 +207,11 @@ function Attendance() {
         if (error) console.error("Error fetching logs:", error);
         else setTodayLogs(data ?? []);
       });
+
+    // Quiet background updater that fetches fresh logs and members every 5 seconds
+    const pollInterval = setInterval(() => {
+      fetchSyncData();
+    }, 5000);
 
     // Realtime subscription for new attendance logs for this branch
     const logsChannel = supabase
@@ -228,6 +261,7 @@ function Attendance() {
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(logsChannel);
       supabase.removeChannel(rfidChannel);
     };

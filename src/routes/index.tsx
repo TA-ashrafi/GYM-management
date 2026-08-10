@@ -55,15 +55,12 @@ function Home() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center relative overflow-hidden select-none">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:30px_30px]" />
-        <div className="text-center relative z-10 space-y-3">
-          <h1 className="text-2xl sm:text-3xl font-heading font-black tracking-[0.2em] uppercase select-none animate-blue-flicker">
+      <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="size-10 border-2 border-t-[#ed3434] border-white/10 rounded-full animate-spin" />
+          <div className="text-[10px] text-white/50 tracking-[0.3em] uppercase font-black">
             ALPHA FITNESS
-          </h1>
-          <p className="text-[#8d8d8d] text-[8px] font-black uppercase tracking-[0.4em] opacity-80">
-            YOUR GYM OPERATING SYSTEM
-          </p>
+          </div>
         </div>
       </div>
     );
@@ -819,7 +816,7 @@ function Dashboard() {
     return d;
   });
 
-  const fetchDashboardData = () => {
+  const fetchDashboardData = useCallback(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
@@ -920,13 +917,18 @@ function Dashboard() {
       setPayments([...payData, ...extraPayments]);
       setStoreSales(salesData);
     });
-  };
+  }, [cycleStart]);
 
   useEffect(() => {
     fetchDashboardData();
 
+    // Silent background updater that polls fresh records every 5 seconds quietly
+    const pollInterval = setInterval(() => {
+      fetchDashboardData();
+    }, 5000);
+
     const branchId = getActiveBranchId();
-    if (!branchId) return;
+    if (!branchId) return () => clearInterval(pollInterval);
 
     const channel = supabase
       .channel("dashboard-realtime")
@@ -945,9 +947,10 @@ function Dashboard() {
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [cycleStart]);
+  }, [cycleStart, fetchDashboardData]);
 
   const settings = useGym((s) => s.settings);
   const layout = settings.dashboardLayout?.length ? settings.dashboardLayout : DEFAULT_LAYOUT;

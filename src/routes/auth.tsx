@@ -53,12 +53,13 @@ function Auth() {
   const incrementAttempts = () => {
     const data = getLoginAttempts();
     data.count += 1;
+    const attemptsLeft = 5 - data.count;
     if (data.count >= 5) {
       // Lock out for 24 hours (86,400,000 milliseconds)
       data.lockedUntil = Date.now() + 86400000;
       toast.error("Too many failed attempts. Login locked for 24 hours.");
     } else {
-      toast.error(`Invalid login credentials. Attempt ${data.count} of 5.`);
+      toast.error(`Invalid login credentials. You have ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`);
     }
     localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
   };
