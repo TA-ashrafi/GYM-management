@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   Users, TrendingUp, AlertTriangle, Wallet, CheckCircle2,
   Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save,
-  Dumbbell, MessageCircle, ShoppingBag, BarChart3, FileText, Zap, ArrowRight, Check, Star, Shield, Award, Flame, Menu
+  Dumbbell, MessageCircle, ShoppingBag, BarChart3, FileText, Zap, ArrowRight, Check, Star, Shield, Award, Flame, Menu, ShieldCheck, Trophy, Sparkles
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
@@ -18,10 +18,11 @@ import { toast } from "sonner";
 import logo2 from "@/assets/logo2.png";
 
 // Load athlete photos safely
-// import image_2_png from "@/assets/image_2_png.png";
-// import m3 from "@/assets/m3.jpg";
 import grip from "@/assets/grip.jpg";
 import pose1 from "@/assets/pose1.png";
+import m4 from "@/assets/m4.jpg";
+
+import { FireSparksOverlay } from "@/components/FireSparksOverlay";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -78,6 +79,9 @@ function MarketingPortal() {
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
 
+      {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
+      <FireSparksOverlay intensity={35} color="red" speed={0.8} />
+
       {/* Background radial effects */}
       <div className="absolute top-0 left-0 right-0 h-[800px] bg-[radial-gradient(circle_at_top,rgba(237,52,52,0.08),transparent_70%)] pointer-events-none z-0" />
       <div className="absolute top-1/3 left-1/4 size-[500px] bg-[#ed3434]/5 rounded-full blur-[120px] pointer-events-none z-0" />
@@ -87,7 +91,6 @@ function MarketingPortal() {
       <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
-            {/* <img src={logo2} alt="Alpha Fitness Logo" className="h-8 object-contain" /> */}
             <div>
               <div className="text-2xl font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
               <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">Your Gym Operating System</div>
@@ -134,27 +137,31 @@ function MarketingPortal() {
       {/* SECTION 2: HERO */}
       <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
         <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] skew-slab opacity-45 pointer-events-none z-0 hidden lg:block" />
-        <img src={pose1} alt="Athlete back detail" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-10 hidden lg:block pointer-events-none" />
+        {/* Layer athlete PNG on top of text (z-20) */}
+        <img src={pose1} alt="Athlete back detail" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-6 w-full relative z-20">
+        <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
           <div className="grid lg:grid-cols-12 gap-12">
             <div className="lg:col-span-8 space-y-6 text-left">
               <div className="inline-flex items-center gap-2">
                 <span className="w-10 h-px bg-[#ed3434]" />
                 <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
               </div>
-              <h1 className="text-white uppercase leading-[0.82] tracking-tighter select-none" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
-                <span className="text-[#ed3434]">B</span>uild<br />
-                <span className="text-[#ed3434]">Y</span>our<br />
-                <span className="text-[#ed3434]">A</span>lpha
+
+              {/* Restructured Muscle Mastery Alpha headline with letter-spacing */}
+              <h1 className="text-white uppercase leading-[0.82] tracking-[0.14em] sm:tracking-[0.18em] select-none font-heading font-black" style={{ fontSize: "clamp(64px, 9.5vw, 150px)" }}>
+                <span className="text-[#ed3434]">M</span>uscle<br />
+                Mastery<br />
+                Alpha
               </h1>
               <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
                 Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
               </p>
 
               <div className="flex flex-wrap items-center gap-6 pt-4">
-                <Link to="/auth" search={{ mode: "signup" }} className="cta group">
-                  Explore Training
+                {/* LAUNCH CONSOLE DASHBOARD button redirecting directly to login */}
+                <Link to="/auth" search={{ mode: "login" }} className="cta group">
+                  LAUNCH CONSOLE DASHBOARD
                   <span className="size-[74px] rounded-full border border-[#ed3434] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ed3434] group-hover:text-white text-[#ed3434] font-black text-xl">
                     ↗
                   </span>
@@ -164,17 +171,19 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Far Left social rail */}
+        {/* Far Left social rail with un-filled outline circular borders */}
         <div className="absolute left-6 bottom-1/4 flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
-          <a href="#" className="hover:text-white transition">IN</a>
-          <a href="#" className="hover:text-white transition">IG</a>
-          <a href="#" className="hover:text-white transition">FB</a>
+          <div className="flex flex-col gap-3 border border-[#242424] rounded-full px-2.5 py-5 items-center bg-transparent">
+            <a href="#" className="hover:text-white transition">IN</a>
+            <a href="#" className="hover:text-white transition">IG</a>
+            <a href="#" className="hover:text-white transition">FB</a>
+          </div>
         </div>
 
-        {/* Bottom Left scroll text */}
-        <div className="absolute left-6 bottom-6 flex items-center gap-2 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
-          <span className="size-2 rounded-full bg-[#ed3434] block animate-ping" />
-          <span>Scroll to discover</span>
+        {/* Bottom Left scroll text - oriented vertically, raised bottom-12 */}
+        <div className="absolute left-10 bottom-12 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
+          <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
+          <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
         </div>
       </section>
 
@@ -210,7 +219,7 @@ function MarketingPortal() {
           </div>
         </div>
 
-        {/* Dashboard mock card */}
+        {/* Dashboard mock card with premium charts */}
         <div className="bg-[#101010] border border-[#242424] rounded-2xl p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between border-b border-[#242424] pb-4">
             <div className="flex items-center gap-2">
@@ -237,42 +246,74 @@ function MarketingPortal() {
             ))}
           </div>
 
-          {/* Bar chart mockup */}
+          {/* Premium Area Chart Mockup */}
           <div className="pt-4 space-y-2">
-            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block">LIVE FOOTFALL TREND 6AM–10PM</span>
-            <div className="flex items-end gap-2 h-24 pt-4 border-t border-[#242424]">
-              {[25, 40, 55, 70, 85, 95, 80, 45, 30, 50, 75, 90, 65, 35].map((val, idx) => (
-                <div key={idx} className="flex-1 bg-gradient-to-t from-[#ed3434]/40 to-[#ed3434] rounded-t" style={{ height: `${val}%` }} />
-              ))}
+            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block mb-4">LIVE FOOTFALL TREND 6AM–10PM</span>
+            <div className="h-44 w-full border-t border-[#242424] pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={[
+                    { hour: "6AM", footfall: 20 },
+                    { hour: "8AM", footfall: 55 },
+                    { hour: "10AM", footfall: 80 },
+                    { hour: "12PM", footfall: 45 },
+                    { hour: "2PM", footfall: 30 },
+                    { hour: "4PM", footfall: 65 },
+                    { hour: "6PM", footfall: 95 },
+                    { hour: "8PM", footfall: 85 },
+                    { hour: "10PM", footfall: 40 }
+                  ]}
+                  margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ed3434" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#ed3434" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
+                  <XAxis dataKey="hour" stroke="#8d8d8d" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#8d8d8d" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#101010",
+                      border: "1px solid #242424",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="footfall" stroke="#ed3434" fill="url(#glow)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 5: ABOUT "Built Different" */}
+      {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="logo-card bg-radial bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] flex items-center justify-center p-8 relative">
-            <img src={logo2} alt="Alpha Standard Logo" className="w-1/2 object-contain" />
-            <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6">The Alpha Standard</span>
+          <div className="logo-card bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] overflow-hidden flex items-center justify-center relative">
+            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover opacity-60" />
+            <span className="absolute text-[11px] uppercase tracking-widest text-[#ed3434] font-bold bottom-6 z-10">The Alpha Standard</span>
           </div>
           <div className="space-y-6 text-left">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Built Different</div>
-            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
-              BUILT DIFFERENT
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Alpha Standard</div>
+            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-5xl">
+              BUILT<br />DIFFERENT
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
               ALPHA FITNESS is a cohesive operations engine developed to bring absolute efficiency, clarity, and design beauty to gym management. Every feature from real-time member records to supplement store profit margins functions offline-first.
             </p>
-            <div className="stats grid grid-cols-3 gap-4 pt-4 border-t border-[#242424]">
+            <div className="stats border-t border-[#242424] pt-6 flex flex-row flex-wrap gap-8 items-center">
               {[
-                { no: "01", text: "Mindset" },
-                { no: "02", text: "Strength" },
-                { no: "03", text: "Results" }
+                { no: "01", text: "MINDSET" },
+                { no: "02", text: "STRENGTH" },
+                { no: "03", text: "RESULT" }
               ].map((x) => (
-                <div key={x.no}>
-                  <strong className="font-heading text-3xl font-black text-white">{x.no}</strong>
-                  <small className="block text-[9px] text-[#8d8d8d] uppercase tracking-widest mt-1">{x.text}</small>
+                <div key={x.no} className="flex items-baseline gap-2">
+                  <span className="font-heading text-3xl font-black text-[#ed3434]">{x.no}</span>
+                  <span className="text-sm font-bold text-white uppercase tracking-wider">{x.text}</span>
                 </div>
               ))}
             </div>
@@ -310,16 +351,18 @@ function MarketingPortal() {
         </div>
       </section>
 
-      {/* SECTION 7: PERFORMANCE */}
+      {/* SECTION 7: PERFORMANCE (Refactored to Portrait covered image) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[420px]">
-            <img src={grip} alt="Barbell training detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+          <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[420px] mx-auto w-full relative z-10">
+            <img src={m4} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
           </div>
           <div className="space-y-6 text-left">
             <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
-            <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
-              DISCIPLINE CREATES POWER
+            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-6xl space-y-1">
+              <span>DISCIPLINE</span><br />
+              <span>CREATES</span><br />
+              <span className="text-[#ed3434]">POWER.</span>
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
               Motivation gets you started. Discipline keeps you moving. At ALPHA FITNESS, we build systems that turn effort into a stronger body and a stronger mindset.
@@ -516,6 +559,62 @@ function MarketingPortal() {
         </div>
       </section>
 
+      {/* SECTION 10.5: THE PROBLEM (New Section) */}
+      <section className="py-24 bg-[#0a0a0a] border-y border-[#242424]">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-start text-left">
+
+          {/* Left Column: The Problem */}
+          <div className="space-y-6">
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Security Problem</div>
+            <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-5xl">
+              FINGERPRINT SCANNERS LIE.
+            </h2>
+            <p className="text-[#8d8d8d] text-sm leading-relaxed max-w-lg">
+              Biometric bypass is incredibly common. When a membership expires, users simply stop scanning or avoid verification entirely. If the gym owner is absent for days, unauthorized entrances go completely undetected. ALPHA FITNESS catches these discrepancies instantly.
+            </p>
+            <div className="space-y-3 pt-4 border-t border-[#242424] max-w-md">
+              {[
+                { label: "4+ days with no scan", action: "Auto Ghost Flag" },
+                { label: "7 days to expiry", action: "WhatsApp Nudge" },
+                { label: "Pending dues", action: "Daily Reminder Queue" },
+                { label: "Store stock low", action: "Dashboard Alert" },
+                { label: "Slot overbooked", action: "Capacity Warning" }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between text-xs font-bold uppercase tracking-wider border-b border-[#242424]/40 pb-2">
+                  <span className="text-white">{item.label}</span>
+                  <span className="text-[#ed3434]">{item.action}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column: Data Security Card */}
+          <div className="bg-[#101010] border border-[#242424] rounded-2xl p-8 space-y-6 relative overflow-hidden">
+            <div className="size-12 bg-[#ed3434]/10 text-[#ed3434] rounded-xl grid place-items-center mb-4">
+              <ShieldCheck className="size-6" />
+            </div>
+            <h3 className="font-heading text-2xl font-bold text-white uppercase">YOUR DATA, YOUR GYM</h3>
+            <p className="text-xs uppercase tracking-widest text-[#ed3434] font-extrabold">Multi-branch · isolated · exportable</p>
+            <p className="text-xs text-[#8d8d8d] leading-relaxed">
+              Each branch remains completely isolated — Branch 1 members will never leak into Branch 2. Export your CSV/JSON backups at any time. No lock-in.
+            </p>
+
+            <div className="grid grid-cols-4 gap-2 pt-2 text-center text-[10px] uppercase font-bold tracking-wider text-white">
+              {["Members", "Attendance", "Store", "Reports"].map((label) => (
+                <div key={label} className="p-2.5 bg-[#070707] border border-[#242424] rounded-lg">
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            <Link to="/auth" search={{ mode: "signup" }} className="w-full py-3 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-black text-center block uppercase tracking-widest shadow-[0_4px_15px_rgba(237,52,52,0.2)]">
+              Start Free
+            </Link>
+          </div>
+
+        </div>
+      </section>
+
       {/* SECTION 11: QUOTE band */}
       <section className="py-20 bg-[#ed3434] text-[#070707] text-center">
         <div className="max-w-5xl mx-auto px-6">
@@ -531,7 +630,6 @@ function MarketingPortal() {
         <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10 relative z-10 text-left">
           <div className="md:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              {/* <img src={logo2} alt="Alpha Logo" className="h-8 object-contain" /> */}
               <div>
                 <div className="text-2xl font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
                 <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">Your Gym Operating System</div>

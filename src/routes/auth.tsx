@@ -7,6 +7,7 @@ import { signIn, signUp } from "@/lib/auth";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 import logoPng from "@/assets/logo.png";
 import logintitan from "@/assets/login-titan.jpg";
+import { FireSparksOverlay } from "@/components/FireSparksOverlay";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Access Portal — ALPHA FITNESS" }] }),
@@ -186,6 +187,9 @@ function Auth() {
   return (
     <div className="min-h-screen w-full bg-[#070707] text-[#f4f4f2] grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden relative select-none">
 
+      {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
+      <FireSparksOverlay intensity={35} color="red" speed={0.8} />
+
       {/* ==================== LEFT PANEL ==================== */}
       <div className="hidden lg:flex relative h-full w-full overflow-hidden bg-black select-none z-0">
         <img
@@ -222,13 +226,13 @@ function Auth() {
 
       {/* ==================== RIGHT PANEL ==================== */}
       <div className="flex items-center justify-center p-4 sm:p-6 lg:h-full z-10 bg-[#070707] relative overflow-hidden">
-        
+
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#6f0000]/15 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="w-full max-w-[380px] relative z-10">
-          
+
           {/* FORM CARD */}
-          <div 
+          <div
             className="relative rounded-2xl p-5 sm:p-6 overflow-hidden"
             style={{
               background: "linear-gradient(to top right, #000000, #2a2a2a)",
@@ -252,15 +256,15 @@ function Auth() {
                 )}
               </h1>
               <p className="text-[#8d8d8d] text-[12px] mt-0.5">
-                {mode === "login" 
-                  ? "Login to continue your fitness journey" 
+                {mode === "login"
+                  ? "Login to continue your fitness journey"
                   : "Establish your gym operating system"}
               </p>
             </div>
 
             {/* Mode Switcher */}
             <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
-              <button 
+              <button
                 onClick={() => { setMode("login"); setAuthMethod("password"); }}
                 className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
                   (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
@@ -268,7 +272,7 @@ function Auth() {
               >
                 Login
               </button>
-              <button 
+              <button
                 onClick={() => { setMode("signup"); setAuthMethod("password"); }}
                 className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
                   (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
@@ -284,7 +288,7 @@ function Auth() {
                 <button
                   type="button"
                   onClick={() => { setAuthMethod("password"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " + 
+                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
                     (authMethod === "password" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
                 >
                   Password
@@ -292,7 +296,7 @@ function Auth() {
                 <button
                   type="button"
                   onClick={() => { setAuthMethod("otp"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " + 
+                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
                     (authMethod === "otp" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
                 >
                   OTP
