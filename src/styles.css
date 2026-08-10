@@ -166,7 +166,7 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   }
 }
 
-/* Custom premium color overrides for logged-in pages */
+/* Custom premium color and background util overrides */
 .bg-brand-gradient {
   background: var(--brand-gradient);
 }
