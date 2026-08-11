@@ -105,8 +105,18 @@ function Auth() {
           await signIn(form.email, form.password);
           clearAttempts();
         } catch (err: any) {
-          incrementAttempts();
-          throw err;
+          const data = getLoginAttempts();
+          data.count += 1;
+          const attemptsLeft = 5 - data.count;
+          if (data.count >= 5) {
+            data.lockedUntil = Date.now() + 86400000;
+            toast.error("Too many failed attempts. Login locked for 24 hours.");
+          } else {
+            toast.error(`Invalid login credentials. You have ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`);
+          }
+          localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+          setLoading(false);
+          return;
         }
         await new Promise((r) => setTimeout(r, 500));
         
@@ -306,7 +316,7 @@ function Auth() {
               </h1>
               <p className="text-[#8d8d8d] text-[12px] mt-0.5">
                 {mode === "login"
-                  ? "Login to continue your fitness journey"
+                  ? "You have 5 attempts to login"
                   : "Establish your gym operating system"}
               </p>
             </div>

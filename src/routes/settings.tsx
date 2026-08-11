@@ -18,10 +18,11 @@ const LANGS: { v: Settings["language"]; label: string }[] = [
   { v: "hinglish", label: "Hinglish" },
 ];
 const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
-  { v: "lime", label: "Emerald Mint", swatch: "linear-gradient(135deg, #5cdb95 0%, #05386b 100%)" },
-  { v: "red", label: "Obsidian Blood", swatch: "linear-gradient(135deg, #000000 0%, #EB5757 100%)" },
-  { v: "blue", label: "Dark Moss", swatch: "linear-gradient(135deg, #237A57 0%, #093028 100%)" },
-  { v: "gold", label: "Platinum Slate", swatch: "linear-gradient(135deg, #EAEAEA 0%, #ADA996 100%)" },
+  { v: "lime", label: "Emerald Mint", swatch: "#22c55e" },
+  { v: "red", label: "Obsidian Blood", swatch: "#ef4444" },
+  { v: "blue", label: "Dark Moss", swatch: "#3b82f6" },
+  { v: "purple", label: "Royal Amethyst", swatch: "#a855f7" },
+  { v: "gold", label: "Platinum Gold", swatch: "#eab308" },
 ];
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
@@ -59,6 +60,19 @@ const SEED_TEMPLATES = [
 function SettingsPage() {
   const settings = useGym((s) => s.settings) as ExtendedSettings;
   const [form, setForm] = useState<ExtendedSettings>(settings);
+
+  const [openSections, setOpenSections] = useState({
+    hardwareKey: true,
+    webhook: false,
+    workoutTemplates: false,
+    planPrices: false,
+    appearance: true,
+    shifts: true,
+  });
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
@@ -121,6 +135,8 @@ function SettingsPage() {
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
           whatsappWebhookUrl: data.whatsapp_webhook_url ?? cachedWebhook ?? "",
+          address: data.address ?? form.address,
+          phone: data.phone ?? form.phone,
         };
 
         setForm(merged);
@@ -292,174 +308,242 @@ function SettingsPage() {
         </section>
 
         {/* Hardware & Active Branch Configuration Credentials */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-4">
-          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Link className="size-4 text-brand" /> Active Branch Hardware Key</h2>
-          <p className="text-xs text-muted-foreground">Copy this unique active Branch ID credential directly into your physical Arduino / ESP32 RFID sketch config to seamlessly stream swipe updates anonymous to this branch.</p>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-secondary/40 rounded-xl border border-border/60">
-            <span className="font-mono text-xs text-white break-all flex-1 selection:bg-brand selection:text-brand-foreground py-1 px-2 bg-black/20 rounded">
-              {activeBranchId || "No active branch loaded"}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                if (activeBranchId) {
-                  navigator.clipboard.writeText(activeBranchId);
-                  toast.success("Active Branch ID copied to clipboard!");
-                } else {
-                  toast.error("No active branch ID available");
-                }
-              }}
-              className="px-4 py-2 bg-brand text-brand-foreground rounded-lg text-xs font-bold shrink-0 hover:scale-[1.02] transition active:scale-95 cursor-pointer"
-            >
-              Copy ID
-            </button>
-          </div>
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("hardwareKey")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
+          >
+            <h2 className="font-heading text-lg flex items-center gap-2 m-0"><Link className="size-4 text-brand" /> Active Branch Hardware Key</h2>
+            <span className="text-muted-foreground font-bold">{openSections.hardwareKey ? "⌃" : "˅"}</span>
+          </button>
+
+          {openSections.hardwareKey && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-4">
+              <p className="text-xs text-muted-foreground m-0">Copy this unique active Branch ID credential directly into your physical Arduino / ESP32 RFID sketch config to seamlessly stream swipe updates anonymous to this branch.</p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-secondary/40 rounded-xl border border-border/60">
+                <span className="font-mono text-xs text-white break-all flex-1 selection:bg-brand selection:text-brand-foreground py-1 px-2 bg-black/20 rounded">
+                  {activeBranchId || "No active branch loaded"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeBranchId) {
+                      navigator.clipboard.writeText(activeBranchId);
+                      toast.success("Active Branch ID copied to clipboard!");
+                    } else {
+                      toast.error("No active branch ID available");
+                    }
+                  }}
+                  className="px-4 py-2 bg-brand text-brand-foreground rounded-lg text-xs font-bold shrink-0 hover:scale-[1.02] transition active:scale-95 cursor-pointer"
+                >
+                  Copy ID
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Automated WhatsApp Notifications */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-3">
-          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Link className="size-4 text-brand" /> WhatsApp Automation Webhook</h2>
-          <p className="text-xs text-muted-foreground">Specify your custom API Webhook (Make/Zapier/WhatsApp tool) to automatically push templates upon successful RFID check-in scans.</p>
-          <Field label="WhatsApp Webhook URL">
-            <input
-              value={form.whatsappWebhookUrl ?? ""}
-              onChange={(e) => set("whatsappWebhookUrl", e.target.value)}
-              placeholder="e.g. https://hook.us1.make.com/your-custom-endpoint"
-              className={input}
-            />
-          </Field>
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("webhook")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
+          >
+            <h2 className="font-heading text-lg flex items-center gap-2 m-0"><Link className="size-4 text-brand" /> WhatsApp Automation Webhook</h2>
+            <span className="text-muted-foreground font-bold">{openSections.webhook ? "⌃" : "˅"}</span>
+          </button>
+
+          {openSections.webhook && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-3">
+              <p className="text-xs text-muted-foreground m-0">Specify your custom API Webhook (Make/Zapier/WhatsApp tool) to automatically push templates upon successful RFID check-in scans.</p>
+              <Field label="WhatsApp Webhook URL">
+                <input
+                  value={form.whatsappWebhookUrl ?? ""}
+                  onChange={(e) => set("whatsappWebhookUrl", e.target.value)}
+                  placeholder="e.g. https://hook.us1.make.com/your-custom-endpoint"
+                  className={input}
+                />
+              </Field>
+            </div>
+          )}
         </section>
 
         {/* Customizable Workout Templates Section (New Feature) */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <h2 className="font-heading text-lg flex items-center gap-2"><Dumbbell className="size-5 text-brand" /> Custom Workout Templates</h2>
-              <p className="text-xs text-muted-foreground">Customize workout templates (Day 1 - Day 6) that can be assigned directly to your members.</p>
-            </div>
-            <button type="button" onClick={addTemplate} className="px-3 py-1.5 bg-secondary text-foreground hover:bg-brand/10 hover:text-brand rounded-lg text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
-              <Plus className="size-3.5" /> Add Template
-            </button>
-          </div>
-          <div className="space-y-4">
-            {workoutTemplates.map((t, tIdx) => (
-              <div key={tIdx} className="p-4 bg-secondary/35 border border-border/60 rounded-2xl relative space-y-3">
-                <button type="button" onClick={() => removeTemplate(tIdx)} className="absolute top-4 right-4 p-1.5 bg-secondary hover:bg-danger/10 hover:text-danger rounded-lg transition cursor-pointer">
-                  <Trash2 className="size-4" />
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("workoutTemplates")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
+          >
+            <h2 className="font-heading text-lg flex items-center gap-2 m-0"><Dumbbell className="size-5 text-brand" /> Custom Workout Templates</h2>
+            <span className="text-muted-foreground font-bold">{openSections.workoutTemplates ? "⌃" : "˅"}</span>
+          </button>
+
+          {openSections.workoutTemplates && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-muted-foreground m-0">Customize workout templates (Day 1 - Day 6) that can be assigned directly to your members.</p>
+                <button type="button" onClick={addTemplate} className="px-3 py-1.5 bg-secondary text-foreground hover:bg-brand/10 hover:text-brand rounded-lg text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                  <Plus className="size-3.5" /> Add Template
                 </button>
-                <div className="grid sm:grid-cols-2 gap-3 max-w-[90%]">
-                  <Field label="Template Name">
-                    <input value={t.name} onChange={(e) => updateTemplateField(tIdx, "name", e.target.value)} placeholder="e.g. Cardio Plan" className={input} />
-                  </Field>
-                  <Field label="Short Description">
-                    <input value={t.desc} onChange={(e) => updateTemplateField(tIdx, "desc", e.target.value)} placeholder="e.g. Weight loss fat burning" className={input} />
-                  </Field>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                  {Array.from({ length: 6 }).map((_, dIdx) => (
-                    <div key={dIdx} className="space-y-1">
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground">Day {dIdx + 1}</label>
-                      <input
-                        value={t.days[dIdx] || ""}
-                        onChange={(e) => updateTemplateDay(tIdx, dIdx, e.target.value)}
-                        placeholder={`Day ${dIdx + 1} exercise...`}
-                        className={input}
-                      />
-                    </div>
-                  ))}
-                </div>
               </div>
-            ))}
-          </div>
+              <div className="space-y-4">
+                {workoutTemplates.map((t, tIdx) => (
+                  <div key={tIdx} className="p-4 bg-secondary/35 border border-border/60 rounded-2xl relative space-y-3">
+                    <button type="button" onClick={() => removeTemplate(tIdx)} className="absolute top-4 right-4 p-1.5 bg-secondary hover:bg-danger/10 hover:text-danger rounded-lg transition cursor-pointer">
+                      <Trash2 className="size-4" />
+                    </button>
+                    <div className="grid sm:grid-cols-2 gap-3 max-w-[90%]">
+                      <Field label="Template Name">
+                        <input value={t.name} onChange={(e) => updateTemplateField(tIdx, "name", e.target.value)} placeholder="e.g. Cardio Plan" className={input} />
+                      </Field>
+                      <Field label="Short Description">
+                        <input value={t.desc} onChange={(e) => updateTemplateField(tIdx, "desc", e.target.value)} placeholder="e.g. Weight loss fat burning" className={input} />
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                      {Array.from({ length: 6 }).map((_, dIdx) => (
+                        <div key={dIdx} className="space-y-1">
+                          <label className="text-[10px] uppercase font-bold text-muted-foreground">Day {dIdx + 1}</label>
+                          <input
+                            value={t.days[dIdx] || ""}
+                            onChange={(e) => updateTemplateDay(tIdx, dIdx, e.target.value)}
+                            placeholder={`Day ${dIdx + 1} exercise...`}
+                            className={input}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Membership Plan Prices */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <h3 className="font-heading text-lg mb-4">Membership Plan Prices</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {PLAN_ORDER.map((plan) => (
-              <div key={plan}>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">{plan}</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-sm font-bold">₹</span>
-                  <input
-                    type="number"
-                    value={planPrices[plan]}
-                    onChange={(e) => setPlanPrices((prev) => ({ ...prev, [plan]: +e.target.value }))}
-                    className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
           <button
-            onClick={savePlanPrices}
-            disabled={saving}
-            className="mt-4 px-5 py-2.5 bg-brand text-brand-foreground rounded-lg text-sm font-semibold disabled:opacity-50 w-full sm:w-auto text-center cursor-pointer"
+            type="button"
+            onClick={() => toggleSection("planPrices")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
           >
-            {saving ? "Saving..." : "Save Plan Prices"}
+            <h2 className="font-heading text-lg m-0 flex items-center gap-2"><CreditCard className="size-4 text-brand" /> Membership Plan Prices</h2>
+            <span className="text-muted-foreground font-bold">{openSections.planPrices ? "⌃" : "˅"}</span>
           </button>
+
+          {openSections.planPrices && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {PLAN_ORDER.map((plan) => (
+                  <div key={plan}>
+                    <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">{plan}</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-sm font-bold">₹</span>
+                      <input
+                        type="number"
+                        value={planPrices[plan]}
+                        onChange={(e) => setPlanPrices((prev) => ({ ...prev, [plan]: +e.target.value }))}
+                        className="flex-1 px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={savePlanPrices}
+                disabled={saving}
+                className="mt-2 px-5 py-2.5 bg-brand text-brand-foreground rounded-lg text-sm font-semibold disabled:opacity-50 w-full sm:w-auto text-center cursor-pointer font-sans"
+              >
+                {saving ? "Saving..." : "Save Plan Prices"}
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Appearance Section */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Palette className="size-4" /> Appearance</h2>
-          <p className="text-xs text-muted-foreground mb-4">Customize theme and color preset</p>
-          <div className="grid grid-cols-1 gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Field label="Mode">
-                <div className="flex gap-2">
-                  {(["dark", "light"] as ThemeMode[]).map((m) => (
-                    <button key={m} onClick={() => { set("theme", m); gym.updateSettings({ theme: m }); }}
-                      className={"flex-1 px-4 py-3 rounded-lg text-sm border inline-flex items-center justify-center gap-2 cursor-pointer " + (form.theme === m ? "bg-brand text-brand-foreground border-brand font-medium" : "bg-secondary border-border text-muted-foreground")}>
-                      {m === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                      {m === "dark" ? "Dark" : "Light"}
-                    </button>
-                  ))}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("appearance")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
+          >
+            <h2 className="font-heading text-lg m-0 flex items-center gap-2"><Palette className="size-4" /> Appearance</h2>
+            <span className="text-muted-foreground font-bold">{openSections.appearance ? "⌃" : "˅"}</span>
+          </button>
+
+          {openSections.appearance && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-4">
+              <p className="text-xs text-muted-foreground m-0">Customize theme and color preset</p>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Field label="Mode">
+                    <div className="flex gap-2">
+                      {(["dark", "light"] as ThemeMode[]).map((m) => (
+                        <button key={m} onClick={() => { set("theme", m); gym.updateSettings({ theme: m }); }}
+                          className={"flex-1 px-4 py-3 rounded-lg text-sm border inline-flex items-center justify-center gap-2 cursor-pointer " + (form.theme === m ? "bg-brand text-brand-foreground border-brand font-medium" : "bg-secondary border-border text-muted-foreground")}>
+                          {m === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                          {m === "dark" ? "Dark" : "Light"}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label="Color Preset">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {PRESETS.map((p) => (
+                        <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
+                          className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
+                          <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ backgroundColor: p.swatch }} />
+                          <span className="text-[11px] sm:text-xs font-semibold">{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
                 </div>
-              </Field>
-              <Field label="Color Preset">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {PRESETS.map((p) => (
-                    <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
-                      className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
-                      <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
-                      <span className="text-[11px] sm:text-xs font-semibold">{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </Field>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* Shifts Section */}
-        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div>
-              <h2 className="font-heading text-lg">Shifts</h2>
-              <p className="text-xs text-muted-foreground">Slots are auto-generated from shifts × duration</p>
-            </div>
-            <button onClick={addShift} className="px-3 py-2 bg-secondary rounded-lg text-xs inline-flex items-center gap-1 hover:bg-brand/10 hover:text-brand font-semibold cursor-pointer">
-              <Plus className="size-3" /> Add Shift
-            </button>
-          </div>
-          <div className="space-y-3">
-            {form.shifts.map((s, i) => (
-              <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-secondary/40 rounded-xl">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground w-16 shrink-0 font-bold">Shift {i + 1}</span>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <input type="time" value={s.start} onChange={(e) => updateShift(i, { start: e.target.value })} className={input + " flex-1 sm:w-32"} />
-                  <span className="text-muted-foreground text-sm">to</span>
-                  <input type="time" value={s.end} onChange={(e) => updateShift(i, { end: e.target.value })} className={input + " flex-1 sm:w-32"} />
-                </div>
-                <button onClick={() => removeShift(i)} className="ml-auto size-9 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center shrink-0">
-                  <Trash2 className="size-4" />
+        <section className="bg-card border border-border rounded-2xl overflow-hidden lg:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("shifts")}
+            className="w-full flex items-center justify-between p-4 sm:p-6 bg-secondary/15 text-left border-0 cursor-pointer"
+          >
+            <h2 className="font-heading text-lg m-0">Shifts</h2>
+            <span className="text-muted-foreground font-bold">{openSections.shifts ? "⌃" : "˅"}</span>
+          </button>
+
+          {openSections.shifts && (
+            <div className="p-4 sm:p-6 border-t border-border space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-muted-foreground m-0">Slots are auto-generated from shifts × duration</p>
+                <button onClick={addShift} className="px-3 py-2 bg-secondary rounded-lg text-xs inline-flex items-center gap-1 hover:bg-brand/10 hover:text-brand font-semibold cursor-pointer">
+                  <Plus className="size-3" /> Add Shift
                 </button>
               </div>
-            ))}
-            {form.shifts.length === 0 && <p className="text-sm text-muted-foreground">No shifts configured. Add one above.</p>}
-          </div>
+              <div className="space-y-3">
+                {form.shifts.map((s, i) => (
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-secondary/40 rounded-xl">
+                    <span className="text-xs uppercase tracking-widest text-muted-foreground w-16 shrink-0 font-bold">Shift {i + 1}</span>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <input type="time" value={s.start} onChange={(e) => updateShift(i, { start: e.target.value })} className={input + " flex-1 sm:w-32"} />
+                      <span className="text-muted-foreground text-sm">to</span>
+                      <input type="time" value={s.end} onChange={(e) => updateShift(i, { end: e.target.value })} className={input + " flex-1 sm:w-32"} />
+                    </div>
+                    <button onClick={() => removeShift(i)} className="ml-auto size-9 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center shrink-0">
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                ))}
+                {form.shifts.length === 0 && <p className="text-sm text-muted-foreground">No shifts configured. Add one above.</p>}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Danger Zone */}
