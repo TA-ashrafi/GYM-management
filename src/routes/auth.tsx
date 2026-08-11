@@ -2,8 +2,10 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Mail, Lock, User, Phone, Eye, EyeOff, ArrowLeft, Building2, ShieldCheck, Trophy, Sparkles, KeyRound } from "lucide-react";
-import { signIn, signUp } from "@/lib/auth";
+import {
+  Mail, Lock, User, Phone, Eye, EyeOff, ArrowLeft,
+  Building2, ShieldCheck, Trophy, Sparkles, KeyRound, Key, RefreshCw
+} from "lucide-react";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 import logoPng from "@/assets/logo.png";
 import logintitan from "@/assets/login-titan.jpg";
@@ -13,113 +15,254 @@ export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Access Portal — ALPHA FITNESS" }] }),
   validateSearch: (search: Record<string, unknown>) =>
     z.object({
-      mode: z.enum(["login", "signup"]).optional(),
+      mode: z.enum(["login", "signup", "reset-password", "forgot-password", "verify"]).optional(),
     }).parse(search),
   component: Auth,
 });
 
+interface LoginRateLimit {
+  failCount: number;
+  lockedUntil: number | null;
+  lockLevel: number; // 0: no locks, 1: locked 15m, 2: locked 30m, 3: locked 1h, 4+: locked 24h
+}
+
 function Auth() {
   const search = Route.useSearch();
   const nav = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup" | "verify">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "verify" | "forgot-password" | "reset-password">("login");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [authMethod, setAuthMethod] = useState<"password" | "otp">("password");
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
 
+  // Form states
   const [form, setForm] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     name: "",
     phone: "",
-    confirmPassword: "",
-    gymName: "",
+    gymName: "", // Keeps compatibility with existing schema/onboarding if needed
     terms: false,
-    rememberMe: true
+    rememberMe: true,
+    newPassword: "",
+    confirmNewPassword: ""
   });
 
-  // Client-Side Login Attempt Rate Limiting
-  const getLoginAttempts = (): { count: number; lockedUntil: number | null } => {
+  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+
+  // ============================================
+  // CLIENT-SIDE RATE LIMITING UTILITIES
+  // ============================================
+
+  // 1. LOGIN ATTEMPT RATE LIMITS
+  const getLoginRateLimits = (): Record<string, LoginRateLimit> => {
     try {
-      const stored = localStorage.getItem("alpha_login_attempts");
+      const stored = localStorage.getItem("alpha_login_rate_limits");
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return { count: 0, lockedUntil: null };
+    return {};
   };
 
-  const incrementAttempts = () => {
-    const data = getLoginAttempts();
-    data.count += 1;
-    const attemptsLeft = 5 - data.count;
-    if (data.count >= 5) {
-      // Lock out for 24 hours (86,400,000 milliseconds)
-      data.lockedUntil = Date.now() + 86400000;
-      toast.error("Too many failed attempts. Login locked for 24 hours.");
-    } else {
-      toast.error(`Invalid login credentials. You have ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`);
+  const getLoginRateLimitForEmail = (email: string): LoginRateLimit => {
+    const limits = getLoginRateLimits();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!limits[cleanEmail]) {
+      limits[cleanEmail] = { failCount: 0, lockedUntil: null, lockLevel: 0 };
     }
-    localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+    return limits[cleanEmail];
   };
 
-  const clearAttempts = () => {
-    localStorage.removeItem("alpha_login_attempts");
+  const saveLoginRateLimitForEmail = (email: string, state: LoginRateLimit) => {
+    const limits = getLoginRateLimits();
+    limits[email.trim().toLowerCase()] = state;
+    localStorage.setItem("alpha_login_rate_limits", JSON.stringify(limits));
   };
 
-  const checkLockStatus = (): boolean => {
-    const data = getLoginAttempts();
-    if (data.lockedUntil && Date.now() < data.lockedUntil) {
-      const hoursRemaining = Math.ceil((data.lockedUntil - Date.now()) / 3600000);
-      toast.error(`Login is temporarily locked. Try again in ${hoursRemaining} hours.`);
+  const clearAttempts = (email: string) => {
+    const limits = getLoginRateLimits();
+    delete limits[email.trim().toLowerCase()];
+    localStorage.setItem("alpha_login_rate_limits", JSON.stringify(limits));
+  };
+
+  const getLockoutDuration = (level: number): number => {
+    if (level === 1) return 15 * 60 * 1000; // 15 mins
+    if (level === 2) return 30 * 60 * 1000; // 30 mins
+    if (level === 3) return 60 * 60 * 1000; // 1 hour
+    return 24 * 60 * 60 * 1000; // 24 hours
+  };
+
+  const incrementAttempts = (email: string) => {
+    const state = getLoginRateLimitForEmail(email);
+    state.failCount += 1;
+
+    let threshold = 5;
+    if (state.lockLevel === 1) threshold = 3;
+    if (state.lockLevel === 2) threshold = 3;
+    if (state.lockLevel >= 3) threshold = 5;
+
+    const remainingAttempts = threshold - state.failCount;
+
+    if (state.failCount >= threshold) {
+      state.lockLevel += 1;
+      state.failCount = 0;
+      const duration = getLockoutDuration(state.lockLevel);
+      state.lockedUntil = Date.now() + duration;
+
+      const durationStr =
+        state.lockLevel === 1 ? "15 minutes" :
+        state.lockLevel === 2 ? "30 minutes" :
+        state.lockLevel === 3 ? "1 hour" : "24 hours";
+
+      toast.error(`Too many failed attempts. Login locked for ${durationStr}.`);
+    } else {
+      toast.error(`Invalid credentials. You have ${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} left.`);
+    }
+
+    saveLoginRateLimitForEmail(email, state);
+  };
+
+  const checkLockStatus = (email: string): boolean => {
+    const state = getLoginRateLimitForEmail(email);
+    if (state.lockedUntil && Date.now() < state.lockedUntil) {
+      const msRemaining = state.lockedUntil - Date.now();
+      let timeStr = "";
+      if (msRemaining > 3600000) {
+        const hours = Math.ceil(msRemaining / 3600000);
+        timeStr = `${hours} hour${hours > 1 ? "s" : ""}`;
+      } else if (msRemaining > 60000) {
+        const mins = Math.ceil(msRemaining / 60000);
+        timeStr = `${mins} minute${mins > 1 ? "s" : ""}`;
+      } else {
+        const secs = Math.ceil(msRemaining / 1000);
+        timeStr = `${secs} second${secs > 1 ? "s" : ""}`;
+      }
+      toast.error(`Login is locked. Try again in ${timeStr}.`);
       return true;
     }
-    if (data.lockedUntil && Date.now() >= data.lockedUntil) {
-      clearAttempts();
+    if (state.lockedUntil && Date.now() >= state.lockedUntil) {
+      // Clear lockout state but retain lockLevel so next fails trigger higher step-up duration
+      state.lockedUntil = null;
+      state.failCount = 0;
+      saveLoginRateLimitForEmail(email, state);
     }
     return false;
   };
 
+  // 2. FORGOT PASSWORD & RESEND VERIFICATION HOURLY RATE LIMITS
+  const checkHourlyLimit = (email: string, key: string): { allowed: boolean; waitMin: number } => {
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const allTimestamps = JSON.parse(localStorage.getItem(key) || "{}");
+      let timestamps: number[] = allTimestamps[cleanEmail] || [];
+
+      // Filter to keep only timestamps from the last 1 hour
+      const oneHourAgo = Date.now() - 3600000;
+      timestamps = timestamps.filter((t) => t > oneHourAgo);
+
+      if (timestamps.length >= 3) {
+        const oldest = timestamps[0];
+        const waitMs = oldest + 3600000 - Date.now();
+        const waitMin = Math.ceil(waitMs / 60000);
+        return { allowed: false, waitMin };
+      }
+
+      timestamps.push(Date.now());
+      allTimestamps[cleanEmail] = timestamps;
+      localStorage.setItem(key, JSON.stringify(allTimestamps));
+      return { allowed: true, waitMin: 0 };
+    } catch (e) {
+      return { allowed: true, waitMin: 0 };
+    }
+  };
+
+  // ============================================
+  // AUTH STATE LISTENERS & INITIAL DETECTION
+  // ============================================
   useEffect(() => {
-    if (search.mode === "signup") {
-      setMode("signup");
+    // 1. Initial Mode Selection based on search param or window hash
+    const isRecoveryHash = window.location.hash.includes("type=recovery");
+    if (isRecoveryHash) {
+      sessionStorage.setItem("alpha_in_recovery", "1");
+      // Clean up the hash immediately for a clean address bar and URL params
+      window.history.replaceState(null, "", window.location.pathname + "?mode=reset-password");
+      setMode("reset-password");
+    } else if (sessionStorage.getItem("alpha_in_recovery") === "1" || search.mode === "reset-password") {
+      setMode("reset-password");
+    } else if (search.mode) {
+      setMode(search.mode as any);
     } else {
       setMode("login");
     }
-    setOtpSent(false);
-    setOtpCode("");
+
+    // 2. Setup auth state listener specifically for PASSWORD_RECOVERY
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        sessionStorage.setItem("alpha_in_recovery", "1");
+        setMode("reset-password");
+        nav({ search: { mode: "reset-password" } as any });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [search.mode]);
 
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  // ============================================
+  // ACTION HANDLERS
+  // ============================================
 
+  // 1. SUBMIT LOGIN OR SIGNUP
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (mode === "login" && checkLockStatus()) {
-      return;
-    }
     setLoading(true);
+
     try {
       if (mode === "login") {
-        try {
-          await signIn(form.email, form.password);
-          clearAttempts();
-        } catch (err: any) {
-          const data = getLoginAttempts();
-          data.count += 1;
-          const attemptsLeft = 5 - data.count;
-          if (data.count >= 5) {
-            data.lockedUntil = Date.now() + 86400000;
-            toast.error("Too many failed attempts. Login locked for 24 hours.");
-          } else {
-            toast.error(`Invalid login credentials. You have ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`);
-          }
-          localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+        const email = form.email.trim();
+        if (!email) {
+          toast.error("Please enter your email");
           setLoading(false);
           return;
         }
-        await new Promise((r) => setTimeout(r, 500));
-        
+
+        if (checkLockStatus(email)) {
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: form.password,
+        });
+
+        if (error) {
+          if (error.message.toLowerCase().includes("confirm")) {
+            toast.error("Please verify your email first.");
+            setLoading(false);
+            return;
+          }
+          incrementAttempts(email);
+          setLoading(false);
+          return;
+        }
+
+        const user = data?.user;
+        if (user && !user.email_confirmed_at) {
+          // Block unconfirmed session immediately
+          await supabase.auth.signOut();
+          toast.error("Please verify your email first.");
+          setLoading(false);
+          return;
+        }
+
+        clearAttempts(email);
+        toast.success("Welcome back! Loading console...");
+        await new Promise((r) => setTimeout(r, 400));
+
         const branches = await fetchBranches();
         if (branches.length === 0) {
           nav({ to: "/onboarding" });
@@ -129,23 +272,165 @@ function Auth() {
           if (!valid) setActiveBranchId(branches[0].id);
           nav({ to: "/" });
         }
-      } else {
-        if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
-        if (!form.gymName.trim()) { toast.error("Please enter your gym name"); setLoading(false); return; }
-        if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
-        if (!form.terms) { toast.error("Please accept the terms and conditions"); setLoading(false); return; }
 
-        await signUp(form.email, form.password, form.name, form.phone);
+      } else if (mode === "signup") {
+        if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
+        if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
+        if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); setLoading(false); return; }
+        if (!form.email.trim()) { toast.error("Email is required"); setLoading(false); return; }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email.trim())) {
+          toast.error("Invalid email format");
+          setLoading(false);
+          return;
+        }
+
+        // SignUp through Supabase directly
+        const { data, error } = await supabase.auth.signUp({
+          email: form.email.trim(),
+          password: form.password,
+          options: {
+            data: {
+              name: form.name.trim(),
+              phone: form.phone.trim(),
+            },
+            emailRedirectTo: window.location.origin + "/auth",
+          }
+        });
+
+        if (error) {
+          if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
+            toast.error("Account already exists. Please log in.");
+          } else {
+            toast.error(error.message || "An error occurred during registration.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Ensure user is not auto-logged in immediately
+        if (data?.session) {
+          await supabase.auth.signOut();
+        }
+
         setMode("verify");
-        toast.success("Verification email sent successfully.");
+        nav({ search: { mode: "verify" } as any });
+        toast.success("Verification email sent! Please check your inbox.");
       }
     } catch (err: any) {
-      console.error("Auth action failed:", err);
       toast.error(err.message || "An authentication error occurred.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
+  // 2. FORGOT PASSWORD REQUEST
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    const email = form.email.trim();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    const rate = checkHourlyLimit(email, "alpha_forgot_pass_rate_limits");
+    if (!rate.allowed) {
+      toast.error(`Request limit exceeded. Max 3 reset links per hour. Please try again in ${rate.waitMin} minutes.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/auth",
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset link sent! Check your email.");
+        setMode("login");
+        nav({ search: { mode: "login" } as any });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reset link.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 3. SET NEW PASSWORD (AFTER RECOVERY LINK)
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (form.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (form.newPassword !== form.confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: form.newPassword
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password updated successfully! Please log in.");
+        sessionStorage.removeItem("alpha_in_recovery");
+        await supabase.auth.signOut();
+        setMode("login");
+        nav({ search: { mode: "login" } as any });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset password.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 4. RESEND VERIFICATION EMAIL
+  async function handleResendVerification() {
+    const email = form.email.trim();
+    if (!email) {
+      toast.error("No email address provided. Please sign up or try logging in.");
+      return;
+    }
+
+    const rate = checkHourlyLimit(email, "alpha_resend_verification_limits");
+    if (!rate.allowed) {
+      toast.error(`Resend limit exceeded. Max 3 verification emails per hour. Try again in ${rate.waitMin} minutes.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth",
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Verification link resent successfully! Please check your email.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend email.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 5. OTP ACTIONS
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     if (!form.email.trim()) {
@@ -217,6 +502,11 @@ function Auth() {
     }
   }
 
+  // ============================================
+  // UI RENDERING VIEWS
+  // ============================================
+
+  // VERIFY MODE VIEW (CHECK EMAIL VIEW)
   if (mode === "verify") {
     return (
       <div className="min-h-screen bg-[#070707] text-[#f4f4f2] flex items-center justify-center p-4">
@@ -229,15 +519,28 @@ function Auth() {
             We have sent a verification link to <strong className="text-white">{form.email}</strong>
           </p>
           <p className="text-sm text-[#8d8d8d] mb-6">
-            Open your email inbox, click the verification link, then return here.
+            Open your email inbox, click the verification link, then return here to log in.
           </p>
-          <button
-            onClick={() => setMode("login")}
-            className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs"
-            style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
-          >
-            Go to Login
-          </button>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setMode("login");
+                nav({ search: { mode: "login" } as any });
+              }}
+              className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98]"
+            >
+              Go to Login
+            </button>
+            <button
+              onClick={handleResendVerification}
+              disabled={loading}
+              className="w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-[11px] inline-flex items-center justify-center gap-1.5"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              Resend Verification Link
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -246,7 +549,6 @@ function Auth() {
   return (
     <div className="min-h-screen w-full bg-[#070707] text-[#f4f4f2] grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden relative select-none">
 
-      {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
       <FireSparksOverlay intensity={35} color="red" speed={0.8} />
 
       {/* ==================== LEFT PANEL ==================== */}
@@ -300,48 +602,50 @@ function Auth() {
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-            {/* LOGO ONLY */}
+            {/* LOGO */}
             <div className="flex justify-center mb-4">
               <img src={logoPng} alt="Alpha Fitness" className="h-20 object-contain drop-shadow-[0_5px_8px_rgba(0,0,0,0.45)]" />
             </div>
 
-            {/* Title */}
+            {/* TITLES & HEADERS */}
             <div className="text-center mb-4">
               <h1 className="text-xl sm:text-2xl font-heading font-bold text-white uppercase tracking-tight">
-                {mode === "login" ? (
-                  <>WELCOME <span className="text-[#ed3434]">BACK</span></>
-                ) : (
-                  <>CREATE <span className="text-[#ed3434]">CONSOLE</span></>
-                )}
+                {mode === "login" && <>WELCOME <span className="text-[#ed3434]">BACK</span></>}
+                {mode === "signup" && <>CREATE <span className="text-[#ed3434]">CONSOLE</span></>}
+                {mode === "forgot-password" && <>RECOVER <span className="text-[#ed3434]">ACCESS</span></>}
+                {mode === "reset-password" && <>RESET <span className="text-[#ed3434]">PASSWORD</span></>}
               </h1>
               <p className="text-[#8d8d8d] text-[12px] mt-0.5">
-                {mode === "login"
-                  ? "You have 5 attempts to login"
-                  : "Establish your gym operating system"}
+                {mode === "login" && "Enter email and password to log in"}
+                {mode === "signup" && "Establish your gym operating system"}
+                {mode === "forgot-password" && "Request password reset verification link"}
+                {mode === "reset-password" && "Establish a secure new password"}
               </p>
             </div>
 
-            {/* Mode Switcher */}
-            <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
-              <button
-                onClick={() => { setMode("login"); setAuthMethod("password"); }}
-                className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
-                  (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
-                style={mode === "login" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => { setMode("signup"); setAuthMethod("password"); }}
-                className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
-                  (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
-                style={mode === "signup" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
-              >
-                Sign Up
-              </button>
-            </div>
+            {/* MAIN SWITCHER (ONLY FOR LOGIN / SIGNUP) */}
+            {(mode === "login" || mode === "signup") && (
+              <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
+                <button
+                  onClick={() => { setMode("login"); setAuthMethod("password"); nav({ search: { mode: "login" } as any }); }}
+                  className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
+                    (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
+                  style={mode === "login" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => { setMode("signup"); setAuthMethod("password"); nav({ search: { mode: "signup" } as any }); }}
+                  className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
+                    (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
+                  style={mode === "signup" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
 
-            {/* Password / OTP Switcher */}
+            {/* PASSWORD / OTP TABS (ONLY IN LOGIN MODE) */}
             {mode === "login" && (
               <div className="flex gap-1 bg-black/40 rounded-lg p-0.5 mb-3.5">
                 <button
@@ -363,8 +667,8 @@ function Auth() {
               </div>
             )}
 
-            {/* ===== FORMS ===== */}
-            {mode === "login" && authMethod === "otp" ? (
+            {/* ==================== LOGIN (OTP) FORM ==================== */}
+            {mode === "login" && authMethod === "otp" && (
               <div className="space-y-3">
                 {!otpSent ? (
                   <form onSubmit={handleSendOtp} className="space-y-3">
@@ -374,7 +678,7 @@ function Auth() {
                         type="email"
                         value={form.email}
                         onChange={(e) => set("email", e.target.value)}
-                        placeholder="Username or Email"
+                        placeholder="Email Address"
                         className={inp}
                         required
                       />
@@ -425,7 +729,10 @@ function Auth() {
                   </form>
                 )}
               </div>
-            ) : (
+            )}
+
+            {/* ==================== LOGIN / SIGNUP PASSWORD FORMS ==================== */}
+            {!(mode === "login" && authMethod === "otp") && mode !== "forgot-password" && mode !== "reset-password" && (
               <form onSubmit={submit} className="space-y-3">
                 {mode === "signup" ? (
                   <div className="space-y-2.5">
@@ -480,7 +787,7 @@ function Auth() {
                         type={showPass ? "text" : "password"}
                         value={form.password}
                         onChange={(e) => set("password", e.target.value)}
-                        placeholder="Choose Password"
+                        placeholder="Choose Password (min 6)"
                         className={inp + " pr-9"}
                         required
                       />
@@ -490,6 +797,25 @@ function Auth() {
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white cursor-pointer bg-transparent border-0"
                       >
                         {showPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                      <input
+                        type={showConfirmPass ? "text" : "password"}
+                        value={form.confirmPassword}
+                        onChange={(e) => set("confirmPassword", e.target.value)}
+                        placeholder="Confirm Password"
+                        className={inp + " pr-9"}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white cursor-pointer bg-transparent border-0"
+                      >
+                        {showConfirmPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                       </button>
                     </div>
 
@@ -548,16 +874,9 @@ function Auth() {
                       </label>
                       <button
                         type="button"
-                        onClick={async () => {
-                          if (!form.email) {
-                            toast.error("Please enter your email address first");
-                            return;
-                          }
-                          const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
-                            redirectTo: window.location.origin + "/auth",
-                          });
-                          if (!error) toast.success("Password reset link sent to your email.");
-                          else toast.error(error.message);
+                        onClick={() => {
+                          setMode("forgot-password");
+                          nav({ search: { mode: "forgot-password" } as any });
                         }}
                         className="text-[#ed3434] hover:underline font-medium bg-transparent border-0 cursor-pointer"
                       >
@@ -580,49 +899,155 @@ function Auth() {
               </form>
             )}
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center my-3.5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
+            {/* ==================== FORGOT PASSWORD VIEW ==================== */}
+            {mode === "forgot-password" && (
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <div className="relative">
+                  <Mail className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    placeholder="Enter registered Email"
+                    className={inp}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
+                  style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
+                >
+                  {loading ? "Sending link..." : "Send Reset Link"}
+                </button>
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      nav({ search: { mode: "login" } as any });
+                    }}
+                    className="text-xs text-[#8d8d8d] hover:text-white underline inline-flex items-center gap-1 bg-transparent border-0 cursor-pointer"
+                  >
+                    <ArrowLeft className="size-3" /> Back to Login
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ==================== RESET PASSWORD VIEW (SET NEW PASSWORD) ==================== */}
+            {mode === "reset-password" && (
+              <form onSubmit={handleResetPassword} className="space-y-3">
+                <div className="relative">
+                  <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                  <input
+                    type={showPass ? "text" : "password"}
+                    value={form.newPassword}
+                    onChange={(e) => set("newPassword", e.target.value)}
+                    placeholder="New Password (min 6)"
+                    className={inp + " pr-9"}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white cursor-pointer bg-transparent border-0"
+                  >
+                    {showPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                  <input
+                    type={showConfirmPass ? "text" : "password"}
+                    value={form.confirmNewPassword}
+                    onChange={(e) => set("confirmNewPassword", e.target.value)}
+                    placeholder="Confirm New Password"
+                    className={inp + " pr-9"}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white cursor-pointer bg-transparent border-0"
+                  >
+                    {showConfirmPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
+                  style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
+                >
+                  {loading ? "Updating password..." : "Update Password"}
+                </button>
+              </form>
+            )}
+
+            {/* GOOGLE / OR BLOCK (ONLY RENDER IN LOGIN OR SIGNUP MODE) */}
+            {(mode === "login" || mode === "signup") && (
+              <>
+                <div className="relative flex items-center justify-center my-3.5">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10" />
+                  </div>
+                  <span className="relative px-3 text-[10px] uppercase tracking-widest text-[#666] font-bold" style={{ background: "#1a1a1a" }}>
+                    OR
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer"
+                >
+                  <svg className="size-4.5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Login with Google
+                </button>
+              </>
+            )}
+
+            {/* Footer switcher links (only if not reset-password) */}
+            {mode !== "reset-password" && (
+              <div className="text-center mt-4 text-[12px] text-[#8d8d8d]">
+                {mode === "login" ? (
+                  <p>
+                    Don't have an account?{" "}
+                    <button
+                      onClick={() => {
+                        setMode("signup");
+                        nav({ search: { mode: "signup" } as any });
+                      }}
+                      className="text-[#ed3434] hover:underline font-bold bg-transparent border-0 cursor-pointer"
+                    >
+                      Sign Up
+                    </button>
+                  </p>
+                ) : (
+                  <p>
+                    Already have an account?{" "}
+                    <button
+                      onClick={() => {
+                        setMode("login");
+                        nav({ search: { mode: "login" } as any });
+                      }}
+                      className="text-[#ed3434] hover:underline font-bold bg-transparent border-0 cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                )}
               </div>
-              <span className="relative px-3 text-[10px] uppercase tracking-widest text-[#666] font-bold" style={{ background: "#1a1a1a" }}>
-                OR
-              </span>
-            </div>
-
-            {/* Google Button */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer"
-            >
-              <svg className="size-4.5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Login with Google
-            </button>
-
-            {/* Footer */}
-            <div className="text-center mt-4 text-[12px] text-[#8d8d8d]">
-              {mode === "login" ? (
-                <p>
-                  Don't have an account?{" "}
-                  <button onClick={() => setMode("signup")} className="text-[#ed3434] hover:underline font-bold">
-                    Sign Up
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  Already have an account?{" "}
-                  <button onClick={() => setMode("login")} className="text-[#ed3434] hover:underline font-bold">
-                    Sign In
-                  </button>
-                </p>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Bottom features */}

@@ -61,11 +61,22 @@ function RootComponent() {
   useEffect(() => {
     // Run only once on initial mount — do not re-run on tab or window switch.
     async function checkAuth() {
+      const isRecovery = pathname === "/auth" && (
+        window.location.hash.includes("type=recovery") ||
+        window.location.search.includes("mode=reset-password") ||
+        sessionStorage.getItem("alpha_in_recovery") === "1"
+      );
+
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         const isPublic = PUBLIC_PATHS.includes(pathname);
         if (!isPublic) router.navigate({ to: "/landing" });
+        setReady(true);
+        return;
+      }
+
+      if (isRecovery) {
         setReady(true);
         return;
       }
