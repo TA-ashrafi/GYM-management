@@ -389,11 +389,19 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
       return;
     }
 
+    const branchId = getActiveBranchId();
+
     intervalRef.current = setInterval(async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("rfid_pending")
         .select("id, uid")
-        .eq("claimed", false)
+        .eq("claimed", false);
+
+      if (branchId) {
+        query = query.eq("branch_id", branchId);
+      }
+
+      const { data } = await query
         .order("created_at", { ascending: false })
         .limit(1);
 

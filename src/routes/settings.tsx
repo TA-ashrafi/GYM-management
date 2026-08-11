@@ -18,10 +18,11 @@ const LANGS: { v: Settings["language"]; label: string }[] = [
   { v: "hinglish", label: "Hinglish" },
 ];
 const PRESETS: { v: ThemePreset; label: string; swatch: string }[] = [
-  { v: "lime", label: "Emerald Mint", swatch: "linear-gradient(135deg, #5cdb95 0%, #05386b 100%)" },
-  { v: "red", label: "Obsidian Blood", swatch: "linear-gradient(135deg, #000000 0%, #EB5757 100%)" },
-  { v: "blue", label: "Dark Moss", swatch: "linear-gradient(135deg, #237A57 0%, #093028 100%)" },
-  { v: "gold", label: "Platinum Slate", swatch: "linear-gradient(135deg, #EAEAEA 0%, #ADA996 100%)" },
+  { v: "lime", label: "Emerald Mint", swatch: "#22c55e" },
+  { v: "red", label: "Obsidian Blood", swatch: "#ef4444" },
+  { v: "blue", label: "Dark Moss", swatch: "#3b82f6" },
+  { v: "purple", label: "Royal Amethyst", swatch: "#a855f7" },
+  { v: "gold", label: "Platinum Gold", swatch: "#eab308" },
 ];
 
 const PLAN_ORDER: PlanType[] = ["Monthly", "Quarterly", "HalfYearly", "Yearly"];
@@ -121,6 +122,8 @@ function SettingsPage() {
           currency: data.currency ?? form.currency,
           language: data.language ?? form.language,
           whatsappWebhookUrl: data.whatsapp_webhook_url ?? cachedWebhook ?? "",
+          address: data.address ?? form.address,
+          phone: data.phone ?? form.phone,
         };
 
         setForm(merged);
@@ -419,11 +422,11 @@ function SettingsPage() {
                 </div>
               </Field>
               <Field label="Color Preset">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {PRESETS.map((p) => (
                     <button key={p.v} onClick={() => { set("preset", p.v); gym.updateSettings({ preset: p.v }); }}
                       className={"px-3 py-3 rounded-lg text-sm border flex flex-col sm:flex-col items-center gap-3 sm:gap-2 cursor-pointer " + (form.preset === p.v ? "border-brand bg-brand/5" : "bg-secondary border-border text-muted-foreground")}>
-                      <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ background: p.swatch }} />
+                      <span className="size-6 rounded-full ring-2 ring-border shrink-0" style={{ backgroundColor: p.swatch }} />
                       <span className="text-[11px] sm:text-xs font-semibold">{p.label}</span>
                     </button>
                   ))}
