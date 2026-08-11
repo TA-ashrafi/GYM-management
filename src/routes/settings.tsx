@@ -134,6 +134,11 @@ function SettingsPage() {
       .catch(() => {});
   }, []);
 
+  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  useEffect(() => {
+    setActiveBranchId(getActiveBranchId());
+  }, []);
+
   // Save plan prices to database
   async function savePlanPrices() {
     const branchId = getActiveBranchId();
@@ -284,6 +289,31 @@ function SettingsPage() {
           <Field label="Default Slot Capacity">
             <input type="number" value={form.slotCapacity} onChange={(e) => set("slotCapacity", Math.max(1, +e.target.value))} className={input} />
           </Field>
+        </section>
+
+        {/* Hardware & Active Branch Configuration Credentials */}
+        <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2 space-y-4">
+          <h2 className="font-heading text-lg mb-1 flex items-center gap-2"><Link className="size-4 text-brand" /> Active Branch Hardware Key</h2>
+          <p className="text-xs text-muted-foreground">Copy this unique active Branch ID credential directly into your physical Arduino / ESP32 RFID sketch config to seamlessly stream swipe updates anonymous to this branch.</p>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-secondary/40 rounded-xl border border-border/60">
+            <span className="font-mono text-xs text-white break-all flex-1 selection:bg-brand selection:text-brand-foreground py-1 px-2 bg-black/20 rounded">
+              {activeBranchId || "No active branch loaded"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (activeBranchId) {
+                  navigator.clipboard.writeText(activeBranchId);
+                  toast.success("Active Branch ID copied to clipboard!");
+                } else {
+                  toast.error("No active branch ID available");
+                }
+              }}
+              className="px-4 py-2 bg-brand text-brand-foreground rounded-lg text-xs font-bold shrink-0 hover:scale-[1.02] transition active:scale-95 cursor-pointer"
+            >
+              Copy ID
+            </button>
+          </div>
         </section>
 
         {/* Automated WhatsApp Notifications */}
