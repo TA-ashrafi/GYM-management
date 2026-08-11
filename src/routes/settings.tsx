@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Sun, Moon, Palette, Link, Dumbbell } from "lucide-react";
+import { Plus, Trash2, Save, Sun, Moon, Palette, Link, Dumbbell, Copy, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
@@ -59,6 +59,7 @@ const SEED_TEMPLATES = [
 function SettingsPage() {
   const settings = useGym((s) => s.settings) as ExtendedSettings;
   const [form, setForm] = useState<ExtendedSettings>(settings);
+  const [activeBranchId, setActiveBranchId] = useState<string>("");
 
   // Plan Prices State
   const [planPrices, setPlanPrices] = useState({
@@ -82,14 +83,14 @@ function SettingsPage() {
     setForm((f) => ({ ...f, shifts: f.shifts.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) }));
   }
 
-  function addShift() {
-    setForm((f) => ({ ...f, shifts: [...f.shifts, { start: "06:00", end: "10:00" }] }));
-  }
-
   // Check and keep active settings
   useEffect(() => {
     setForm(settings);
   }, [settings]);
+
+  function addShift() {
+    setForm((f) => ({ ...f, shifts: [...f.shifts, { start: "06:00", end: "10:00" }] }));
+  }
 
   function removeShift(i: number) {
     setForm((f) => ({ ...f, shifts: f.shifts.filter((_, idx) => idx !== i) }));
@@ -99,6 +100,7 @@ function SettingsPage() {
   useEffect(() => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
+    setActiveBranchId(branchId);
 
     const cachedWebhook = localStorage.getItem(`fs_webhook_${branchId}`) || "";
 
@@ -186,6 +188,12 @@ function SettingsPage() {
     }));
   };
 
+  const copyBranchId = () => {
+    if (!activeBranchId) return;
+    navigator.clipboard.writeText(activeBranchId);
+    toast.success("Active Branch ID copied to clipboard! 📋");
+  };
+
   // Save all settings to local state and Supabase with local fallback
   async function save() {
     gym.updateSettings(form);
@@ -238,6 +246,34 @@ function SettingsPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Arduino RFID Hardware Integration Console (NEW HIGH-FIDELITY COMPONENT) */}
+        <section className="bg-[#101010] border border-[#242424] rounded-2xl p-5 sm:p-6 lg:col-span-2 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="size-11 bg-[#ed3434]/10 rounded-xl grid place-items-center text-[#ed3434]">
+              <Cpu className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-heading text-lg text-white">Hardware Configuration</h2>
+              <p className="text-xs text-muted-foreground">Retrieve your credentials instantly for RFID Reader firmware compile integration.</p>
+            </div>
+          </div>
+          <div className="p-4 bg-[#0a0a0a] border border-[#242424] rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ACTIVE BRANCH DATABASE ID</span>
+              <p className="text-xs sm:text-sm font-mono text-white font-medium select-all break-all">{activeBranchId || "No active branch loaded"}</p>
+            </div>
+            <button
+              type="button"
+              onClick={copyBranchId}
+              disabled={!activeBranchId}
+              className="px-4 py-2 bg-[#ed3434] hover:bg-[#ff4b4b] text-white text-xs font-bold rounded-lg uppercase tracking-wider inline-flex items-center gap-2 transition disabled:opacity-40 cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <Copy className="size-3.5" /> Copy Branch ID
+            </button>
+          </div>
+        </section>
+
         {/* Gym Profile Section */}
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 space-y-4">
           <h2 className="font-heading text-lg">Gym Profile</h2>
