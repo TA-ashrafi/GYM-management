@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Sun, Moon, Palette, Link, Dumbbell } from "lucide-react";
+import { Plus, Trash2, Save, Sun, Moon, Palette, Link, Dumbbell, CreditCard } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, gym, type Settings, type Shift, type ThemePreset, type ThemeMode, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
