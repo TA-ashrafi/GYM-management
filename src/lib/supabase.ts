@@ -38,18 +38,18 @@ export function clearActiveBranch() {
 // ==================== Branch Queries ====================
 
 /**
- * Fetch all branches for the current user
+ * Fetch all branches for the current user (using Clerk ID)
+ * @param clerkUserId - Current active Clerk User ID
  * @returns Array of branch objects or empty array on error
  */
-export async function fetchBranches() {
+export async function fetchBranches(clerkUserId?: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!clerkUserId) return [];
 
     const { data, error } = await supabase
       .from("branches")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("owner_id", clerkUserId)
       .order("created_at", { ascending: true });
     if (error) { console.error(error); return []; }
     return data ?? [];
