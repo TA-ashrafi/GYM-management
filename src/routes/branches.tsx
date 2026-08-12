@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Building2, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
+import { useAuth } from "@clerk/tanstack-react-start";
+import { supabase, fetchBranchesForUser, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/branches")({
   head: () => ({ meta: [{ title: "Branches — ALPHA FITNESS" }] }),
@@ -11,17 +12,23 @@ export const Route = createFileRoute("/branches")({
 
 function Branches() {
   const nav = useNavigate();
+  const { userId, isLoaded: isAuthLoaded } = useAuth();
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const activeBranchId = getActiveBranchId();
 
   // Fetch branches on component mount
   useEffect(() => {
-    fetchBranches().then((data) => {
+    if (!isAuthLoaded) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    fetchBranchesForUser(userId).then((data) => {
       setBranches(data);
       setLoading(false);
     });
-  }, []);
+  }, [userId, isAuthLoaded]);
 
   // Switch to a different branch
   async function switchBranch(id: string) {
