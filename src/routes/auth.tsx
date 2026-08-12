@@ -2,11 +2,11 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useSignIn, useSignUp } from "@clerk/tanstack-react-start";
 import {
   Mail, Lock, User, Phone, Eye, EyeOff, ArrowLeft,
-  Building2, ShieldCheck, Trophy, Sparkles, KeyRound, Key, RefreshCw
+  Building2, ShieldCheck, Trophy, Sparkles, KeyRound
 } from "lucide-react";
-import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 import logoPng from "@/assets/logo.png";
 import logintitan from "@/assets/login-titan.jpg";
 import { FireSparksOverlay } from "@/components/FireSparksOverlay";
@@ -20,12 +20,6 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
-interface LoginRateLimit {
-  failCount: number;
-  lockedUntil: number | null;
-  lockLevel: number; // 0: no locks, 1: locked 15m, 2: locked 30m, 3: locked 1h, 4+: locked 24h
-}
-
 function Auth() {
   const search = Route.useSearch();
   const nav = useNavigate();
@@ -34,10 +28,8 @@ function Auth() {
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
-  const [authMethod, setAuthMethod] = useState<"password" | "otp">("password");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
+  const { signIn, isLoaded: isSignInLoaded, setActive: setActiveSignIn } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded, setActive: setActiveSignUp } = useSignUp();
 
   // Form states
   const [form, setForm] = useState({
@@ -46,178 +38,37 @@ function Auth() {
     confirmPassword: "",
     name: "",
     phone: "",
-    gymName: "", // Keeps compatibility with existing schema/onboarding if needed
+    gymName: "",
     terms: false,
     rememberMe: true,
+    resetCode: "",
     newPassword: "",
     confirmNewPassword: ""
   });
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  // ============================================
-  // CLIENT-SIDE RATE LIMITING UTILITIES
-  // ============================================
-
-  // 1. LOGIN ATTEMPT RATE LIMITS
-  const getLoginRateLimits = (): Record<string, LoginRateLimit> => {
-    try {
-      const stored = localStorage.getItem("alpha_login_rate_limits");
-      if (stored) return JSON.parse(stored);
-    } catch (e) {}
-    return {};
-  };
-
-  const getLoginRateLimitForEmail = (email: string): LoginRateLimit => {
-    const limits = getLoginRateLimits();
-    const cleanEmail = email.trim().toLowerCase();
-    if (!limits[cleanEmail]) {
-      limits[cleanEmail] = { failCount: 0, lockedUntil: null, lockLevel: 0 };
-    }
-    return limits[cleanEmail];
-  };
-
-  const saveLoginRateLimitForEmail = (email: string, state: LoginRateLimit) => {
-    const limits = getLoginRateLimits();
-    limits[email.trim().toLowerCase()] = state;
-    localStorage.setItem("alpha_login_rate_limits", JSON.stringify(limits));
-  };
-
-  const clearAttempts = (email: string) => {
-    const limits = getLoginRateLimits();
-    delete limits[email.trim().toLowerCase()];
-    localStorage.setItem("alpha_login_rate_limits", JSON.stringify(limits));
-  };
-
-  const getLockoutDuration = (level: number): number => {
-    if (level === 1) return 15 * 60 * 1000; // 15 mins
-    if (level === 2) return 30 * 60 * 1000; // 30 mins
-    if (level === 3) return 60 * 60 * 1000; // 1 hour
-    return 24 * 60 * 60 * 1000; // 24 hours
-  };
-
-  const incrementAttempts = (email: string) => {
-    const state = getLoginRateLimitForEmail(email);
-    state.failCount += 1;
-
-    let threshold = 5;
-    if (state.lockLevel === 1) threshold = 3;
-    if (state.lockLevel === 2) threshold = 3;
-    if (state.lockLevel >= 3) threshold = 5;
-
-    const remainingAttempts = threshold - state.failCount;
-
-    if (state.failCount >= threshold) {
-      state.lockLevel += 1;
-      state.failCount = 0;
-      const duration = getLockoutDuration(state.lockLevel);
-      state.lockedUntil = Date.now() + duration;
-
-      const durationStr =
-        state.lockLevel === 1 ? "15 minutes" :
-        state.lockLevel === 2 ? "30 minutes" :
-        state.lockLevel === 3 ? "1 hour" : "24 hours";
-
-      toast.error(`Too many failed attempts. Login locked for ${durationStr}.`);
-    } else {
-      toast.error(`Invalid credentials. You have ${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} left.`);
-    }
-
-    saveLoginRateLimitForEmail(email, state);
-  };
-
-  const checkLockStatus = (email: string): boolean => {
-    const state = getLoginRateLimitForEmail(email);
-    if (state.lockedUntil && Date.now() < state.lockedUntil) {
-      const msRemaining = state.lockedUntil - Date.now();
-      let timeStr = "";
-      if (msRemaining > 3600000) {
-        const hours = Math.ceil(msRemaining / 3600000);
-        timeStr = `${hours} hour${hours > 1 ? "s" : ""}`;
-      } else if (msRemaining > 60000) {
-        const mins = Math.ceil(msRemaining / 60000);
-        timeStr = `${mins} minute${mins > 1 ? "s" : ""}`;
-      } else {
-        const secs = Math.ceil(msRemaining / 1000);
-        timeStr = `${secs} second${secs > 1 ? "s" : ""}`;
-      }
-      toast.error(`Login is locked. Try again in ${timeStr}.`);
-      return true;
-    }
-    if (state.lockedUntil && Date.now() >= state.lockedUntil) {
-      // Clear lockout state but retain lockLevel so next fails trigger higher step-up duration
-      state.lockedUntil = null;
-      state.failCount = 0;
-      saveLoginRateLimitForEmail(email, state);
-    }
-    return false;
-  };
-
-  // 2. FORGOT PASSWORD & RESEND VERIFICATION HOURLY RATE LIMITS
-  const checkHourlyLimit = (email: string, key: string): { allowed: boolean; waitMin: number } => {
-    try {
-      const cleanEmail = email.trim().toLowerCase();
-      const allTimestamps = JSON.parse(localStorage.getItem(key) || "{}");
-      let timestamps: number[] = allTimestamps[cleanEmail] || [];
-
-      // Filter to keep only timestamps from the last 1 hour
-      const oneHourAgo = Date.now() - 3600000;
-      timestamps = timestamps.filter((t) => t > oneHourAgo);
-
-      if (timestamps.length >= 3) {
-        const oldest = timestamps[0];
-        const waitMs = oldest + 3600000 - Date.now();
-        const waitMin = Math.ceil(waitMs / 60000);
-        return { allowed: false, waitMin };
-      }
-
-      timestamps.push(Date.now());
-      allTimestamps[cleanEmail] = timestamps;
-      localStorage.setItem(key, JSON.stringify(allTimestamps));
-      return { allowed: true, waitMin: 0 };
-    } catch (e) {
-      return { allowed: true, waitMin: 0 };
-    }
-  };
-
-  // ============================================
-  // AUTH STATE LISTENERS & INITIAL DETECTION
-  // ============================================
+  // Synchronize initial component mode
   useEffect(() => {
-    // 1. Initial Mode Selection based on search param or window hash
-    const isRecoveryHash = window.location.hash.includes("type=recovery");
-    if (isRecoveryHash) {
-      sessionStorage.setItem("alpha_in_recovery", "1");
-      // Clean up the hash immediately for a clean address bar and URL params
-      window.history.replaceState(null, "", window.location.pathname + "?mode=reset-password");
-      setMode("reset-password");
-    } else if (sessionStorage.getItem("alpha_in_recovery") === "1" || search.mode === "reset-password") {
-      setMode("reset-password");
-    } else if (search.mode) {
+    if (search.mode) {
       setMode(search.mode as any);
     } else {
       setMode("login");
     }
-
-    // 2. Setup auth state listener specifically for PASSWORD_RECOVERY
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        sessionStorage.setItem("alpha_in_recovery", "1");
-        setMode("reset-password");
-        nav({ search: { mode: "reset-password" } as any });
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [search.mode]);
 
   // ============================================
-  // ACTION HANDLERS
+  // ACTION HANDLERS WITH CLERK HEADLESS API
   // ============================================
 
   // 1. SUBMIT LOGIN OR SIGNUP
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isSignInLoaded || !isSignUpLoaded) {
+      toast.error("Authentication system is booting. Please wait a second.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -229,48 +80,19 @@ function Auth() {
           return;
         }
 
-        if (checkLockStatus(email)) {
-          setLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email,
+        // Initialize sign in with password using Clerk
+        const result = await signIn.create({
+          identifier: email,
           password: form.password,
         });
 
-        if (error) {
-          if (error.message.toLowerCase().includes("confirm")) {
-            toast.error("Please verify your email first.");
-            setLoading(false);
-            return;
-          }
-          incrementAttempts(email);
-          setLoading(false);
-          return;
-        }
-
-        const user = data?.user;
-        if (user && !user.email_confirmed_at) {
-          // Block unconfirmed session immediately
-          await supabase.auth.signOut();
-          toast.error("Please verify your email first.");
-          setLoading(false);
-          return;
-        }
-
-        clearAttempts(email);
-        toast.success("Welcome back! Loading console...");
-        await new Promise((r) => setTimeout(r, 400));
-
-        const branches = await fetchBranches();
-        if (branches.length === 0) {
-          nav({ to: "/onboarding" });
-        } else {
-          const activeBranchId = getActiveBranchId();
-          const valid = branches.find((b: any) => b.id === activeBranchId);
-          if (!valid) setActiveBranchId(branches[0].id);
+        if (result.status === "complete") {
+          await setActiveSignIn({ session: result.createdSessionId });
+          toast.success("Welcome back! Loading console...");
+          await new Promise((r) => setTimeout(r, 600));
           nav({ to: "/" });
+        } else {
+          toast.error(`Authentication incomplete: status is ${result.status}`);
         }
 
       } else if (mode === "signup") {
@@ -286,46 +108,61 @@ function Auth() {
           return;
         }
 
-        // SignUp through Supabase directly
-        const { data, error } = await supabase.auth.signUp({
-          email: form.email.trim(),
+        // Initialize SignUp through Clerk
+        await signUp.create({
+          emailAddress: form.email.trim(),
           password: form.password,
-          options: {
-            data: {
-              name: form.name.trim(),
-              phone: form.phone.trim(),
-            },
-            emailRedirectTo: window.location.origin + "/auth",
-          }
+          firstName: form.name.split(" ")[0] || "",
+          lastName: form.name.split(" ").slice(1).join(" ") || "",
         });
 
-        if (error) {
-          if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
-            toast.error("Account already exists. Please log in.");
-          } else {
-            toast.error(error.message || "An error occurred during registration.");
-          }
-          setLoading(false);
-          return;
-        }
-
-        // Ensure user is not auto-logged in immediately
-        if (data?.session) {
-          await supabase.auth.signOut();
-        }
+        // Send email verification code
+        await signUp.prepareEmailAddressVerification({
+          strategy: "email_code",
+        });
 
         setMode("verify");
         nav({ search: { mode: "verify" } as any });
-        toast.success("Verification email sent! Please check your inbox.");
+        toast.success("Verification code sent! Please check your email.");
       }
     } catch (err: any) {
-      toast.error(err.message || "An authentication error occurred.");
+      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  // 2. FORGOT PASSWORD REQUEST
+  // 2. VERIFY SIGNUP EMAIL CODE
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.resetCode.trim()) {
+      toast.error("Please enter the verification code");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await signUp.attemptEmailAddressVerification({
+        code: form.resetCode.trim(),
+      });
+
+      if (result.status === "complete") {
+        await setActiveSignUp({ session: result.createdSessionId });
+        toast.success("Verification successful!");
+        nav({ to: "/onboarding" });
+      } else {
+        toast.error(`Signup status: ${result.status}`);
+      }
+    } catch (err: any) {
+      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Invalid or expired code.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 3. FORGOT PASSWORD REQUEST
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault();
     const email = form.email.trim();
@@ -334,35 +171,32 @@ function Auth() {
       return;
     }
 
-    const rate = checkHourlyLimit(email, "alpha_forgot_pass_rate_limits");
-    if (!rate.allowed) {
-      toast.error(`Request limit exceeded. Max 3 reset links per hour. Please try again in ${rate.waitMin} minutes.`);
-      return;
-    }
-
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/auth",
+      await signIn.create({
+        identifier: email,
       });
 
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Password reset link sent! Check your email.");
-        setMode("login");
-        nav({ search: { mode: "login" } as any });
-      }
+      await signIn.resetPasswordEmailCode.sendCode();
+
+      toast.success("Password reset code sent! Check your inbox.");
+      setMode("reset-password");
+      nav({ search: { mode: "reset-password" } as any });
     } catch (err: any) {
-      toast.error(err.message || "Failed to send reset link.");
+      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Failed to send reset code.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  // 3. SET NEW PASSWORD (AFTER RECOVERY LINK)
+  // 4. SET NEW PASSWORD (AFTER RECOVERY LINK CODE)
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.resetCode.trim()) {
+      toast.error("Please enter the reset code sent to your email");
+      return;
+    }
     if (form.newPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
@@ -374,129 +208,38 @@ function Auth() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: form.newPassword
+      await signIn.resetPasswordEmailCode.verifyCode({
+        code: form.resetCode.trim(),
       });
 
-      if (error) {
-        toast.error(error.message);
-      } else {
+      const submitResult = await signIn.resetPasswordEmailCode.submitPassword({
+        password: form.newPassword,
+        signOutOfOtherSessions: true,
+      });
+
+      if (submitResult.status === "complete") {
         toast.success("Password updated successfully! Please log in.");
-        sessionStorage.removeItem("alpha_in_recovery");
-        await supabase.auth.signOut();
         setMode("login");
         nav({ search: { mode: "login" } as any });
+      } else {
+        toast.error(`Reset incomplete: status is ${submitResult.status}`);
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to reset password.");
+      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Failed to reset password.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  // 4. RESEND VERIFICATION EMAIL
-  async function handleResendVerification() {
-    const email = form.email.trim();
-    if (!email) {
-      toast.error("No email address provided. Please sign up or try logging in.");
-      return;
-    }
-
-    const rate = checkHourlyLimit(email, "alpha_resend_verification_limits");
-    if (!rate.allowed) {
-      toast.error(`Resend limit exceeded. Max 3 verification emails per hour. Try again in ${rate.waitMin} minutes.`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-        }
-      });
-
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Verification link resent successfully! Please check your email.");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to resend email.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 5. OTP ACTIONS
-  async function handleSendOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.email.trim()) {
-      toast.error("Please enter your email address first");
-      return;
-    }
-    setOtpLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: form.email.trim(),
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-        }
-      });
-      if (error) throw error;
-      setOtpSent(true);
-      toast.success("OTP verification code sent to your email.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP code.");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!otpCode.trim()) {
-      toast.error("Please enter the 6-digit OTP code");
-      return;
-    }
-    setOtpLoading(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: form.email.trim(),
-        token: otpCode.trim(),
-        type: "email"
-      });
-      if (error) throw error;
-
-      toast.success("OTP verified. Access authorized.");
-
-      const branches = await fetchBranches();
-      if (branches.length === 0) {
-        nav({ to: "/onboarding" });
-      } else {
-        const activeBranchId = getActiveBranchId();
-        const valid = branches.find((b: any) => b.id === activeBranchId);
-        if (!valid) setActiveBranchId(branches[0].id);
-        nav({ to: "/" });
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Invalid OTP code.");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
+  // 5. GOOGLE OAUTH WITH CLERK
   async function handleGoogleLogin() {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth",
-        }
+      await signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: window.location.origin + "/auth",
+        redirectUrlComplete: window.location.origin + "/",
       });
-      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Failed to initialize Google Authentication");
     }
@@ -506,7 +249,7 @@ function Auth() {
   // UI RENDERING VIEWS
   // ============================================
 
-  // VERIFY MODE VIEW (CHECK EMAIL VIEW)
+  // VERIFY MODE VIEW (OTP CHECK CODE VIEW)
   if (mode === "verify") {
     return (
       <div className="min-h-screen bg-[#070707] text-[#f4f4f2] flex items-center justify-center p-4">
@@ -516,31 +259,45 @@ function Auth() {
           </div>
           <h1 className="text-2xl font-heading mb-2 font-bold text-white uppercase tracking-tight">Verify your email</h1>
           <p className="text-[#8d8d8d] mb-1 text-sm">
-            We have sent a verification link to <strong className="text-white">{form.email}</strong>
+            We have sent a verification code to your email <strong className="text-white">{form.email}</strong>
           </p>
           <p className="text-sm text-[#8d8d8d] mb-6">
-            Open your email inbox, click the verification link, then return here to log in.
+            Enter the verification code below to authorize your gym console.
           </p>
 
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                setMode("login");
-                nav({ search: { mode: "login" } as any });
-              }}
-              className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98]"
-            >
-              Go to Login
-            </button>
-            <button
-              onClick={handleResendVerification}
-              disabled={loading}
-              className="w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-[11px] inline-flex items-center justify-center gap-1.5"
-            >
-              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-              Resend Verification Link
-            </button>
-          </div>
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <div className="relative">
+              <KeyRound className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+              <input
+                type="text"
+                placeholder="6-digit verification code"
+                value={form.resetCode}
+                onChange={(e) => set("resetCode", e.target.value)}
+                className="w-full pl-10 pr-3 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none border border-white/8 text-white placeholder:text-[#555]"
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98]"
+              >
+                {loading ? "Verifying..." : "Verify Code"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  nav({ search: { mode: "login" } as any });
+                }}
+                className="w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-[11px]"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -618,7 +375,7 @@ function Auth() {
               <p className="text-[#8d8d8d] text-[12px] mt-0.5">
                 {mode === "login" && "Enter email and password to log in"}
                 {mode === "signup" && "Establish your gym operating system"}
-                {mode === "forgot-password" && "Request password reset verification link"}
+                {mode === "forgot-password" && "Request password reset code"}
                 {mode === "reset-password" && "Establish a secure new password"}
               </p>
             </div>
@@ -627,7 +384,7 @@ function Auth() {
             {(mode === "login" || mode === "signup") && (
               <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
                 <button
-                  onClick={() => { setMode("login"); setAuthMethod("password"); nav({ search: { mode: "login" } as any }); }}
+                  onClick={() => { setMode("login"); nav({ search: { mode: "login" } as any }); }}
                   className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
                     (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
                   style={mode === "login" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
@@ -635,7 +392,7 @@ function Auth() {
                   Login
                 </button>
                 <button
-                  onClick={() => { setMode("signup"); setAuthMethod("password"); nav({ search: { mode: "signup" } as any }); }}
+                  onClick={() => { setMode("signup"); nav({ search: { mode: "signup" } as any }); }}
                   className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
                     (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
                   style={mode === "signup" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
@@ -645,94 +402,8 @@ function Auth() {
               </div>
             )}
 
-            {/* PASSWORD / OTP TABS (ONLY IN LOGIN MODE) */}
-            {mode === "login" && (
-              <div className="flex gap-1 bg-black/40 rounded-lg p-0.5 mb-3.5">
-                <button
-                  type="button"
-                  onClick={() => { setAuthMethod("password"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
-                    (authMethod === "password" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
-                >
-                  Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMethod("otp"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
-                    (authMethod === "otp" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
-                >
-                  OTP
-                </button>
-              </div>
-            )}
-
-            {/* ==================== LOGIN (OTP) FORM ==================== */}
-            {mode === "login" && authMethod === "otp" && (
-              <div className="space-y-3">
-                {!otpSent ? (
-                  <form onSubmit={handleSendOtp} className="space-y-3">
-                    <div className="relative">
-                      <Mail className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
-                      <input
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => set("email", e.target.value)}
-                        placeholder="Email Address"
-                        className={inp}
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={otpLoading}
-                      className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
-                      style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
-                    >
-                      {otpLoading ? "Sending OTP..." : "Send OTP Code"}
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-3">
-                    <div className="relative">
-                      <KeyRound className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        placeholder="Enter 6-digit OTP"
-                        className={inp + " text-center tracking-[0.3em] font-bold"}
-                        required
-                      />
-                    </div>
-                    <p className="text-[11px] text-[#8d8d8d] text-center -mt-1">
-                      Code sent to <span className="text-[#ed3434]">{form.email}</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setOtpSent(false)}
-                        className="py-2.5 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl uppercase tracking-wider hover:bg-white/10 transition"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={otpLoading}
-                        className="py-2.5 text-white text-xs font-bold rounded-xl uppercase tracking-wider"
-                        style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
-                      >
-                        {otpLoading ? "Verifying..." : "Verify & Login"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-
             {/* ==================== LOGIN / SIGNUP PASSWORD FORMS ==================== */}
-            {!(mode === "login" && authMethod === "otp") && mode !== "forgot-password" && mode !== "reset-password" && (
+            {mode !== "forgot-password" && mode !== "reset-password" && (
               <form onSubmit={submit} className="space-y-3">
                 {mode === "signup" ? (
                   <div className="space-y-2.5">
@@ -919,7 +590,7 @@ function Auth() {
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading ? "Sending link..." : "Send Reset Link"}
+                  {loading ? "Sending link..." : "Send Reset Code"}
                 </button>
                 <div className="text-center pt-1">
                   <button
@@ -939,6 +610,18 @@ function Auth() {
             {/* ==================== RESET PASSWORD VIEW (SET NEW PASSWORD) ==================== */}
             {mode === "reset-password" && (
               <form onSubmit={handleResetPassword} className="space-y-3">
+                <div className="relative">
+                  <KeyRound className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                  <input
+                    type="text"
+                    value={form.resetCode}
+                    onChange={(e) => set("resetCode", e.target.value)}
+                    placeholder="Reset Code from Email"
+                    className={inp}
+                    required
+                  />
+                </div>
+
                 <div className="relative">
                   <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
                   <input

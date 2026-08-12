@@ -59,6 +59,26 @@ export async function fetchBranches() {
   }
 }
 
+/**
+ * Fetch all branches directly by Clerk user ID (deterministic fallback)
+ * @param clerkUserId - Clerk user ID
+ * @returns Array of branch objects
+ */
+export async function fetchBranchesForUser(clerkUserId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("*")
+      .eq("owner_id", clerkUserId)
+      .order("created_at", { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data ?? [];
+  } catch (err) {
+    console.error("Error in fetchBranchesForUser:", err);
+    return [];
+  }
+}
+
 // ==================== Member Queries ====================
 
 /**

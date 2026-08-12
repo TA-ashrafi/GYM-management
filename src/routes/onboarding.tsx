@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAuth, useUser } from "@clerk/tanstack-react-start";
 import { supabase, setActiveBranchId } from "@/lib/supabase";
 import { Building2, Landmark, Phone, MapPin, ArrowRight, Dumbbell, Award, Landmark as MultiBranchIcon } from "lucide-react";
 
@@ -23,6 +24,9 @@ function Onboarding() {
     phone: "",
   });
 
+  const { userId } = useAuth();
+  const { user } = useUser();
+
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function createBranch() {
@@ -30,21 +34,23 @@ function Onboarding() {
       toast.error("Please enter your gym name"); 
       return; 
     }
+    if (!userId) {
+      toast.error("Your login session has expired. Please log in again.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not logged in");
-
       // Ensure gym_owner record exists
       await supabase.from("gym_owners").upsert({
-        id: user.id,
+        id: userId,
         name: form.gymName,
-        email: user.email || "",
+        email: user?.primaryEmailAddress?.emailAddress || "",
         phone: form.phone,
       });
 
       const { data, error } = await supabase.from("branches").insert({
-        owner_id: user.id,
+        owner_id: userId,
         gym_name: form.gymName,
         branch_name: form.branchName,
         address: form.address,

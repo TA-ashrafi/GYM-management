@@ -4,10 +4,11 @@ import {
   useRouter, useRouterState, HeadContent, Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { ClerkProvider, useAuth, useUser } from "@clerk/tanstack-react-start";
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
+import { supabase, getActiveBranchId, fetchBranchesForUser, setActiveBranchId } from "@/lib/supabase";
 import { gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 
@@ -35,19 +36,35 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
 
 function RootComponent() {
+  const publishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string) || "";
+  return (
+    <ClerkProvider publishableKey={publishableKey}>
+      <RootInner />
+    </ClerkProvider>
+  );
+}
+
+function RootInner() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [coords, setCoords] = useState({ x: -100, y: -100 });
+  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
 
-  // Apply theme & preset globally at root level, ensuring perfect persistence across logins, logouts, reloads, and landing/auth screens instantly!
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const { user } = useUser();
+
+  // Apply theme & preset globally at root level, ensuring perfect persistence
   useApplyTheme();
 
   useEffect(() => {
@@ -59,95 +76,117 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
-    // Run only once on initial mount — do not re-run on tab or window switch.
-    async function checkAuth() {
-      const isRecovery = pathname === "/auth" && (
-        window.location.hash.includes("type=recovery") ||
-        window.location.search.includes("mode=reset-password") ||
-        sessionStorage.getItem("alpha_in_recovery") === "1"
-      );
+    if (!isLoaded) return;
 
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
+    async function checkAuthAndSync() {
+      // 1. Signed-out handling
+      if (!isSignedIn) {
+        setSyncedUserId(null);
         const isPublic = PUBLIC_PATHS.includes(pathname);
-        if (!isPublic) router.navigate({ to: "/landing" });
+        if (!isPublic) {
+          router.navigate({ to: "/landing" });
+        }
         setReady(true);
         return;
       }
 
-      if (isRecovery) {
+      // 2. Signed-in handling
+      try {
+        // Sync active Clerk session token to Supabase client so RLS rules evaluate correctly
+        const token = await getToken({ template: "supabase" });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: "",
+          });
+        }
+
+        // Only hit the database (upsert & fetch branches) if not already synced for this user
+        // Or if we are transitioning away from onboarding and need to verify the new branch
+        if (userId && (syncedUserId !== userId || (pathname !== "/onboarding" && syncedUserId === "onboarding"))) {
+          // Upsert gym_owner metadata mapping the Clerk User ID
+          if (user) {
+            await supabase.from("gym_owners").upsert({
+              id: userId,
+              name: user.fullName || user.firstName || "",
+              email: user.primaryEmailAddress?.emailAddress || "",
+            });
+          }
+
+          // Fetch branches for active Clerk user
+          const branches = await fetchBranchesForUser(userId);
+
+          if (branches.length === 0) {
+            localStorage.removeItem("fs_active_branch"); // Safe cleanup
+            gym.reset(); // Wipe any old cached records
+            setSyncedUserId("onboarding");
+            if (pathname !== "/onboarding") {
+              router.navigate({ to: "/onboarding" });
+            }
+            setReady(true);
+            return;
+          }
+
+          const activeBranchId = getActiveBranchId();
+          let validBranch = branches.find((b: any) => b.id === activeBranchId);
+
+          if (!validBranch && branches.length > 0) {
+            setActiveBranchId(branches[0].id);
+            validBranch = branches[0];
+          }
+
+          // Synchronize active branch settings and theme on load
+          const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
+          if (currentBranch) {
+            gym.updateSettings({
+              gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
+              theme: currentBranch.theme ?? "dark",
+              preset: currentBranch.preset ?? "lime",
+              slotDurationMin: currentBranch.slot_duration_min ?? 60,
+              slotCapacity: currentBranch.slot_capacity ?? 20,
+              currency: currentBranch.currency ?? "INR",
+              language: currentBranch.language ?? "hinglish",
+            });
+          }
+
+          setSyncedUserId(userId);
+        }
+
+        // Route protection checks (always runs on pathname change)
+        const isPublic = PUBLIC_PATHS.includes(pathname);
+        if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
+          router.navigate({ to: "/" });
+        }
         setReady(true);
-        return;
-      }
-
-      const branches = await fetchBranches();
-
-      if (branches.length === 0) {
-        localStorage.removeItem("fs_active_branch"); // Safe cleanup
-        gym.reset(); // Wipe any old cached records
-        if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
+      } catch (err) {
+        console.error("Error synchronizing Clerk auth with Supabase:", err);
         setReady(true);
-        return;
       }
-
-      const activeBranchId = getActiveBranchId();
-      let validBranch = branches.find((b: any) => b.id === activeBranchId);
-
-      if (!validBranch && branches.length > 0) {
-        setActiveBranchId(branches[0].id);
-        validBranch = branches[0];
-      }
-
-      // Synchronize active branch settings and theme on load so appearance stays persisted
-      const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
-      if (currentBranch) {
-        gym.updateSettings({
-          gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
-          theme: currentBranch.theme ?? "dark",
-          preset: currentBranch.preset ?? "lime",
-          slotDurationMin: currentBranch.slot_duration_min ?? 60,
-          slotCapacity: currentBranch.slot_capacity ?? 20,
-          currency: currentBranch.currency ?? "INR",
-          language: currentBranch.language ?? "hinglish",
-        });
-      }
-
-      const isPublic = PUBLIC_PATHS.includes(pathname);
-      if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
-        router.navigate({ to: "/" });
-      }
-      setReady(true);
     }
 
-    checkAuth();
+    checkAuthAndSync();
+  }, [isLoaded, isSignedIn, userId, user, pathname, syncedUserId]);
 
-    // Track user session changes to prevent profile cross-leakage on same browser
-    let currentUserId = "";
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) currentUserId = session.user.id;
-    });
-
-    // Listen only for authentication events (login/logout), not tab switching.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
-        localStorage.removeItem("fs_active_branch");
-        gym.reset();
-        router.navigate({ to: "/landing" });
-      } else if (event === "SIGNED_IN" && session?.user) {
-        if (currentUserId && currentUserId !== session.user.id) {
-          localStorage.removeItem("fs_active_branch");
-          gym.reset();
-          window.location.reload();
+  // Sync token periodically on session transitions or layout renders
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const interval = setInterval(async () => {
+      try {
+        const token = await getToken({ template: "supabase" });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: "",
+          });
         }
-        currentUserId = session.user.id;
+      } catch (err) {
+        console.error("Failed to refresh Supabase session token from Clerk:", err);
       }
-    });
+    }, 4 * 60 * 1000); // 4 minutes
+    return () => clearInterval(interval);
+  }, [isSignedIn]);
 
-    return () => subscription.unsubscribe();
-  }, []); // Run only once when the component mounts.
-
-  if (!ready) {
+  if (!isLoaded || !ready) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
