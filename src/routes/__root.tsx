@@ -45,12 +45,28 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const publishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string) || "";
+  const publishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string) || "pk_test_YWN0aXZlLWNoaW1wLTI2LmNsZXJrLmFjY291bnRzLmRldiQ";
   return (
     <ClerkProvider publishableKey={publishableKey}>
       <RootInner />
     </ClerkProvider>
   );
+}
+
+// Safely retrieve token, falling back to standard Clerk token if supabase template is not configured yet
+async function safelyGetToken(getToken: any) {
+  try {
+    const token = await getToken({ template: "supabase" });
+    if (token) return token;
+  } catch (err) {
+    console.warn("Supabase JWT template not configured in Clerk dashboard, falling back to standard session token.", err);
+  }
+  try {
+    return await getToken();
+  } catch (err) {
+    console.error("Failed to retrieve Clerk session token:", err);
+    return null;
+  }
 }
 
 function RootInner() {
@@ -93,7 +109,7 @@ function RootInner() {
       // 2. Signed-in handling
       try {
         // Sync active Clerk session token to Supabase client so RLS rules evaluate correctly
-        const token = await getToken({ template: "supabase" });
+        const token = await safelyGetToken(getToken);
         if (token) {
           await supabase.auth.setSession({
             access_token: token,
@@ -172,7 +188,7 @@ function RootInner() {
     if (!isSignedIn) return;
     const interval = setInterval(async () => {
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await safelyGetToken(getToken);
         if (token) {
           await supabase.auth.setSession({
             access_token: token,
