@@ -1,6 +1,6 @@
 /**
  * Error capture utility for server-side error recovery
- * 
+ *
  * This module captures unhandled errors and unhandled promise rejections
  * so that the server can recover the original error stack when h3 has
  * already swallowed the error into a generic 500 Response.
@@ -23,8 +23,10 @@ function record(error: unknown) {
 // Register global error handlers when in a browser environment
 if (typeof globalThis.addEventListener === "function") {
   // Capture unhandled errors
-  globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
-  
+  globalThis.addEventListener("error", (event) =>
+    record((event as ErrorEvent).error ?? event),
+  );
+
   // Capture unhandled promise rejections
   globalThis.addEventListener("unhandledrejection", (event) =>
     record((event as PromiseRejectionEvent).reason),
@@ -38,13 +40,13 @@ if (typeof globalThis.addEventListener === "function") {
 export function consumeLastCapturedError(): unknown {
   // No error captured
   if (!lastCapturedError) return undefined;
-  
+
   // Check if the error has expired
   if (Date.now() - lastCapturedError.at > TTL_MS) {
     lastCapturedError = undefined;
     return undefined;
   }
-  
+
   // Retrieve and clear the error
   const { error } = lastCapturedError;
   lastCapturedError = undefined;

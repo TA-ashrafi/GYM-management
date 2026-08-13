@@ -30,7 +30,12 @@ import { logout } from "@/lib/auth";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 
 // Navigation configuration
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+};
 
 const nav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -54,7 +59,7 @@ const nav: NavItem[] = [
 /**
  * Main application shell component that provides the sidebar layout
  * and global navigation for the gym management application.
- * 
+ *
  * @param children - The page content to render within the shell
  */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -64,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // Real-time capacity statistics from Supabase
   const [liveMemberCount, setLiveMemberCount] = useState(0);
   const [liveCheckInCount, setLiveCheckInCount] = useState(0);
@@ -87,7 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       .then(({ count }) => {
         setLiveMemberCount(count ?? 0);
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -100,10 +105,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         .gte("checked_in_at", today + "T00:00:00")
         .lte("checked_in_at", today + "T23:59:59")
         .then(({ data }) => {
-          const uniqueMemberIds = new Set(data?.map((log: any) => log.member_id));
+          const uniqueMemberIds = new Set(
+            data?.map((log: any) => log.member_id),
+          );
           setLiveCheckInCount(uniqueMemberIds.size);
         })
-        .catch(err => console.error(err));
+        .catch((err) => console.error(err));
     };
 
     loadCheckInCount();
@@ -119,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           if (row.branch_id === branchId) {
             loadCheckInCount();
           }
-        }
+        },
       )
       .subscribe();
 
@@ -128,7 +135,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [pathname]); // Refresh on navigation changes
 
-  const capacity = Math.min(100, Math.round((liveCheckInCount / Math.max(1, liveMemberCount)) * 100));
+  const capacity = Math.min(
+    100,
+    Math.round((liveCheckInCount / Math.max(1, liveMemberCount)) * 100),
+  );
 
   // Handle user logout
   async function handleLogout() {
@@ -153,7 +163,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="size-10 rounded-xl bg-card border border-border/80 grid place-items-center cursor-pointer shadow-sm hover:scale-95 active:scale-90 transition-transform"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {mobileMenuOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
           </button>
         </div>
 
@@ -161,7 +175,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex justify-center min-w-0">
           <Link to="/" className="flex items-center gap-2 min-w-0">
             <div className="size-8 bg-brand rounded-lg grid place-items-center shadow-[0_0_16px_-4px_var(--color-brand)] shrink-0 animate-pulse">
-              <Dumbbell className="size-4 text-brand-foreground" strokeWidth={2.5} />
+              <Dumbbell
+                className="size-4 text-brand-foreground"
+                strokeWidth={2.5}
+              />
             </div>
             <span className="font-heading text-sm sm:text-base tracking-tight text-foreground uppercase truncate font-bold">
               {settings.gymName}
@@ -189,13 +206,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-between mb-6 px-2">
           <Link to="/" className="flex items-center gap-3 min-w-0">
             <div className="size-9 bg-brand rounded-lg grid place-items-center shadow-[0_0_24px_-4px_var(--color-brand)] shrink-0">
-              <Dumbbell className="size-5 text-brand-foreground" strokeWidth={2.5} />
+              <Dumbbell
+                className="size-5 text-brand-foreground"
+                strokeWidth={2.5}
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-heading text-base tracking-tight text-foreground leading-none truncate uppercase font-bold" title={settings.gymName}>
+              <div
+                className="font-heading text-base tracking-tight text-foreground leading-none truncate uppercase font-bold"
+                title={settings.gymName}
+              >
                 {settings.gymName}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">ALPHA FITNESS</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">
+                ALPHA FITNESS
+              </div>
             </div>
           </Link>
           <button
@@ -209,7 +234,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav className="space-y-1 flex-1 overflow-y-auto scrollbar-thin -mx-1 px-1">
           {nav.map((n) => {
-            const active = n.exact ? pathname === n.to : pathname === n.to || pathname.startsWith(n.to + "/");
+            const active = n.exact
+              ? pathname === n.to
+              : pathname === n.to || pathname.startsWith(n.to + "/");
             const Icon = n.icon;
             return (
               <Link
@@ -231,13 +258,20 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Capacity Widget */}
         <div className="mt-4 p-4 bg-card border border-border/80 rounded-2xl shadow-sm">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 font-semibold">Today's Capacity</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 font-semibold">
+            Today's Capacity
+          </p>
           <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-brand transition-all duration-500" style={{ width: `${capacity}%` }} />
+            <div
+              className="h-full bg-brand transition-all duration-500"
+              style={{ width: `${capacity}%` }}
+            />
           </div>
           <p className="mt-2 text-xs font-semibold">
             <span className="text-foreground">{liveCheckInCount}</span>{" "}
-            <span className="text-muted-foreground">of {liveMemberCount} checked in</span>
+            <span className="text-muted-foreground">
+              of {liveMemberCount} checked in
+            </span>
           </p>
         </div>
 
@@ -248,7 +282,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="p-3 bg-secondary/40 border border-border/40 rounded-2xl flex items-center gap-3 justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <div className="size-8 bg-brand/10 text-brand rounded-lg grid place-items-center text-[10px] font-bold shrink-0">
-              {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+              {(
+                currentUser?.user_metadata?.name?.[0] ||
+                currentUser?.email?.[0] ||
+                "O"
+              ).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-xs text-foreground truncate">
@@ -261,11 +299,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => gym.updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
+              onClick={() =>
+                gym.updateSettings({
+                  theme: settings.theme === "dark" ? "light" : "dark",
+                })
+              }
               className="size-8 rounded-lg bg-card border border-border/80 hover:border-brand/40 grid place-items-center cursor-pointer transition"
               title="Toggle theme"
             >
-              {settings.theme === "dark" ? <Sun className="size-4 text-muted-foreground hover:text-foreground" /> : <Moon className="size-4 text-muted-foreground hover:text-foreground" />}
+              {settings.theme === "dark" ? (
+                <Sun className="size-4 text-muted-foreground hover:text-foreground" />
+              ) : (
+                <Moon className="size-4 text-muted-foreground hover:text-foreground" />
+              )}
             </button>
             <button
               onClick={handleLogout}
@@ -292,16 +338,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="no-print hidden md:flex sticky top-0 z-30 justify-end gap-2 px-8 py-4 bg-background/80 backdrop-blur-md border-b border-border/40">
           {/* Theme Toggle */}
           <button
-            onClick={() => gym.updateSettings({ theme: settings.theme === "dark" ? "light" : "dark" })}
+            onClick={() =>
+              gym.updateSettings({
+                theme: settings.theme === "dark" ? "light" : "dark",
+              })
+            }
             className="size-10 rounded-xl bg-card border border-border/80 hover:border-brand/40 grid place-items-center transition cursor-pointer hover:scale-95 shadow-sm"
             aria-label="Toggle theme"
           >
-            {settings.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {settings.theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
           </button>
-          
+
           {/* Notifications */}
           <NotificationsBell />
-          
+
           {/* Account Profile Menu Dropdown */}
           <div className="relative">
             <button
@@ -310,7 +364,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-label="Account Menu"
             >
               <div className="size-6 bg-brand/10 text-brand rounded-lg grid place-items-center text-xs font-bold">
-                {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+                {(
+                  currentUser?.user_metadata?.name?.[0] ||
+                  currentUser?.email?.[0] ||
+                  "O"
+                ).toUpperCase()}
               </div>
               <span className="hidden sm:inline">Account</span>
             </button>
@@ -324,7 +382,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-2xl p-4 shadow-2xl z-50 animate-fade-in text-left">
                   <div className="flex items-center gap-3 pb-3 border-b border-border/60">
                     <div className="size-10 bg-brand/10 text-brand rounded-xl grid place-items-center text-sm font-bold shrink-0">
-                      {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+                      {(
+                        currentUser?.user_metadata?.name?.[0] ||
+                        currentUser?.email?.[0] ||
+                        "O"
+                      ).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-foreground truncate">
@@ -339,11 +401,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <div className="py-2.5 my-1 text-xs space-y-1 text-muted-foreground font-semibold">
                     <div className="flex justify-between">
                       <span>Status:</span>
-                      <span className="text-brand font-bold">Authenticated</span>
+                      <span className="text-brand font-bold">
+                        Authenticated
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Branch:</span>
-                      <span className="text-foreground max-w-[150px] truncate">{settings.gymName}</span>
+                      <span className="text-foreground max-w-[150px] truncate">
+                        {settings.gymName}
+                      </span>
                     </div>
                   </div>
 
@@ -364,9 +430,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* Children Render Area */}
-        <div className="flex-1 w-full animate-fade-in">
-          {children}
-        </div>
+        <div className="flex-1 w-full animate-fade-in">{children}</div>
       </main>
     </div>
   );
@@ -374,7 +438,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 /**
  * Page header component with title, subtitle, and optional action buttons
- * 
+ *
  * @param title - The main page title
  * @param subtitle - Optional subtitle text
  * @param actions - Optional action buttons or elements
@@ -391,10 +455,20 @@ export function PageHeader({
   return (
     <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 flex-wrap">
       <div className="space-y-0.5">
-        <h1 className="text-2xl sm:text-3xl font-heading text-foreground font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-muted-foreground text-sm font-medium">{subtitle}</p>}
+        <h1 className="text-2xl sm:text-3xl font-heading text-foreground font-bold tracking-tight">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-muted-foreground text-sm font-medium">
+            {subtitle}
+          </p>
+        )}
       </div>
-      {actions && <div className="flex gap-2 no-print flex-wrap w-full sm:w-auto">{actions}</div>}
+      {actions && (
+        <div className="flex gap-2 no-print flex-wrap w-full sm:w-auto">
+          {actions}
+        </div>
+      )}
     </header>
   );
 }

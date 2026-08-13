@@ -1,11 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Printer, Search, ChevronLeft, ChevronRight, Calendar, User, ShieldCheck, Dumbbell, LineChart as ChartIcon, Plus, Save, Trash2, X, PlusCircle } from "lucide-react";
+import {
+  Printer,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  User,
+  ShieldCheck,
+  Dumbbell,
+  LineChart as ChartIcon,
+  Plus,
+  Save,
+  Trash2,
+  X,
+  PlusCircle,
+} from "lucide-react";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
 import { memberStatus, daysUntil, daysSince, money } from "@/lib/gym-store";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reports")({
@@ -37,15 +61,23 @@ function Reports() {
       <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-6 no-print w-fit">
         <button
           onClick={() => setTab("monthly")}
-          className={"px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
-            (tab === "monthly" ? "bg-card shadow text-foreground" : "text-muted-foreground")}
+          className={
+            "px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
+            (tab === "monthly"
+              ? "bg-card shadow text-foreground"
+              : "text-muted-foreground")
+          }
         >
           Monthly Report
         </button>
         <button
           onClick={() => setTab("member")}
-          className={"px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
-            (tab === "member" ? "bg-card shadow text-foreground" : "text-muted-foreground")}
+          className={
+            "px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer " +
+            (tab === "member"
+              ? "bg-card shadow text-foreground"
+              : "text-muted-foreground")
+          }
         >
           Member Progress OS
         </button>
@@ -67,7 +99,10 @@ function MonthlyReport() {
   const [loading, setLoading] = useState(true);
 
   const { start, end } = getMonthRange(monthOffset);
-  const monthLabel = start.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = start.toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 
   useEffect(() => {
     const branchId = getActiveBranchId();
@@ -80,11 +115,34 @@ function MonthlyReport() {
     const eStr = e.toISOString();
 
     Promise.all([
-      supabase.from("payments").select("*").eq("branch_id", branchId).gte("payment_date", s).lte("payment_date", eStr),
-      supabase.from("sales").select("*").eq("branch_id", branchId).gte("created_at", s).lte("created_at", eStr),
-      supabase.from("expenses").select("*").eq("branch_id", branchId).gte("date", s).lte("date", eStr),
-      supabase.from("members").select("*").eq("branch_id", branchId).gte("created_at", s).lte("created_at", eStr),
-      supabase.from("products").select("id, cost, price").eq("branch_id", branchId),
+      supabase
+        .from("payments")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("payment_date", s)
+        .lte("payment_date", eStr),
+      supabase
+        .from("sales")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("created_at", s)
+        .lte("created_at", eStr),
+      supabase
+        .from("expenses")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("date", s)
+        .lte("date", eStr),
+      supabase
+        .from("members")
+        .select("*")
+        .eq("branch_id", branchId)
+        .gte("created_at", s)
+        .lte("created_at", eStr),
+      supabase
+        .from("products")
+        .select("id, cost, price")
+        .eq("branch_id", branchId),
     ]).then(([p, sa, ex, m, pr]) => {
       setPayments(p.data ?? []);
       setSales(sa.data ?? []);
@@ -119,11 +177,20 @@ function MonthlyReport() {
 
   const totalRevenue = memberRevenue + storeRevenue;
 
-  const expCats = ["Rent", "Electricity", "Water", "Equipment", "Staff", "Other"];
+  const expCats = [
+    "Rent",
+    "Electricity",
+    "Water",
+    "Equipment",
+    "Staff",
+    "Other",
+  ];
   const expByCat = expCats
     .map((cat) => ({
       cat,
-      amount: expenses.filter((e) => e.category === cat).reduce((a, e) => a + (e.amount ?? 0), 0),
+      amount: expenses
+        .filter((e) => e.category === cat)
+        .reduce((a, e) => a + (e.amount ?? 0), 0),
     }))
     .filter((e) => e.amount > 0);
   const totalExpenses = expenses.reduce((a, e) => a + (e.amount ?? 0), 0);
@@ -139,7 +206,9 @@ function MonthlyReport() {
           >
             <ChevronLeft className="size-5" />
           </button>
-          <h2 className="text-lg sm:text-xl font-heading flex-1 text-center font-bold">{monthLabel}</h2>
+          <h2 className="text-lg sm:text-xl font-heading flex-1 text-center font-bold">
+            {monthLabel}
+          </h2>
           <button
             onClick={() => setMonthOffset((o) => o + 1)}
             disabled={monthOffset >= 0}
@@ -157,17 +226,31 @@ function MonthlyReport() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">Loading...</div>
+        <div className="text-center py-16 text-muted-foreground">
+          Loading...
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Revenue */}
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
-            <h3 className="font-heading text-lg mb-4 text-brand">Revenue (Collected This Cycle)</h3>
+            <h3 className="font-heading text-lg mb-4 text-brand">
+              Revenue (Collected This Cycle)
+            </h3>
             <div className="space-y-3">
-              <Row label="Member Fees / Renewals" value={money(memberRevenue)} />
-              <Row label="Supplement Store (Estimated Profit Only)" value={money(storeRevenue)} />
+              <Row
+                label="Member Fees / Renewals"
+                value={money(memberRevenue)}
+              />
+              <Row
+                label="Supplement Store (Estimated Profit Only)"
+                value={money(storeRevenue)}
+              />
               <div className="border-t border-border pt-3">
-                <Row label="Total Revenue (Cycle Profits)" value={money(totalRevenue)} bold />
+                <Row
+                  label="Total Revenue (Cycle Profits)"
+                  value={money(totalRevenue)}
+                  bold
+                />
               </div>
             </div>
           </div>
@@ -176,21 +259,32 @@ function MonthlyReport() {
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
             <h3 className="font-heading text-lg mb-4 text-danger">Expenses</h3>
             {expByCat.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No expenses this month</p>
+              <p className="text-sm text-muted-foreground">
+                No expenses this month
+              </p>
             ) : (
               <div className="space-y-3">
                 {expByCat.map((e) => (
                   <Row key={e.cat} label={e.cat} value={money(e.amount)} />
                 ))}
                 <div className="border-t border-border pt-3">
-                  <Row label="Total Expenses" value={money(totalExpenses)} bold />
+                  <Row
+                    label="Total Expenses"
+                    value={money(totalExpenses)}
+                    bold
+                  />
                 </div>
               </div>
             )}
           </div>
 
           {/* Net Profit */}
-          <div className={"bg-card border rounded-2xl p-4 sm:p-6 " + (netProfit >= 0 ? "border-brand/40" : "border-danger/40")}>
+          <div
+            className={
+              "bg-card border rounded-2xl p-4 sm:p-6 " +
+              (netProfit >= 0 ? "border-brand/40" : "border-danger/40")
+            }
+          >
             <h3 className="font-heading text-lg mb-4">Net Profit</h3>
             <div className="space-y-3">
               <Row label="Total Revenue" value={money(totalRevenue)} />
@@ -208,18 +302,31 @@ function MonthlyReport() {
 
           {/* New Members */}
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
-            <h3 className="font-heading text-lg mb-4">New Members This Month</h3>
+            <h3 className="font-heading text-lg mb-4">
+              New Members This Month
+            </h3>
             {newMembers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No new members this month</p>
+              <p className="text-sm text-muted-foreground">
+                No new members this month
+              </p>
             ) : (
               <div className="space-y-2">
                 {newMembers.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  >
                     <div>
-                      <p className="font-medium text-sm text-foreground">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.roll_no ?? m.rollNo} · {m.plan}</p>
+                      <p className="font-medium text-sm text-foreground">
+                        {m.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {m.roll_no ?? m.rollNo} · {m.plan}
+                      </p>
                     </div>
-                    <span className="text-brand font-semibold text-sm">{money(m.fee_amount ?? m.feeAmount ?? 0)}</span>
+                    <span className="text-brand font-semibold text-sm">
+                      {money(m.fee_amount ?? m.feeAmount ?? 0)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -232,14 +339,22 @@ function MonthlyReport() {
               <h3 className="font-heading text-lg mb-4">Payment History</h3>
               <div className="space-y-2">
                 {payments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-foreground">{p.note ?? "Payment"}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {p.note ?? "Payment"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(p.payment_date).toLocaleDateString("en-IN")} · {p.plan}
+                        {new Date(p.payment_date).toLocaleDateString("en-IN")} ·{" "}
+                        {p.plan}
                       </p>
                     </div>
-                    <span className="text-brand font-semibold text-sm">{money(p.amount)}</span>
+                    <span className="text-brand font-semibold text-sm">
+                      {money(p.amount)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -251,13 +366,34 @@ function MonthlyReport() {
   );
 }
 
-function Row({ label, value, bold, accent }: {
-  label: string; value: string; bold?: boolean; accent?: string;
+function Row({
+  label,
+  value,
+  bold,
+  accent,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  accent?: string;
 }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className={"text-sm " + (bold ? "font-semibold text-foreground" : "text-muted-foreground")}>{label}</span>
-      <span className={"text-sm " + (bold ? "font-semibold " : "") + (accent ?? "text-foreground")}>
+      <span
+        className={
+          "text-sm " +
+          (bold ? "font-semibold text-foreground" : "text-muted-foreground")
+        }
+      >
+        {label}
+      </span>
+      <span
+        className={
+          "text-sm " +
+          (bold ? "font-semibold " : "") +
+          (accent ?? "text-foreground")
+        }
+      >
         {value}
       </span>
     </div>
@@ -275,8 +411,8 @@ const DEFAULT_WORKOUTS = [
       "Barbell Squats 4x8 · Leg Press 3x12 · Calf Raises 4x15 · Lying Leg Curls 3x12",
       "Incline DB Press 4x10 · Military Press 3x8 · Tricep Pushdowns 3x12 · Lateral Raises 4x15",
       "Bent Over Rows 3x8 · Pullups 3x8 · Cable Bicep Curls 3x12 · DB Shrugs 3x12",
-      "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Planks 3x1min"
-    ]
+      "Romanian Deadlift 4x10 · Leg Extensions 3x15 · Hanging Leg Raises 3x15 · Planks 3x1min",
+    ],
   },
   {
     name: "Classic Bro Split",
@@ -287,8 +423,8 @@ const DEFAULT_WORKOUTS = [
       "Overhead Press 4x8 · Lateral Raises 4x15 · Front Raises 3x12 · Shrugs 3x15",
       "Squats 4x10 · Leg Press 3x12 · Hamstring Curls 3x12 · Calf Raises 4x15",
       "Barbell Curls 4x10 · Skullcrushers 4x12 · Hammer Curls 3x12 · Cable Tricep Pushdowns 3x15",
-      "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)"
-    ]
+      "Hanging Leg Raises 4x15 · Cable Crunches 3x20 · Incline Walk 25min (HIIT)",
+    ],
   },
   {
     name: "HIIT Cardio & Abs Plan",
@@ -299,9 +435,9 @@ const DEFAULT_WORKOUTS = [
       "Mountain Climbers 4x30s · Russian Twists 4x25 · Bicycle Crunches 4x20 · Planks 4x1min",
       "Stationary Cycling - 30 minutes (Alternating 1min Sprint / 1min Recovery)",
       "Dumbbell Thrusters 3x12 · Dumbbell Rows 3x15 · Ab Wheel Rollouts 3x12 · HIIT Rower 15min",
-      "Stretching & Yoga Recovery Workout - 45 Minutes (Flexibility & Joint Health)"
-    ]
-  }
+      "Stretching & Yoga Recovery Workout - 45 Minutes (Flexibility & Joint Health)",
+    ],
+  },
 ];
 
 function MemberReport() {
@@ -312,7 +448,8 @@ function MemberReport() {
 
   // States for Modals
   const [workoutOpen, setWorkoutOpen] = useState(false);
-  const [branchTemplates, setBranchTemplates] = useState<any[]>(DEFAULT_WORKOUTS);
+  const [branchTemplates, setBranchTemplates] =
+    useState<any[]>(DEFAULT_WORKOUTS);
   const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number>(0);
 
   const [progressOpen, setProgressOpen] = useState(false);
@@ -333,9 +470,14 @@ function MemberReport() {
 
   const matches = q
     ? members.filter((m) =>
-        ((m.rollNo ?? m.roll_no ?? "") + m.name + (m.phone ?? "") + (m.rfid ?? ""))
+        (
+          (m.rollNo ?? m.roll_no ?? "") +
+          m.name +
+          (m.phone ?? "") +
+          (m.rfid ?? "")
+        )
           .toLowerCase()
-          .includes(q.toLowerCase())
+          .includes(q.toLowerCase()),
       )
     : [];
 
@@ -363,7 +505,11 @@ function MemberReport() {
         .eq("id", branchId)
         .single()
         .then(({ data }) => {
-          if (data?.workout_templates && Array.isArray(data.workout_templates) && data.workout_templates.length > 0) {
+          if (
+            data?.workout_templates &&
+            Array.isArray(data.workout_templates) &&
+            data.workout_templates.length > 0
+          ) {
             setBranchTemplates(data.workout_templates);
           } else {
             setBranchTemplates(DEFAULT_WORKOUTS);
@@ -380,7 +526,7 @@ function MemberReport() {
       const day = new Date(log.checked_in_at).toDateString();
       (acc[day] ??= []).push(log.checked_in_at);
       return acc;
-    }, {})
+    }, {}),
   )
     .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
     .slice(0, 30);
@@ -396,28 +542,36 @@ function MemberReport() {
   }, []);
 
   const dayMap = useMemo(() => {
-    return attendanceLogs.reduce<Record<string, { in?: string; out?: string }>>((acc, log) => {
-      const day = log.checked_in_at.split("T")[0];
-      if (!acc[day]) acc[day] = {};
-      const time = new Date(log.checked_in_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-      if (log.punch_type === "in" || !log.punch_type) acc[day].in = time;
-      else acc[day].out = time;
-      return acc;
-    }, {});
+    return attendanceLogs.reduce<Record<string, { in?: string; out?: string }>>(
+      (acc, log) => {
+        const day = log.checked_in_at.split("T")[0];
+        if (!acc[day]) acc[day] = {};
+        const time = new Date(log.checked_in_at).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        if (log.punch_type === "in" || !log.punch_type) acc[day].in = time;
+        else acc[day].out = time;
+        return acc;
+      },
+      {},
+    );
   }, [attendanceLogs]);
 
   // Robust Cache Fallbacks for Schema Missing errors
   const workoutRoutine = useMemo(() => {
     if (!m) return [];
     const cached = localStorage.getItem(`fs_workout_${m.id}`);
-    if (Array.isArray(m.workout_routine) && m.workout_routine.length > 0) return m.workout_routine;
+    if (Array.isArray(m.workout_routine) && m.workout_routine.length > 0)
+      return m.workout_routine;
     return cached ? JSON.parse(cached) : [];
   }, [m?.workout_routine, m?.id]);
 
   const progressLogs = useMemo(() => {
     if (!m) return [];
     const cached = localStorage.getItem(`fs_progress_${m.id}`);
-    if (Array.isArray(m.progress_logs) && m.progress_logs.length > 0) return m.progress_logs;
+    if (Array.isArray(m.progress_logs) && m.progress_logs.length > 0)
+      return m.progress_logs;
     return cached ? JSON.parse(cached) : [];
   }, [m?.progress_logs, m?.id]);
 
@@ -427,7 +581,7 @@ function MemberReport() {
     const template = branchTemplates[selectedTemplateIdx];
     const routine = template.days.map((item: string, index: number) => ({
       day: `Day ${index + 1}`,
-      items: item
+      items: item,
     }));
 
     localStorage.setItem(`fs_workout_${m.id}`, JSON.stringify(routine));
@@ -442,7 +596,9 @@ function MemberReport() {
       loadData();
       setWorkoutOpen(false);
     } else if (error.message.includes("schema cache")) {
-      toast.success("Workout saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.");
+      toast.success(
+        "Workout saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.",
+      );
       loadData();
       setWorkoutOpen(false);
     } else {
@@ -453,7 +609,10 @@ function MemberReport() {
   // Handle Progress entry save
   const handleSaveProgress = async () => {
     if (!m) return;
-    if (!weight) { toast.error("Weight is required"); return; }
+    if (!weight) {
+      toast.error("Weight is required");
+      return;
+    }
 
     const newLog = {
       date: new Date().toLocaleDateString("en-IN"),
@@ -486,7 +645,9 @@ function MemberReport() {
       loadData();
       setProgressOpen(false);
     } else if (error.message.includes("schema cache")) {
-      toast.success("Assessment saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.");
+      toast.success(
+        "Assessment saved locally! Run Supabase SQL Editor migration in SUPABASE_SQL.md to enable cross-device sync.",
+      );
       setWeight("");
       setBodyFat("");
       setMuscleMass("");
@@ -515,7 +676,8 @@ function MemberReport() {
         </div>
         {q && matches.length > 1 && (
           <p className="text-xs text-muted-foreground mt-3">
-            {matches.length} matches — showing first. Refine search for exact match.
+            {matches.length} matches — showing first. Refine search for exact
+            match.
           </p>
         )}
       </div>
@@ -560,19 +722,27 @@ function MemberReport() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Complete Member Report</p>
-              <h2 className="text-2xl sm:text-3xl font-heading mt-1 text-foreground">{m.name}</h2>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                Complete Member Report
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-heading mt-1 text-foreground">
+                {m.name}
+              </h2>
               <p className="text-sm text-muted-foreground mt-1 truncate">
                 {m.rollNo ?? m.roll_no} · RFID {m.rfid} · {m.phone}
               </p>
-              {m.email && <p className="text-xs text-muted-foreground mt-0.5 truncate">{m.email}</p>}
+              {m.email && (
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {m.email}
+                </p>
+              )}
               <span
                 className={`inline-block mt-2 px-2.5 py-0.5 text-[9px] rounded uppercase font-bold tracking-wider ${
                   status === "active"
                     ? "bg-brand/10 text-brand"
                     : status === "expiring"
-                    ? "bg-warn/10 text-warn"
-                    : "bg-danger/10 text-danger"
+                      ? "bg-warn/10 text-warn"
+                      : "bg-danger/10 text-danger"
                 }`}
               >
                 {status}
@@ -582,12 +752,34 @@ function MemberReport() {
 
           <Block title="Personal Information">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Info label="Gender" value={m.gender === "M" ? "Male" : m.gender === "F" ? "Female" : "Other"} />
+              <Info
+                label="Gender"
+                value={
+                  m.gender === "M"
+                    ? "Male"
+                    : m.gender === "F"
+                      ? "Female"
+                      : "Other"
+                }
+              />
               <Info label="Age" value={`${m.age} years`} />
               <Info label="Address" value={m.address || "Not provided"} />
-              <Info label="Emergency Contact" value={(m.emergencyContact ?? m.emergency_contact) || "Not provided"} />
-              <Info label="Joined" value={new Date(m.joinDate ?? m.join_date ?? m.joining_date).toLocaleDateString("en-IN")} />
-              <Info label="Preferred Slot" value={m.preferredSlot ?? m.preferred_slot} />
+              <Info
+                label="Emergency Contact"
+                value={
+                  (m.emergencyContact ?? m.emergency_contact) || "Not provided"
+                }
+              />
+              <Info
+                label="Joined"
+                value={new Date(
+                  m.joinDate ?? m.join_date ?? m.joining_date,
+                ).toLocaleDateString("en-IN")}
+              />
+              <Info
+                label="Preferred Slot"
+                value={m.preferredSlot ?? m.preferred_slot}
+              />
             </div>
           </Block>
 
@@ -595,11 +787,17 @@ function MemberReport() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Info label="Height" value={`${m.heightCm ?? m.height_cm} cm`} />
               <Info label="Weight" value={`${m.weightKg ?? m.weight_kg} kg`} />
-              <Info label="BMI" value={diet.bmi.toFixed(1) + " · " + diet.bmiClass} />
+              <Info
+                label="BMI"
+                value={diet.bmi.toFixed(1) + " · " + diet.bmiClass}
+              />
               <Info label="BMR" value={`${diet.bmr} kcal`} />
               <Info label="TDEE" value={`${diet.tdee} kcal`} />
               <Info label="Goal" value={m.goal} />
-              <Info label="Target Calories" value={`${diet.targetKcal} kcal/day`} />
+              <Info
+                label="Target Calories"
+                value={`${diet.targetKcal} kcal/day`}
+              />
               <Info label="Medical" value={m.medical || "None reported"} />
             </div>
           </Block>
@@ -609,14 +807,22 @@ function MemberReport() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {workoutRoutine.length > 0 ? (
                 workoutRoutine.map((w: any, index: number) => (
-                  <div key={index} className="p-4 bg-secondary/30 border border-border/40 rounded-xl flex flex-col gap-1.5">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-brand">{w.day || `Day ${index + 1}`}</span>
-                    <p className="text-xs text-foreground font-medium leading-relaxed">{w.items || "Rest Day / Active Stretching"}</p>
+                  <div
+                    key={index}
+                    className="p-4 bg-secondary/30 border border-border/40 rounded-xl flex flex-col gap-1.5"
+                  >
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-brand">
+                      {w.day || `Day ${index + 1}`}
+                    </span>
+                    <p className="text-xs text-foreground font-medium leading-relaxed">
+                      {w.items || "Rest Day / Active Stretching"}
+                    </p>
                   </div>
                 ))
               ) : (
                 <div className="col-span-full py-8 text-center bg-secondary/20 border border-dashed border-border rounded-xl text-sm text-muted-foreground">
-                  No exercise plan assigned yet. Click the "Assign Workout Plan" button above to template a premium routine instantly!
+                  No exercise plan assigned yet. Click the "Assign Workout Plan"
+                  button above to template a premium routine instantly!
                 </div>
               )}
             </div>
@@ -628,17 +834,41 @@ function MemberReport() {
               <div className="space-y-6">
                 {/* Weight and Muscle progression */}
                 <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Weight & Muscle Progression (kg)</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">
+                    Weight & Muscle Progression (kg)
+                  </span>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={progressLogs.slice(-10)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="var(--color-border)"
+                        />
+                        <XAxis
+                          dataKey="date"
+                          stroke="var(--color-muted-foreground)"
+                          fontSize={10}
+                        />
+                        <YAxis
+                          stroke="var(--color-muted-foreground)"
+                          fontSize={10}
+                        />
                         <Tooltip contentStyle={tt} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" name="Weight (kg)" dataKey="weight" stroke="var(--color-brand)" strokeWidth={2.5} />
-                        <Line type="monotone" name="Muscle Mass (kg)" dataKey="muscle_mass" stroke="var(--color-accent)" strokeWidth={2} />
+                        <Line
+                          type="monotone"
+                          name="Weight (kg)"
+                          dataKey="weight"
+                          stroke="var(--color-brand)"
+                          strokeWidth={2.5}
+                        />
+                        <Line
+                          type="monotone"
+                          name="Muscle Mass (kg)"
+                          dataKey="muscle_mass"
+                          stroke="var(--color-accent)"
+                          strokeWidth={2}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -646,18 +876,48 @@ function MemberReport() {
 
                 {/* Body Fat & Chest/Waist dimensions */}
                 <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Body Fat % and Core Dimensions (inches)</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">
+                    Body Fat % and Core Dimensions (inches)
+                  </span>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={progressLogs.slice(-10)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="var(--color-border)"
+                        />
+                        <XAxis
+                          dataKey="date"
+                          stroke="var(--color-muted-foreground)"
+                          fontSize={10}
+                        />
+                        <YAxis
+                          stroke="var(--color-muted-foreground)"
+                          fontSize={10}
+                        />
                         <Tooltip contentStyle={tt} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" name="Body Fat %" dataKey="body_fat" stroke="var(--color-danger)" strokeWidth={2} />
-                        <Line type="monotone" name="Chest (in)" dataKey="chest" stroke="var(--color-warn)" strokeWidth={1.5} />
-                        <Line type="monotone" name="Waist (in)" dataKey="waist" stroke="var(--color-info)" strokeWidth={1.5} />
+                        <Line
+                          type="monotone"
+                          name="Body Fat %"
+                          dataKey="body_fat"
+                          stroke="var(--color-danger)"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          name="Chest (in)"
+                          dataKey="chest"
+                          stroke="var(--color-warn)"
+                          strokeWidth={1.5}
+                        />
+                        <Line
+                          type="monotone"
+                          name="Waist (in)"
+                          dataKey="waist"
+                          stroke="var(--color-info)"
+                          strokeWidth={1.5}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -665,7 +925,8 @@ function MemberReport() {
               </div>
             ) : (
               <div className="py-8 text-center bg-secondary/20 border border-dashed border-border rounded-xl text-sm text-muted-foreground">
-                No progress evaluations recorded yet. Log measurements to generate progression lines automatically!
+                No progress evaluations recorded yet. Log measurements to
+                generate progression lines automatically!
               </div>
             )}
           </Block>
@@ -673,22 +934,37 @@ function MemberReport() {
           <Block title="Membership & Payments">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 sm:p-5 bg-secondary/40 rounded-xl">
-                <p className="text-xl sm:text-2xl font-heading text-foreground">{m.plan}</p>
+                <p className="text-xl sm:text-2xl font-heading text-foreground">
+                  {m.plan}
+                </p>
                 <p className="text-sm mt-1">
                   Fee: {money(m.feeAmount ?? m.fee_amount)} ·{" "}
-                  {(m.feePaid ?? m.fee_paid) ? <span className="text-brand font-semibold">Paid</span> : <span className="text-danger font-bold">Pending</span>}
+                  {(m.feePaid ?? m.fee_paid) ? (
+                    <span className="text-brand font-semibold">Paid</span>
+                  ) : (
+                    <span className="text-danger font-bold">Pending</span>
+                  )}
                 </p>
                 <p className="text-sm mt-1 text-muted-foreground">
-                  Expiry: {new Date(m.expiryDate ?? m.expiry_date).toLocaleDateString("en-IN")} ·{" "}
+                  Expiry:{" "}
+                  {new Date(m.expiryDate ?? m.expiry_date).toLocaleDateString(
+                    "en-IN",
+                  )}{" "}
+                  ·{" "}
                   {daysUntil(m.expiryDate ?? m.expiry_date) >= 0
                     ? `${daysUntil(m.expiryDate ?? m.expiry_date)}d left`
                     : `Expired ${-daysUntil(m.expiryDate ?? m.expiry_date)}d ago`}
                 </p>
               </div>
               <div className="p-4 sm:p-5 bg-secondary/40 rounded-xl">
-                <p className="text-xl sm:text-2xl font-heading text-foreground">{attendanceLogs.length} visits</p>
+                <p className="text-xl sm:text-2xl font-heading text-foreground">
+                  {attendanceLogs.length} visits
+                </p>
                 <p className="text-sm mt-1 text-muted-foreground">
-                  Last seen: {attendanceLogs[0] ? `${daysSince(attendanceLogs[0].checked_in_at)}d ago` : "Never"}
+                  Last seen:{" "}
+                  {attendanceLogs[0]
+                    ? `${daysSince(attendanceLogs[0].checked_in_at)}d ago`
+                    : "Never"}
                 </p>
               </div>
             </div>
@@ -704,12 +980,22 @@ function MemberReport() {
                   <div
                     key={day}
                     title={`${day}${data?.in ? " IN: " + data.in : ""}${data?.out ? " OUT: " + data.out : ""}`}
-                    className={"rounded-lg p-1.5 text-center text-[9px] font-bold transition " +
-                      (present ? "bg-brand text-brand-foreground" : "bg-secondary text-muted-foreground")}
+                    className={
+                      "rounded-lg p-1.5 text-center text-[9px] font-bold transition " +
+                      (present
+                        ? "bg-brand text-brand-foreground"
+                        : "bg-secondary text-muted-foreground")
+                    }
                   >
                     <div>{dateNum}</div>
-                    {data?.in && <div className="text-[8px] mt-0.5 opacity-80">{data.in}</div>}
-                    {data?.out && <div className="text-[8px] opacity-60">{data.out}</div>}
+                    {data?.in && (
+                      <div className="text-[8px] mt-0.5 opacity-80">
+                        {data.in}
+                      </div>
+                    )}
+                    {data?.out && (
+                      <div className="text-[8px] opacity-60">{data.out}</div>
+                    )}
                   </div>
                 );
               })}
@@ -718,16 +1004,29 @@ function MemberReport() {
 
           <Block title="Punch-in History (last 30 days)">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-              {punchHistory.length === 0 && <p className="text-muted-foreground p-2">No punch-in records found.</p>}
+              {punchHistory.length === 0 && (
+                <p className="text-muted-foreground p-2">
+                  No punch-in records found.
+                </p>
+              )}
               {punchHistory.map(([day, times]) => (
                 <div key={day} className="p-3 bg-secondary/40 rounded-lg">
                   <p className="font-semibold text-foreground">
-                    {new Date(day).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                    {new Date(day).toLocaleDateString("en-IN", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                    })}
                   </p>
                   <p className="text-muted-foreground mt-1">
                     {times
                       .sort()
-                      .map((t) => new Date(t).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }))
+                      .map((t) =>
+                        new Date(t).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }),
+                      )
                       .join(" · ")}
                   </p>
                 </div>
@@ -744,9 +1043,16 @@ function MemberReport() {
             </div>
             <div className="space-y-2 text-sm">
               {diet.meals.map((meal: any) => (
-                <div key={meal.name} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3 p-3 bg-secondary/40 rounded-lg">
-                  <span className="text-[10px] uppercase tracking-widest text-brand w-24 shrink-0 font-bold">{meal.name}</span>
-                  <span className="text-foreground text-xs sm:text-sm">{meal.items}</span>
+                <div
+                  key={meal.name}
+                  className="flex flex-col sm:flex-row items-start gap-1 sm:gap-3 p-3 bg-secondary/40 rounded-lg"
+                >
+                  <span className="text-[10px] uppercase tracking-widest text-brand w-24 shrink-0 font-bold">
+                    {meal.name}
+                  </span>
+                  <span className="text-foreground text-xs sm:text-sm">
+                    {meal.items}
+                  </span>
                 </div>
               ))}
             </div>
@@ -768,37 +1074,69 @@ function MemberReport() {
 
       {/* Assign Workout Plan Modal */}
       {workoutOpen && m && (
-        <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={() => setWorkoutOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setWorkoutOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+        <div
+          className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4"
+          onClick={() => setWorkoutOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+          >
+            <button
+              onClick={() => setWorkoutOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
               <X className="size-5" />
             </button>
             <div className="flex items-center gap-3 mb-6">
               <Dumbbell className="size-6 text-brand" />
               <div>
-                <h3 className="font-heading text-lg text-foreground">Assign Workout Plan</h3>
-                <p className="text-xs text-muted-foreground">Assign workout routine template for {m.name}</p>
+                <h3 className="font-heading text-lg text-foreground">
+                  Assign Workout Plan
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Assign workout routine template for {m.name}
+                </p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2 font-bold">Select Template Preset</label>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2 font-bold">
+                  Select Template Preset
+                </label>
                 <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
                   {branchTemplates.map((temp, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedTemplateIdx(index)}
-                      className={"p-3 rounded-xl border text-left transition w-full " + (selectedTemplateIdx === index ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                      className={
+                        "p-3 rounded-xl border text-left transition w-full " +
+                        (selectedTemplateIdx === index
+                          ? "border-brand bg-brand/10"
+                          : "border-border bg-secondary/40 hover:border-brand/40")
+                      }
                     >
-                      <p className="text-sm font-semibold text-foreground">{temp.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{temp.desc}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {temp.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {temp.desc}
+                      </p>
                     </button>
                   ))}
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={() => setWorkoutOpen(false)} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
-                <button onClick={handleSaveWorkout} className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setWorkoutOpen(false)}
+                  className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveWorkout}
+                  className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                >
                   <Save className="size-4" /> Save Routine
                 </button>
               </div>
@@ -809,42 +1147,106 @@ function MemberReport() {
 
       {/* Add Progress Logs Modal */}
       {progressOpen && m && (
-        <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={() => setProgressOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-2xl relative">
-            <button onClick={() => setProgressOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+        <div
+          className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4"
+          onClick={() => setProgressOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
+          >
+            <button
+              onClick={() => setProgressOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
               <X className="size-5" />
             </button>
             <div className="flex items-center gap-3 mb-6">
               <ChartIcon className="size-6 text-brand" />
               <div>
-                <h3 className="font-heading text-lg text-foreground">Log Physical Assessment</h3>
-                <p className="text-xs text-muted-foreground">Log weight, fat %, and muscular measurements for {m.name}</p>
+                <h3 className="font-heading text-lg text-foreground">
+                  Log Physical Assessment
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Log weight, fat %, and muscular measurements for {m.name}
+                </p>
               </div>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Weight (kg) *">
-                  <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="70.5" className={input_field} required />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="70.5"
+                    className={input_field}
+                    required
+                  />
                 </Field>
                 <Field label="Body Fat %">
-                  <input type="number" step="0.1" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} placeholder="15.2" className={input_field} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bodyFat}
+                    onChange={(e) => setBodyFat(e.target.value)}
+                    placeholder="15.2"
+                    className={input_field}
+                  />
                 </Field>
                 <Field label="Muscle Mass (kg)">
-                  <input type="number" step="0.1" value={muscleMass} onChange={(e) => setMuscleMass(e.target.value)} placeholder="58.1" className={input_field} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={muscleMass}
+                    onChange={(e) => setMuscleMass(e.target.value)}
+                    placeholder="58.1"
+                    className={input_field}
+                  />
                 </Field>
                 <Field label="Chest (inches)">
-                  <input type="number" step="0.1" value={chest} onChange={(e) => setChest(e.target.value)} placeholder="39.5" className={input_field} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={chest}
+                    onChange={(e) => setChest(e.target.value)}
+                    placeholder="39.5"
+                    className={input_field}
+                  />
                 </Field>
                 <Field label="Biceps (inches)">
-                  <input type="number" step="0.1" value={biceps} onChange={(e) => setBiceps(e.target.value)} placeholder="14.2" className={input_field} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={biceps}
+                    onChange={(e) => setBiceps(e.target.value)}
+                    placeholder="14.2"
+                    className={input_field}
+                  />
                 </Field>
                 <Field label="Waist (inches)">
-                  <input type="number" step="0.1" value={waist} onChange={(e) => setWaist(e.target.value)} placeholder="31.2" className={input_field} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={waist}
+                    onChange={(e) => setWaist(e.target.value)}
+                    placeholder="31.2"
+                    className={input_field}
+                  />
                 </Field>
               </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={() => setProgressOpen(false)} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
-                <button onClick={handleSaveProgress} className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setProgressOpen(false)}
+                  className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProgress}
+                  className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                >
                   <Save className="size-4" /> Save Progress Entry
                 </button>
               </div>
@@ -856,12 +1258,21 @@ function MemberReport() {
   );
 }
 
-const input_field = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";
+const input_field =
+  "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-semibold">{title}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-semibold">
+        {title}
+      </p>
       {children}
     </section>
   );
@@ -871,17 +1282,29 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{label}</p>
-      <p className="text-xs sm:text-sm font-medium mt-0.5 text-foreground">{value}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">
+        {label}
+      </p>
+      <p className="text-xs sm:text-sm font-medium mt-0.5 text-foreground">
+        {value}
+      </p>
     </div>
   );
 }
 
 // Reusable Field wrapper
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="block">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
       <div className="mt-1">{children}</div>
     </div>
   );
@@ -901,31 +1324,79 @@ function computeDiet(m: any) {
   const gender = m.gender ?? "M";
 
   const bmi = weight / Math.pow(height / 100, 2);
-  const bmiClass = bmi < 18.5 ? "Underweight" : bmi < 25 ? "Healthy" : bmi < 30 ? "Overweight" : "Obese";
+  const bmiClass =
+    bmi < 18.5
+      ? "Underweight"
+      : bmi < 25
+        ? "Healthy"
+        : bmi < 30
+          ? "Overweight"
+          : "Obese";
 
   const bmr = Math.round(
     gender === "F"
       ? 10 * weight + 6.25 * height - 5 * age - 161
-      : 10 * weight + 6.25 * height - 5 * age + 5
+      : 10 * weight + 6.25 * height - 5 * age + 5,
   );
 
   const tdee = Math.round(bmr * 1.55);
   const goal = (m.goal || "").toLowerCase();
-  const targetKcal = goal.includes("loss") ? tdee - 500 : goal.includes("gain") || goal.includes("muscle") ? tdee + 400 : tdee;
+  const targetKcal = goal.includes("loss")
+    ? tdee - 500
+    : goal.includes("gain") || goal.includes("muscle")
+      ? tdee + 400
+      : tdee;
 
-  const protein = Math.round(weight * (goal.includes("muscle") || goal.includes("strength") ? 2.0 : 1.6));
+  const protein = Math.round(
+    weight * (goal.includes("muscle") || goal.includes("strength") ? 2.0 : 1.6),
+  );
   const fats = Math.round((targetKcal * 0.25) / 9);
-  const carbs = Math.max(0, Math.round((targetKcal - protein * 4 - fats * 9) / 4));
+  const carbs = Math.max(
+    0,
+    Math.round((targetKcal - protein * 4 - fats * 9) / 4),
+  );
   const water = +(weight * 0.033).toFixed(1);
 
   const meals = [
-    { name: "Breakfast", items: "4 egg whites + 2 whole eggs, oats 60g with milk, 1 banana, black coffee" },
-    { name: "Mid-morning", items: "Handful almonds (15) + greek yogurt 150g + apple" },
-    { name: "Lunch", items: "Grilled chicken/paneer 180g, brown rice 1 cup, mixed vegetables, salad, dal 1 bowl" },
-    { name: "Pre-workout", items: "Black coffee + 1 banana + 5g creatine (30 minutes before)" },
-    { name: "Post-workout", items: "Whey protein 1 scoop + 1 banana + 250ml milk" },
-    { name: "Dinner", items: "Grilled fish/tofu 180g, 2 chapati, sautéed vegetables, curd 1 bowl" },
+    {
+      name: "Breakfast",
+      items:
+        "4 egg whites + 2 whole eggs, oats 60g with milk, 1 banana, black coffee",
+    },
+    {
+      name: "Mid-morning",
+      items: "Handful almonds (15) + greek yogurt 150g + apple",
+    },
+    {
+      name: "Lunch",
+      items:
+        "Grilled chicken/paneer 180g, brown rice 1 cup, mixed vegetables, salad, dal 1 bowl",
+    },
+    {
+      name: "Pre-workout",
+      items: "Black coffee + 1 banana + 5g creatine (30 minutes before)",
+    },
+    {
+      name: "Post-workout",
+      items: "Whey protein 1 scoop + 1 banana + 250ml milk",
+    },
+    {
+      name: "Dinner",
+      items:
+        "Grilled fish/tofu 180g, 2 chapati, sautéed vegetables, curd 1 bowl",
+    },
   ];
 
-  return { bmi, bmiClass, bmr, tdee, targetKcal, protein, carbs, fats, water, meals };
+  return {
+    bmi,
+    bmiClass,
+    bmr,
+    tdee,
+    targetKcal,
+    protein,
+    carbs,
+    fats,
+    water,
+    meals,
+  };
 }

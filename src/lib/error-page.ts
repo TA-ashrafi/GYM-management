@@ -1,7 +1,7 @@
 /**
  * Generates a user-friendly error page HTML for display when a page fails to load.
  * This page provides options to retry loading or navigate back to the home page.
- * 
+ *
  * @returns HTML string for the error page
  */
 export function renderErrorPage(): string {

@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, AlertTriangle, Clock, Ghost, Wallet, CheckSquare, Package, X } from "lucide-react";
+import {
+  Bell,
+  AlertTriangle,
+  Clock,
+  Ghost,
+  Wallet,
+  CheckSquare,
+  Package,
+  X,
+} from "lucide-react";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 import { daysUntil } from "@/lib/gym-store";
 
@@ -99,7 +108,9 @@ function useNotifications() {
         // Wrong time slot
         const preferredSlot = m.preferred_slot ?? m.preferredSlot;
         if (preferredSlot && logs) {
-          const memberPunchedToday = logs.find((l: any) => l.member_id === m.id);
+          const memberPunchedToday = logs.find(
+            (l: any) => l.member_id === m.id,
+          );
           if (memberPunchedToday) {
             const [startStr, endStr] = preferredSlot.split("-");
             if (startStr && endStr) {
@@ -108,7 +119,8 @@ function useNotifications() {
               const slotStart = sh * 60 + (sm || 0);
               const slotEnd = eh * 60 + (em || 0);
               const punchTime = new Date(memberPunchedToday.checked_in_at);
-              const punchMin = punchTime.getHours() * 60 + punchTime.getMinutes();
+              const punchMin =
+                punchTime.getHours() * 60 + punchTime.getMinutes();
 
               if (punchMin < slotStart || punchMin > slotEnd) {
                 out.push({
@@ -145,7 +157,12 @@ function useNotifications() {
         out.push({
           id: `todo_${t.id}`,
           type: "task",
-          tone: t.priority === "high" ? "danger" : t.priority === "med" ? "warn" : "info",
+          tone:
+            t.priority === "high"
+              ? "danger"
+              : t.priority === "med"
+                ? "warn"
+                : "info",
           title: `Task pending: ${t.title}`,
           desc: t.note ?? `Priority: ${t.priority}`,
           href: "/todos",
@@ -207,8 +224,12 @@ export function NotificationsBell() {
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div>
-              <h3 className="font-heading text-base text-foreground">Notifications</h3>
-              <p className="text-[11px] text-muted-foreground">{count} alerts pending</p>
+              <h3 className="font-heading text-base text-foreground">
+                Notifications
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                {count} alerts pending
+              </p>
             </div>
             {count > 0 && (
               <button
@@ -234,36 +255,62 @@ export function NotificationsBell() {
             {Object.entries(grouped).map(([type, list]) => (
               <div key={type}>
                 <div className="px-4 py-2 text-[10px] uppercase tracking-widest text-muted-foreground bg-secondary/30 font-bold">
-                  {type === "expiry" ? "Membership Expiry" :
-                   type === "ghost" ? "Scan Bypass / Ghosts" :
-                   type === "dues" ? "Pending Dues" :
-                   type === "task" ? "Tasks" :
-                   type === "slot" ? "Wrong Slot" : "Low Stock"}
+                  {type === "expiry"
+                    ? "Membership Expiry"
+                    : type === "ghost"
+                      ? "Scan Bypass / Ghosts"
+                      : type === "dues"
+                        ? "Pending Dues"
+                        : type === "task"
+                          ? "Tasks"
+                          : type === "slot"
+                            ? "Wrong Slot"
+                            : "Low Stock"}
                 </div>
 
                 {list.slice(0, 8).map((n) => {
                   const Icon = ICONS[n.type] ?? AlertTriangle;
                   const toneCls =
-                    n.tone === "danger" ? "text-danger bg-danger/10" :
-                    n.tone === "warn" ? "text-warn bg-warn/10" :
-                    "text-info bg-info/10";
+                    n.tone === "danger"
+                      ? "text-danger bg-danger/10"
+                      : n.tone === "warn"
+                        ? "text-warn bg-warn/10"
+                        : "text-info bg-info/10";
 
                   return (
-                    <div key={n.id} className="px-4 py-3 flex gap-3 hover:bg-secondary/50 border-b border-border/50 last:border-0">
-                      <div className={"size-9 rounded-lg grid place-items-center shrink-0 " + toneCls}>
+                    <div
+                      key={n.id}
+                      className="px-4 py-3 flex gap-3 hover:bg-secondary/50 border-b border-border/50 last:border-0"
+                    >
+                      <div
+                        className={
+                          "size-9 rounded-lg grid place-items-center shrink-0 " +
+                          toneCls
+                        }
+                      >
                         <Icon className="size-4" />
                       </div>
                       <Link
                         to={(n.href?.split("?")[0] ?? "/") as "/"}
-                        search={Object.fromEntries(new URLSearchParams(n.href?.split("?")[1] ?? "")) as never}
+                        search={
+                          Object.fromEntries(
+                            new URLSearchParams(n.href?.split("?")[1] ?? ""),
+                          ) as never
+                        }
                         onClick={() => setOpen(false)}
                         className="flex-1 min-w-0"
                       >
-                        <p className="text-sm font-medium truncate text-foreground">{n.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{n.desc}</p>
+                        <p className="text-sm font-medium truncate text-foreground">
+                          {n.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {n.desc}
+                        </p>
                       </Link>
                       <button
-                        onClick={() => setDismissed((prev) => new Set([...prev, n.id]))}
+                        onClick={() =>
+                          setDismissed((prev) => new Set([...prev, n.id]))
+                        }
                         className="size-6 rounded grid place-items-center hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                       >
                         <X className="size-3" />

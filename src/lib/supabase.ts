@@ -2,8 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 
 // ==================== Supabase Client Initialization ====================
 
-const url = (import.meta.env.VITE_SUPABASE_URL as string) || "https://placeholder-project-url.supabase.co";
-const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "placeholder-anon-key-string-value-for-booting-safely";
+const url =
+  (import.meta.env.VITE_SUPABASE_URL as string) ||
+  "https://placeholder-project-url.supabase.co";
+const key =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  "placeholder-anon-key-string-value-for-booting-safely";
 
 export const supabase = createClient(url, key);
 
@@ -43,7 +47,9 @@ export function clearActiveBranch() {
  */
 export async function fetchBranches() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
@@ -51,7 +57,10 @@ export async function fetchBranches() {
       .select("*")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: true });
-    if (error) { console.error(error); return []; }
+    if (error) {
+      console.error(error);
+      return [];
+    }
     return data ?? [];
   } catch (err) {
     console.error("Error in fetchBranches:", err);
@@ -73,7 +82,10 @@ export async function fetchMembers() {
     .select("*")
     .eq("branch_id", branchId)
     .order("created_at", { ascending: false });
-  if (error) { console.error(error); return []; }
+  if (error) {
+    console.error(error);
+    return [];
+  }
   return (data ?? []).map(mapMember);
 }
 

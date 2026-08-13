@@ -8,5 +8,5 @@ export const Route = createFileRoute("/login")({
       nav({ to: "/auth", search: { mode: "login" } });
     }, [nav]);
     return null;
-  }
+  },
 });

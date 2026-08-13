@@ -8,5 +8,5 @@ export const Route = createFileRoute("/landing")({
       nav({ to: "/" });
     }, [nav]);
     return null;
-  }
+  },
 });

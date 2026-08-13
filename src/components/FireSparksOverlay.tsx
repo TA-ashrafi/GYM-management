@@ -15,7 +15,10 @@ interface FireSparksOverlayProps {
   className?: string;
 }
 
-const colorMap: Record<NonNullable<FireSparksOverlayProps["color"]>, string[]> = {
+const colorMap: Record<
+  NonNullable<FireSparksOverlayProps["color"]>,
+  string[]
+> = {
   orange: ["#ff7a18", "#ff9d3c", "#ffb457", "#ffd08a"],
   red: ["#ff4d2d", "#ff6b45", "#ff8a5c", "#ffab7a"],
   yellow: ["#ffd60a", "#ffe066", "#fff0a8", "#fff7cf"],
@@ -84,7 +87,9 @@ export function FireSparksOverlay({
       return {
         x,
         y,
-        vx: side ? (fromLeft ? 0.15 : -0.15) * (0.6 + Math.random()) : (Math.random() - 0.5) * 0.14,
+        vx: side
+          ? (fromLeft ? 0.15 : -0.15) * (0.6 + Math.random())
+          : (Math.random() - 0.5) * 0.14,
         vy: -(0.16 + Math.random() * 0.26) * speed,
         size: Math.random() * 0.9 + 0.35,
         alpha: 0,
@@ -96,7 +101,9 @@ export function FireSparksOverlay({
       };
     };
 
-    sparksRef.current = Array.from({ length: intensity }, () => createSpark(true));
+    sparksRef.current = Array.from({ length: intensity }, () =>
+      createSpark(true),
+    );
 
     const animate = () => {
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -111,14 +118,16 @@ export function FireSparksOverlay({
 
         // fade in, hold, fade out
         const t = s.life / s.maxLife;
-        s.alpha = t < 0.15 ? t / 0.15 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
+        s.alpha =
+          t < 0.15 ? t / 0.15 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
 
         if (s.life >= s.maxLife || s.y < -20) {
           sparksRef.current[i] = createSpark();
           continue;
         }
 
-        const flicker = 0.55 + Math.abs(Math.sin(s.life * 0.06 + s.drift)) * 0.45;
+        const flicker =
+          0.55 + Math.abs(Math.sin(s.life * 0.06 + s.drift)) * 0.45;
         const a = s.alpha * flicker * 0.9;
 
         ctx.save();

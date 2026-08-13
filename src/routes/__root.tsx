@@ -1,41 +1,64 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet, createRootRouteWithContext,
-  useRouter, useRouterState, HeadContent, Scripts,
+  Outlet,
+  createRootRouteWithContext,
+  useRouter,
+  useRouterState,
+  HeadContent,
+  Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
+import {
+  supabase,
+  getActiveBranchId,
+  fetchBranches,
+  setActiveBranchId,
+} from "@/lib/supabase";
 import { gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 
-const PUBLIC_PATHS = ["/", "/auth", "/landing", "/login", "/onboarding"];
+const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ALPHA FITNESS — Premium Fitness streak" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-});
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "ALPHA FITNESS — Premium Fitness streak" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap",
+        },
+      ],
+    }),
+    shellComponent: RootShell,
+    component: RootComponent,
+  },
+);
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -58,72 +81,125 @@ function RootComponent() {
     return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
+  // 1. Run auth check on mount and pathname transitions
   useEffect(() => {
-    // Run only once on initial mount — do not re-run on tab or window switch.
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
+      // 1. Password Recovery Bypass
+      const isRecovery =
+        pathname === "/auth" &&
+        (window.location.hash.includes("type=recovery") ||
+          window.location.search.includes("type=recovery") ||
+          window.location.hash.includes("recovery") ||
+          window.location.search.includes("recovery"));
 
+      if (isRecovery) {
+        setReady(true);
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // 2. No session
       if (!session) {
         const isPublic = PUBLIC_PATHS.includes(pathname);
-        if (!isPublic) router.navigate({ to: "/landing" });
+        if (!isPublic) {
+          router.navigate({ to: "/landing" });
+        }
         setReady(true);
         return;
       }
 
       const branches = await fetchBranches();
 
+      // 3. Session + 0 branches
       if (branches.length === 0) {
         localStorage.removeItem("fs_active_branch"); // Safe cleanup
         gym.reset(); // Wipe any old cached records
-        if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
+        if (pathname !== "/onboarding") {
+          router.navigate({ to: "/onboarding" });
+        }
         setReady(true);
         return;
       }
 
-      const activeBranchId = getActiveBranchId();
-      let validBranch = branches.find((b: any) => b.id === activeBranchId);
+      // 4. Session + 1 branch
+      if (branches.length === 1) {
+        const singleBranch = branches[0];
+        setActiveBranchId(singleBranch.id);
 
-      if (!validBranch && branches.length > 0) {
-        setActiveBranchId(branches[0].id);
-        validBranch = branches[0];
-      }
-
-      // Synchronize active branch settings and theme on load so appearance stays persisted
-      const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
-      if (currentBranch) {
         gym.updateSettings({
-          gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
-          theme: currentBranch.theme ?? "dark",
-          preset: currentBranch.preset ?? "lime",
-          slotDurationMin: currentBranch.slot_duration_min ?? 60,
-          slotCapacity: currentBranch.slot_capacity ?? 20,
-          currency: currentBranch.currency ?? "INR",
-          language: currentBranch.language ?? "hinglish",
+          gymName: singleBranch.gym_name ?? "ALPHA FITNESS",
+          theme: singleBranch.theme ?? "dark",
+          preset: singleBranch.preset ?? "lime",
+          slotDurationMin: singleBranch.slot_duration_min ?? 60,
+          slotCapacity: singleBranch.slot_capacity ?? 20,
+          currency: singleBranch.currency ?? "INR",
+          language: singleBranch.language ?? "hinglish",
         });
+
+        const isPublic = PUBLIC_PATHS.includes(pathname);
+        if (isPublic) {
+          router.navigate({ to: "/" });
+        }
+        setReady(true);
+        return;
       }
 
-      const isPublic = PUBLIC_PATHS.includes(pathname);
-      if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
-        router.navigate({ to: "/" });
+      // 5. Session + multiple branches
+      if (branches.length > 1) {
+        const activeBranchId = getActiveBranchId();
+        let validBranch = branches.find((b: any) => b.id === activeBranchId);
+
+        if (!validBranch) {
+          if (pathname !== "/branches") {
+            router.navigate({ to: "/branches" });
+          }
+        } else {
+          gym.updateSettings({
+            gymName: validBranch.gym_name ?? "ALPHA FITNESS",
+            theme: validBranch.theme ?? "dark",
+            preset: validBranch.preset ?? "lime",
+            slotDurationMin: validBranch.slot_duration_min ?? 60,
+            slotCapacity: validBranch.slot_capacity ?? 20,
+            currency: validBranch.currency ?? "INR",
+            language: validBranch.language ?? "hinglish",
+          });
+
+          const isPublic = PUBLIC_PATHS.includes(pathname);
+          if (isPublic) {
+            router.navigate({ to: "/" });
+          }
+        }
+        setReady(true);
+        return;
       }
-      setReady(true);
     }
 
     checkAuth();
+  }, [pathname]);
 
-    // Track user session changes to prevent profile cross-leakage on same browser
+  // 2. Track auth state changes only once on mount
+  useEffect(() => {
     let currentUserId = "";
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) currentUserId = session.user.id;
     });
 
-    // Listen only for authentication events (login/logout), not tab switching.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         localStorage.removeItem("fs_active_branch");
         gym.reset();
         router.navigate({ to: "/landing" });
       } else if (event === "SIGNED_IN" && session?.user) {
+        const isRecovery =
+          window.location.hash.includes("type=recovery") ||
+          window.location.search.includes("type=recovery");
+        if (isRecovery) return;
+
         if (currentUserId && currentUserId !== session.user.id) {
           localStorage.removeItem("fs_active_branch");
           gym.reset();
@@ -134,7 +210,7 @@ function RootComponent() {
     });
 
     return () => subscription.unsubscribe();
-  }, []); // Run only once when the component mounts.
+  }, []);
 
   if (!ready) {
     return (
@@ -156,7 +232,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isPublic ? <Outlet /> : <AppShell><Outlet /></AppShell>}
+      {isPublic ? (
+        <Outlet />
+      ) : (
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      )}
       <Toaster position="top-right" />
 
       {/* Interactive cursor glow trail */}

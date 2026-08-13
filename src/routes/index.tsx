@@ -1,17 +1,58 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
-  Users, TrendingUp, AlertTriangle, Wallet, CheckCircle2,
-  Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save,
-  Dumbbell, MessageCircle, ShoppingBag, BarChart3, FileText, Zap, ArrowRight, Check, Star, Shield, Award, Flame, Menu, ShieldCheck, Trophy, Sparkles
+  Users,
+  TrendingUp,
+  AlertTriangle,
+  Wallet,
+  CheckCircle2,
+  Activity,
+  ArrowUpRight,
+  Bell,
+  Clock,
+  Radio,
+  GripVertical,
+  Eye,
+  EyeOff,
+  RotateCcw,
+  X,
+  CreditCard,
+  Save,
+  Dumbbell,
+  MessageCircle,
+  ShoppingBag,
+  BarChart3,
+  FileText,
+  Zap,
+  ArrowRight,
+  Check,
+  Star,
+  Shield,
+  Award,
+  Flame,
+  Menu,
+  ShieldCheck,
+  Trophy,
+  Sparkles,
 } from "lucide-react";
 import {
-  AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import {
-  useGym, daysUntil, money, gym,
-  DEFAULT_LAYOUT, type WidgetId, type PlanType
+  useGym,
+  daysUntil,
+  money,
+  gym,
+  DEFAULT_LAYOUT,
+  type WidgetId,
+  type PlanType,
 } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -28,9 +69,20 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "ALPHA FITNESS — Your GYM Operating System" },
-      { name: "description", content: "RFID attendance, ghost detection, WhatsApp reminders, supplement POS, analytics — the complete OS for modern gym networks." },
-      { property: "og:title", content: "ALPHA FITNESS — Your GYM Operating System" },
-      { property: "og:description", content: "Eliminate scan bypass. Track every member, every transaction, and every check-in with high-end analytics." },
+      {
+        name: "description",
+        content:
+          "RFID attendance, ghost detection, WhatsApp reminders, supplement POS, analytics — the complete OS for modern gym networks.",
+      },
+      {
+        property: "og:title",
+        content: "ALPHA FITNESS — Your GYM Operating System",
+      },
+      {
+        property: "og:description",
+        content:
+          "Eliminate scan bypass. Track every member, every transaction, and every check-in with high-end analytics.",
+      },
     ],
   }),
   component: Home,
@@ -46,7 +98,9 @@ function Home() {
       setAuthLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
@@ -66,7 +120,13 @@ function Home() {
     );
   }
 
-  return user ? <AppShell><Dashboard /></AppShell> : <MarketingPortal />;
+  return user ? (
+    <AppShell>
+      <Dashboard />
+    </AppShell>
+  ) : (
+    <MarketingPortal />
+  );
 }
 
 /* =========================================================================
@@ -85,7 +145,8 @@ function MarketingPortal() {
       const currentScrollY = window.scrollY;
 
       // Calculate Scroll Progress Percentage
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const totalHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
       if (totalHeight > 0) {
         setScrollProgress((currentScrollY / totalHeight) * 100);
       }
@@ -105,7 +166,6 @@ function MarketingPortal() {
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
-
       {/* Scroll Progress Tracker in Right Bottom Corner */}
       <div className="fixed bottom-6 right-6 z-50 pointer-events-none select-none">
         <div className="relative size-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-md shadow-2xl">
@@ -144,33 +204,78 @@ function MarketingPortal() {
       <div className="absolute bottom-1/4 right-1/4 size-[600px] bg-[#ed3434]/3 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* SECTION 1: Fixed Nav Bar */}
-      <header className={`fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-all duration-300 ${visibleNavbar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
+      <header
+        className={`fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-all duration-300 ${visibleNavbar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}
+      >
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
+          <Link
+            to="/"
+            className="flex items-center gap-3 relative z-10 hover:opacity-90 transition"
+          >
             <div>
-              <div className="text-2xl font-black tracking-tight text-white uppercase leading-none">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
-              <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">Your Gym Operating System</div>
+              <div className="text-2xl font-black tracking-tight text-white uppercase leading-none">
+                ALPHA <span className="text-[#ed3434]">FITNESS</span>
+              </div>
+              <div className="text-[8px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold mt-1">
+                Your Gym Operating System
+              </div>
             </div>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-[#8d8d8d]">
-            <a href="#home" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Home</a>
-            <a href="#features" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Features</a>
-            <a href="#testimonials" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Testimonials</a>
-            <a href="#pricing" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Pricing</a>
-            <a href="#contact" className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all">Contact</a>
+            <a
+              href="#home"
+              className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all"
+            >
+              Home
+            </a>
+            <a
+              href="#features"
+              className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all"
+            >
+              Features
+            </a>
+            <a
+              href="#testimonials"
+              className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all"
+            >
+              Testimonials
+            </a>
+            <a
+              href="#pricing"
+              className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all"
+            >
+              Pricing
+            </a>
+            <a
+              href="#contact"
+              className="hover:text-white transition-colors py-1 hover:border-b-2 hover:border-[#ed3434] transition-all"
+            >
+              Contact
+            </a>
           </nav>
 
           <div className="hidden lg:flex items-center gap-4">
-            <Link to="/auth" search={{ mode: "login" }} className="text-xs font-bold uppercase tracking-widest text-[#8d8d8d] hover:text-white transition">
+            <Link
+              to="/auth"
+              search={{ mode: "login" }}
+              className="text-xs font-bold uppercase tracking-widest text-[#8d8d8d] hover:text-white transition"
+            >
               Login
             </Link>
-            <Link to="/auth" search={{ mode: "signup" }} className="px-5 py-2.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-extrabold uppercase tracking-widest transition shadow-[0_4px_15px_rgba(237,52,52,0.2)]">
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              className="px-5 py-2.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-extrabold uppercase tracking-widest transition shadow-[0_4px_15px_rgba(237,52,52,0.2)]"
+            >
               Sign Up
             </Link>
           </div>
 
-          <button onClick={() => setMobileMenu(!mobileMenu)} className="lg:hidden size-10 rounded border border-[#242424] bg-[#101010] text-white grid place-items-center cursor-pointer">
+          <button
+            onClick={() => setMobileMenu(!mobileMenu)}
+            className="lg:hidden size-10 rounded border border-[#242424] bg-[#101010] text-white grid place-items-center cursor-pointer"
+          >
             <Menu className="size-5" />
           </button>
         </div>
@@ -178,82 +283,149 @@ function MarketingPortal() {
         {/* Mobile Dropdown Panel */}
         {mobileMenu && (
           <div className="lg:hidden absolute top-20 left-0 right-0 bg-[#101010] border-b border-[#242424] p-6 flex flex-col gap-4 animate-fade-in z-50">
-            <a href="#home" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Home</a>
-            <a href="#features" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Features</a>
-            <a href="#testimonials" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Testimonials</a>
-            <a href="#pricing" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Pricing</a>
-            <a href="#contact" onClick={() => setMobileMenu(false)} className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition">Contact</a>
+            <a
+              href="#home"
+              onClick={() => setMobileMenu(false)}
+              className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition"
+            >
+              Home
+            </a>
+            <a
+              href="#features"
+              onClick={() => setMobileMenu(false)}
+              className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition"
+            >
+              Features
+            </a>
+            <a
+              href="#testimonials"
+              onClick={() => setMobileMenu(false)}
+              className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition"
+            >
+              Testimonials
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setMobileMenu(false)}
+              className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition"
+            >
+              Pricing
+            </a>
+            <a
+              href="#contact"
+              onClick={() => setMobileMenu(false)}
+              className="text-xs font-bold uppercase tracking-widest hover:text-[#ed3434] transition"
+            >
+              Contact
+            </a>
             <div className="h-px bg-[#242424] my-2" />
-            <Link to="/auth" search={{ mode: "login" }} className="text-xs font-bold uppercase tracking-widest text-center py-2 border border-[#242424] rounded-lg">Login</Link>
-            <Link to="/auth" search={{ mode: "signup" }} className="text-xs font-bold uppercase tracking-widest text-center py-2 bg-[#ed3434] text-white rounded-lg">Sign Up</Link>
+            <Link
+              to="/auth"
+              search={{ mode: "login" }}
+              className="text-xs font-bold uppercase tracking-widest text-center py-2 border border-[#242424] rounded-lg"
+            >
+              Login
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              className="text-xs font-bold uppercase tracking-widest text-center py-2 bg-[#ed3434] text-white rounded-lg"
+            >
+              Sign Up
+            </Link>
           </div>
         )}
       </header>
 
       {/* SECTION 2: HERO — Premium tilted strip with improved design */}
-      <section className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]" id="home">
+      <section
+        className="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden border-b border-[#242424]"
+        id="home"
+      >
         {/* Premium tilted geometric strip — improved with better visibility and depth */}
-        <div className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] pointer-events-none z-0 hidden lg:block" style={{ transform: 'skewX(-12deg)' }}>
+        <div
+          className="absolute right-[6%] top-[-10%] w-[28%] h-[125%] pointer-events-none z-0 hidden lg:block"
+          style={{ transform: "skewX(-12deg)" }}
+        >
           <div className="w-full h-full relative">
             {/* Main strip with gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#ff0000]/20 via-[#ff0000]/10 to-transparent" />
-            
+
             {/* Inner glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent blur-xl" />
-            
+
             {/* Vertical accent lines */}
             <div className="absolute left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/30 to-transparent" />
             <div className="absolute right-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/20 to-transparent" />
-            
+
             {/* Diagonal light rays */}
             <div className="absolute top-[10%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent" />
             <div className="absolute top-[30%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/10 to-transparent" />
             <div className="absolute top-[50%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/5 to-transparent" />
-            
+
             {/* Vertical gradient edge */}
             <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/30 to-transparent" />
             <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/20 to-transparent" />
-            
+
             {/* Subtle grid pattern */}
-            <div className="absolute inset-0 opacity-[0.04]" 
-                 style={{
-                   backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
-                   backgroundSize: '32px 32px'
-                 }} 
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
+                backgroundSize: "32px 32px",
+              }}
             />
           </div>
         </div>
 
         {/* Layer athlete PNG on top of text (z-20) */}
-        <img src={pose1} alt="Athlete posing" className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none" />
+        <img
+          src={pose1}
+          alt="Athlete posing"
+          className="absolute right-[-1%] bottom-[-1%] h-[96vh] max-w-[67vw] object-contain object-right-bottom filter contrast-110 brightness-75 drop-shadow-[0_20px_40px_rgba(0,0,0,0.9)] z-20 hidden lg:block pointer-events-none"
+        />
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
           <div className="grid lg:grid-cols-12 gap-12">
             <div className="lg:col-span-8 space-y-6 text-left">
               <div className="inline-flex items-center gap-2">
                 <span className="w-10 h-px bg-[#ed3434]" />
-                <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Your Gym Operating System</span>
+                <span className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+                  Your Gym Operating System
+                </span>
               </div>
 
               {/* VARIANT 7: Vintage Strength - Old School Gym */}
-              <h1 className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none" 
-                  style={{ 
-                    fontSize: "clamp(64px, 9.5vw, 150px)",
-                    fontFamily: "'Abril Fatface', 'Georgia', serif",
-                    fontWeight: 400
-                  }}>
-                <span className="text-[#ed3434]">M</span>uscle<br />
-                Mastery<br />
+              <h1
+                className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none"
+                style={{
+                  fontSize: "clamp(64px, 9.5vw, 150px)",
+                  fontFamily: "'Abril Fatface', 'Georgia', serif",
+                  fontWeight: 400,
+                }}
+              >
+                <span className="text-[#ed3434]">M</span>uscle
+                <br />
+                Mastery
+                <br />
                 Alpha
               </h1>
-              
+
               <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
-                Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
+                Train with purpose. Build relentless strength. ALPHA FITNESS is
+                a performance-driven gym management platform designed to
+                eliminate fingerprint bypass, track RFID attendance, automate
+                WhatsApp communication, and deliver absolute clarity over your
+                gym console.
               </p>
 
               <div className="flex flex-wrap items-center gap-6 pt-4">
                 {/* LAUNCH CONSOLE DASHBOARD button redirecting directly to login */}
-                <Link to="/auth" search={{ mode: "login" }} className="cta group relative z-30">
+                <Link
+                  to="/auth"
+                  search={{ mode: "login" }}
+                  className="cta group relative z-30"
+                >
                   LAUNCH CONSOLE DASHBOARD
                   <span className="size-[74px] rounded-full border border-[#ed3434] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ed3434] group-hover:text-white text-[#ed3434] font-black text-xl">
                     ↗
@@ -267,26 +439,46 @@ function MarketingPortal() {
         {/* Far Left social rail - moved UP */}
         <div className="absolute left-6 top-[30%] flex flex-col gap-4 text-xs font-semibold uppercase tracking-widest text-[#8d8d8d] z-20 hidden md:flex">
           <div className="flex flex-col gap-3 border border-[#242424] rounded-full px-2.5 py-5 items-center bg-transparent">
-            <a href="#" className="hover:text-white transition">IN</a>
-            <a href="#" className="hover:text-white transition">IG</a>
-            <a href="#" className="hover:text-white transition">FB</a>
+            <a href="#" className="hover:text-white transition">
+              IN
+            </a>
+            <a href="#" className="hover:text-white transition">
+              IG
+            </a>
+            <a href="#" className="hover:text-white transition">
+              FB
+            </a>
           </div>
         </div>
 
         {/* Bottom Left scroll text - moved UP to avoid marquee overlap */}
         <div className="absolute left-10 bottom-50 flex flex-col items-center gap-4 text-[9px] uppercase tracking-[0.25em] text-[#8d8d8d] font-bold z-20 select-none">
           <span className="size-2 bg-[#ed3434] rounded-full block animate-pulse" />
-          <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">SCROLL DOWN -----</span>
+          <span className="rotate-90 origin-left translate-x-1 whitespace-nowrap">
+            SCROLL DOWN -----
+          </span>
         </div>
       </section>
 
       {/* SECTION 3: Marquee strip */}
       <div className="marquee border-y border-[#242424] py-4 bg-[#0a0a0a]">
         <div className="marquee-track text-[#8d8d8d] font-heading text-xl uppercase tracking-wider flex gap-8">
-          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
-          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
-          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
-          <span>No Excuses <span className="text-[#ed3434]">✦</span> Just Work <span className="text-[#ed3434]">✦</span> Build Your Alpha</span>
+          <span>
+            No Excuses <span className="text-[#ed3434]">✦</span> Just Work{" "}
+            <span className="text-[#ed3434]">✦</span> Build Your Alpha
+          </span>
+          <span>
+            No Excuses <span className="text-[#ed3434]">✦</span> Just Work{" "}
+            <span className="text-[#ed3434]">✦</span> Build Your Alpha
+          </span>
+          <span>
+            No Excuses <span className="text-[#ed3434]">✦</span> Just Work{" "}
+            <span className="text-[#ed3434]">✦</span> Build Your Alpha
+          </span>
+          <span>
+            No Excuses <span className="text-[#ed3434]">✦</span> Just Work{" "}
+            <span className="text-[#ed3434]">✦</span> Build Your Alpha
+          </span>
         </div>
       </div>
 
@@ -294,18 +486,31 @@ function MarketingPortal() {
       <section className="py-24 max-w-7xl mx-auto px-6" id="features">
         <div className="grid lg:grid-cols-12 gap-8 items-start mb-16">
           <div className="lg:col-span-8 space-y-4">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">High-Performance Gym Management ERP</div>
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+              High-Performance Gym Management ERP
+            </div>
             <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
-              Control Your Gym Network Like A <span className="text-[#ed3434]">Sovereign</span>
+              Control Your Gym Network Like A{" "}
+              <span className="text-[#ed3434]">Sovereign</span>
             </h2>
             <p className="text-[#8d8d8d] text-sm sm:text-base max-w-2xl leading-relaxed">
-              Eliminate fingerprint bypass completely. ALPHA FITNESS provides direct real-time RFID integration, zero-click automated WhatsApp alerts, high-margin supplement POS software, and instant multi-branch profit P&L calculations.
+              Eliminate fingerprint bypass completely. ALPHA FITNESS provides
+              direct real-time RFID integration, zero-click automated WhatsApp
+              alerts, high-margin supplement POS software, and instant
+              multi-branch profit P&L calculations.
             </p>
             <div className="flex gap-4 pt-4">
-              <Link to="/auth" search={{ mode: "login" }} className="px-6 py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition">
+              <Link
+                to="/auth"
+                search={{ mode: "login" }}
+                className="px-6 py-3.5 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition"
+              >
                 Launch Console Dashboard
               </Link>
-              <a href="#pricing" className="px-6 py-3.5 bg-[#101010] border border-[#242424] hover:border-[#ed3434]/40 text-[#f4f4f2] rounded-lg text-xs font-bold uppercase tracking-widest transition">
+              <a
+                href="#pricing"
+                className="px-6 py-3.5 bg-[#101010] border border-[#242424] hover:border-[#ed3434]/40 text-[#f4f4f2] rounded-lg text-xs font-bold uppercase tracking-widest transition"
+              >
                 Explore Features
               </a>
             </div>
@@ -317,7 +522,9 @@ function MarketingPortal() {
           <div className="flex items-center justify-between border-b border-[#242424] pb-4">
             <div className="flex items-center gap-2">
               <span className="size-2 bg-[#ed3434] rounded-full animate-ping" />
-              <span className="text-[10px] uppercase tracking-widest text-[#8d8d8d] font-bold">REAL-TIME MONITOR</span>
+              <span className="text-[10px] uppercase tracking-widest text-[#8d8d8d] font-bold">
+                REAL-TIME MONITOR
+              </span>
             </div>
             <span className="px-3 py-1 bg-[#ed3434]/10 border border-[#ed3434]/20 rounded-full text-[9px] text-[#ed3434] font-extrabold uppercase tracking-wider">
               CONSOLE READY
@@ -328,20 +535,39 @@ function MarketingPortal() {
             {[
               { label: "Active Roster", value: "382", desc: "active members" },
               { label: "Check-ins Today", value: "114", desc: "scanned logs" },
-              { label: "Bypass Flagged", value: "0", desc: "perfect regular rosters" },
-              { label: "Monthly Revenue", value: "₹2.48L", desc: "net collected profits" },
+              {
+                label: "Bypass Flagged",
+                value: "0",
+                desc: "perfect regular rosters",
+              },
+              {
+                label: "Monthly Revenue",
+                value: "₹2.48L",
+                desc: "net collected profits",
+              },
             ].map((kpi) => (
-              <div key={kpi.label} className="p-4 bg-[#070707] border border-[#242424] rounded-xl text-left">
-                <span className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">{kpi.label}</span>
-                <p className="text-2xl sm:text-3xl font-heading font-black text-white mt-1 uppercase">{kpi.value}</p>
-                <span className="text-[9px] text-[#ed3434] uppercase font-bold tracking-wider mt-2 block">{kpi.desc}</span>
+              <div
+                key={kpi.label}
+                className="p-4 bg-[#070707] border border-[#242424] rounded-xl text-left"
+              >
+                <span className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">
+                  {kpi.label}
+                </span>
+                <p className="text-2xl sm:text-3xl font-heading font-black text-white mt-1 uppercase">
+                  {kpi.value}
+                </p>
+                <span className="text-[9px] text-[#ed3434] uppercase font-bold tracking-wider mt-2 block">
+                  {kpi.desc}
+                </span>
               </div>
             ))}
           </div>
 
           {/* Premium Area Chart Mockup */}
           <div className="pt-4 space-y-2">
-            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block mb-4">LIVE FOOTFALL TREND 6AM–10PM</span>
+            <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block mb-4">
+              LIVE FOOTFALL TREND 6AM–10PM
+            </span>
             <div className="h-44 w-full border-t border-[#242424] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -354,7 +580,7 @@ function MarketingPortal() {
                     { hour: "4PM", footfall: 65 },
                     { hour: "6PM", footfall: 95 },
                     { hour: "8PM", footfall: 85 },
-                    { hour: "10PM", footfall: 40 }
+                    { hour: "10PM", footfall: 40 },
                   ]}
                   margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
                 >
@@ -365,8 +591,18 @@ function MarketingPortal() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
-                  <XAxis dataKey="hour" stroke="#8d8d8d" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#8d8d8d" fontSize={10} tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke="#8d8d8d"
+                    fontSize={10}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="#8d8d8d"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "#101010",
@@ -375,7 +611,13 @@ function MarketingPortal() {
                       fontSize: 12,
                     }}
                   />
-                  <Area type="monotone" dataKey="footfall" stroke="#ed3434" fill="url(#glow)" strokeWidth={3} />
+                  <Area
+                    type="monotone"
+                    dataKey="footfall"
+                    stroke="#ed3434"
+                    fill="url(#glow)"
+                    strokeWidth={3}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -383,11 +625,15 @@ function MarketingPortal() {
         </div>
       </section>
 
-                  {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
+      {/* SECTION 5: ABOUT "Built Different" (Refactored to cover box and use custom stats) */}
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="logo-card bg-gradient-to-br from-[#171717] to-[#070707] min-h-[420px] rounded-2xl border border-[#242424] overflow-hidden flex items-center justify-center relative">
-            <img src={grip} alt="Alpha Standard Logo" className="w-full h-full object-cover grayscale opacity-60" />
+            <img
+              src={grip}
+              alt="Alpha Standard Logo"
+              className="w-full h-full object-cover grayscale opacity-60"
+            />
             {/* Centered Text Overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
               <span className="text-white font-heading font-black text-4xl sm:text-5xl lg:text-6xl uppercase tracking-[0.15em] leading-none">
@@ -402,22 +648,33 @@ function MarketingPortal() {
             </div>
           </div>
           <div className="space-y-6 text-left">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Alpha Standard</div>
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+              The Alpha Standard
+            </div>
             <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-8xl">
-              BUILT<br />DIFFERENT
+              BUILT
+              <br />
+              DIFFERENT
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
-              ALPHA FITNESS is a cohesive operations engine developed to bring absolute efficiency, clarity, and design beauty to gym management. Every feature from real-time member records to supplement store profit margins functions offline-first.
+              ALPHA FITNESS is a cohesive operations engine developed to bring
+              absolute efficiency, clarity, and design beauty to gym management.
+              Every feature from real-time member records to supplement store
+              profit margins functions offline-first.
             </p>
             <div className="stats border-t border-[#242424] pt-9 flex flex-row flex-wrap gap-8 items-center">
               {[
                 { no: "01", text: "MINDSET" },
                 { no: "02", text: "STRENGTH" },
-                { no: "03", text: "RESULT" }
+                { no: "03", text: "RESULT" },
               ].map((x) => (
                 <div key={x.no} className="flex items-baseline gap-2">
-                  <span className="font-heading text-3xl font-black text-[#ed3434]">{x.no}</span>
-                  <span className="text-sm font-bold text-white uppercase tracking-wider">{x.text}</span>
+                  <span className="font-heading text-3xl font-black text-[#ed3434]">
+                    {x.no}
+                  </span>
+                  <span className="text-sm font-bold text-white uppercase tracking-wider">
+                    {x.text}
+                  </span>
                 </div>
               ))}
             </div>
@@ -428,28 +685,54 @@ function MarketingPortal() {
       {/* SECTION 6: PROGRAMS */}
       <section className="py-24 max-w-7xl mx-auto px-6 text-center">
         <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
-          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Choose Your Path</div>
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+            Choose Your Path
+          </div>
           <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
             TRAIN WITH PURPOSE
           </h2>
           <p className="text-[#8d8d8d] text-sm sm:text-base">
-            Focused programs built to improve strength, physique, and overall operational performance.
+            Focused programs built to improve strength, physique, and overall
+            operational performance.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { num: "01", name: "Strength", desc: "Progressive training built around compound movements, controlled volume and serious strength gains." },
-            { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
-            { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
+            {
+              num: "01",
+              name: "Strength",
+              desc: "Progressive training built around compound movements, controlled volume and serious strength gains.",
+            },
+            {
+              num: "02",
+              name: "Hypertrophy",
+              desc: "Structured muscle-building sessions designed for shape, density and balanced development.",
+            },
+            {
+              num: "03",
+              name: "Conditioning",
+              desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard.",
+            },
           ].map((program) => (
-            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group">
-              <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
+            <article
+              key={program.num}
+              className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group"
+            >
+              <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">
+                {program.num}
+              </span>
               <div className="z-10 mt-12 space-y-3">
-                <h3 className="font-heading text-2xl font-bold text-white uppercase group-hover:text-[#ed3434] transition-colors duration-300">{program.name}</h3>
-                <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-[240px]">{program.desc}</p>
+                <h3 className="font-heading text-2xl font-bold text-white uppercase group-hover:text-[#ed3434] transition-colors duration-300">
+                  {program.name}
+                </h3>
+                <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-[240px]">
+                  {program.desc}
+                </p>
               </div>
-              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10 group-hover:translate-x-2 transition-transform duration-300">↗ View program</span>
+              <span className="text-[10px] text-[#ed3434] uppercase tracking-wider font-bold block pt-6 z-10 group-hover:translate-x-2 transition-transform duration-300">
+                ↗ View program
+              </span>
             </article>
           ))}
         </div>
@@ -459,28 +742,58 @@ function MarketingPortal() {
       <section className="py-24 bg-[#101010] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div className="rounded-2xl border border-[#242424] overflow-hidden h-[620px] max-w-[520px] mx-auto w-full relative z-10">
-            <img src={benchpress} alt="Barbell training portrait detail" className="w-full h-full object-cover filter contrast-110 brightness-75" />
+            <img
+              src={benchpress}
+              alt="Barbell training portrait detail"
+              className="w-full h-full object-cover filter contrast-110 brightness-75"
+            />
           </div>
           <div className="space-y-6 text-left">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Earn Your Reflection</div>
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+              Earn Your Reflection
+            </div>
             <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-8xl space-y-1">
-              <span>DISCIPLINE</span><br />
-              <span>CREATES</span><br />
+              <span>DISCIPLINE</span>
+              <br />
+              <span>CREATES</span>
+              <br />
               <span className="text-[#ed3434]">POWER.</span>
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed">
-              Motivation gets you started. Discipline keeps you moving. At ALPHA FITNESS, we build systems that turn effort into a stronger body and a stronger mindset.
+              Motivation gets you started. Discipline keeps you moving. At ALPHA
+              FITNESS, we build systems that turn effort into a stronger body
+              and a stronger mindset.
             </p>
             <div className="bullets grid grid-cols-2 gap-4 pt-4 border-t border-[#242424]">
               {[
-                { num: "01", title: "Progressive", desc: "Train with a plan that evolves with you." },
-                { num: "02", title: "Focused", desc: "Remove distractions. Attack the work." },
-                { num: "03", title: "Measurable", desc: "Track the numbers. Own the progress." },
-                { num: "04", title: "Relentless", desc: "Show up when it matters most." }
+                {
+                  num: "01",
+                  title: "Progressive",
+                  desc: "Train with a plan that evolves with you.",
+                },
+                {
+                  num: "02",
+                  title: "Focused",
+                  desc: "Remove distractions. Attack the work.",
+                },
+                {
+                  num: "03",
+                  title: "Measurable",
+                  desc: "Track the numbers. Own the progress.",
+                },
+                {
+                  num: "04",
+                  title: "Relentless",
+                  desc: "Show up when it matters most.",
+                },
               ].map((b) => (
                 <div key={b.num} className="space-y-1">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider block">{b.num} — {b.title}</span>
-                  <p className="text-[11px] text-[#8d8d8d] leading-relaxed">{b.desc}</p>
+                  <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                    {b.num} — {b.title}
+                  </span>
+                  <p className="text-[11px] text-[#8d8d8d] leading-relaxed">
+                    {b.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -489,66 +802,131 @@ function MarketingPortal() {
       </section>
 
       {/* SECTION 8: FEATURES */}
-      <section className="py-24 max-w-7xl mx-auto px-6 text-center" id="features-grid">
+      <section
+        className="py-24 max-w-7xl mx-auto px-6 text-center"
+        id="features-grid"
+      >
         <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
-          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">High Performance Suite</div>
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+            High Performance Suite
+          </div>
           <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
             Engineered To Drive Operational Velocity
           </h2>
           <p className="text-[#8d8d8d] text-sm sm:text-base">
-            All modules compile instantly, run offline-first, and store data securely with Supabase database integrations.
+            All modules compile instantly, run offline-first, and store data
+            securely with Supabase database integrations.
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { num: "01", name: "RFID Attendance", desc: "Equip members with secure RFID access cards. Detect scan mismatches instantly and eliminate fingerprint bypass." },
-            { num: "02", name: "Ghost Detection", desc: "Identify active members who have not checked in for over 4 days. Intervene proactively to reduce churn." },
-            { num: "03", name: "WhatsApp Integration", desc: "Dispatch automatic reminders for plan expirations, unpaid dues, and birthdays directly with a single click." },
-            { num: "04", name: "Advanced CRM Console", desc: "Manage detailed member profiles, medical records, physical progression metrics, and emergency contacts easily." },
-            { num: "05", name: "Supplement POS Tracker", desc: "Track protein powder sales, snacks, and gear inventory with automated cost-margin profit logs built right into the platform." },
-            { num: "06", name: "Deep Real-Time Analytics", desc: "Visualize hourly footfall peaks, active member counts, and monthly sales trends on live interactive dashboards." },
-            { num: "07", name: "Expenses & Cash Flow P&L", desc: "Monitor recurring expenses like rent, staff salaries, and utility bills. Auto-generate comprehensive monthly net income reports." },
-            { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
-            { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
+            {
+              num: "01",
+              name: "RFID Attendance",
+              desc: "Equip members with secure RFID access cards. Detect scan mismatches instantly and eliminate fingerprint bypass.",
+            },
+            {
+              num: "02",
+              name: "Ghost Detection",
+              desc: "Identify active members who have not checked in for over 4 days. Intervene proactively to reduce churn.",
+            },
+            {
+              num: "03",
+              name: "WhatsApp Integration",
+              desc: "Dispatch automatic reminders for plan expirations, unpaid dues, and birthdays directly with a single click.",
+            },
+            {
+              num: "04",
+              name: "Advanced CRM Console",
+              desc: "Manage detailed member profiles, medical records, physical progression metrics, and emergency contacts easily.",
+            },
+            {
+              num: "05",
+              name: "Supplement POS Tracker",
+              desc: "Track protein powder sales, snacks, and gear inventory with automated cost-margin profit logs built right into the platform.",
+            },
+            {
+              num: "06",
+              name: "Deep Real-Time Analytics",
+              desc: "Visualize hourly footfall peaks, active member counts, and monthly sales trends on live interactive dashboards.",
+            },
+            {
+              num: "07",
+              name: "Expenses & Cash Flow P&L",
+              desc: "Monitor recurring expenses like rent, staff salaries, and utility bills. Auto-generate comprehensive monthly net income reports.",
+            },
+            {
+              num: "08",
+              name: "Crowd Control Slots",
+              desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly.",
+            },
+            {
+              num: "09",
+              name: "A4 Print-Ready Reports",
+              desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing.",
+            },
           ].map((f) => (
-            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group">
-              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest group-hover:text-[#ed3434]">{f.num}</span>
-              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2 group-hover:text-[#ed3434] transition-colors duration-300">{f.name}</h3>
-              <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
+            <div
+              key={f.num}
+              className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group"
+            >
+              <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest group-hover:text-[#ed3434]">
+                {f.num}
+              </span>
+              <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2 group-hover:text-[#ed3434] transition-colors duration-300">
+                {f.name}
+              </h3>
+              <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">
+                {f.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
       {/* SECTION 9: TESTIMONIALS */}
-      <section className="py-24 bg-[#101010] border-y border-[#242424]" id="testimonials">
+      <section
+        className="py-24 bg-[#101010] border-y border-[#242424]"
+        id="testimonials"
+      >
         <div className="max-w-7xl mx-auto px-6 text-left">
           <div className="max-w-2xl space-y-4 mb-16">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Owner Endorsements</div>
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+              Owner Endorsements
+            </div>
             <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
               Loved By Modern Gym Owners
             </h2>
             <p className="text-[#8d8d8d] text-sm">
-              See how actual athletic clubs and fitness complexes use ALPHA FITNESS to optimize staff time slots, reclaim lost membership revenues, and drive retail supplement store inventory profits.
+              See how actual athletic clubs and fitness complexes use ALPHA
+              FITNESS to optimize staff time slots, reclaim lost membership
+              revenues, and drive retail supplement store inventory profits.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
               {
-                quote: "ALPHA FITNESS completely revamped how we track member entries. Our fingerprint scanner had 30% bypass, but RFID solved it instantly.",
+                quote:
+                  "ALPHA FITNESS completely revamped how we track member entries. Our fingerprint scanner had 30% bypass, but RFID solved it instantly.",
                 author: "Rajesh Kumar",
-                role: "Owner, Iron Legacy Gym"
+                role: "Owner, Iron Legacy Gym",
               },
               {
-                quote: "The monthly P&L and supplement profit tracking are unmatched. I can see my actual margins with zero manual math.",
+                quote:
+                  "The monthly P&L and supplement profit tracking are unmatched. I can see my actual margins with zero manual math.",
                 author: "Vikram Malhotra",
-                role: "Director, Alpha Zone Club"
-              }
+                role: "Director, Alpha Zone Club",
+              },
             ].map((q) => (
-              <div key={q.author} className="p-8 bg-[#070707] border border-[#242424] rounded-2xl relative text-left">
-                <span className="absolute top-4 right-4 text-[#ed3434] text-5xl font-heading leading-none select-none font-bold">“</span>
+              <div
+                key={q.author}
+                className="p-8 bg-[#070707] border border-[#242424] rounded-2xl relative text-left"
+              >
+                <span className="absolute top-4 right-4 text-[#ed3434] text-5xl font-heading leading-none select-none font-bold">
+                  “
+                </span>
                 <p className="text-xs sm:text-sm text-[#8d8d8d] italic leading-relaxed font-medium relative z-10">
                   {q.quote}
                 </p>
@@ -558,7 +936,9 @@ function MarketingPortal() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-white">{q.author}</p>
-                    <p className="text-[10px] text-[#8d8d8d] font-semibold uppercase tracking-wider">{q.role}</p>
+                    <p className="text-[10px] text-[#8d8d8d] font-semibold uppercase tracking-wider">
+                      {q.role}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -568,14 +948,20 @@ function MarketingPortal() {
       </section>
 
       {/* SECTION 10: PRICING */}
-      <section className="py-24 max-w-7xl mx-auto px-6 text-center" id="pricing">
+      <section
+        className="py-24 max-w-7xl mx-auto px-6 text-center"
+        id="pricing"
+      >
         <div className="max-w-3xl mx-auto space-y-4 mb-16 text-left sm:text-center">
-          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">Fair Enterprise Pricing</div>
+          <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+            Fair Enterprise Pricing
+          </div>
           <h2 className="text-white uppercase leading-[0.86] tracking-tight font-heading text-4xl sm:text-6xl">
             Select Your System Tier
           </h2>
           <p className="text-[#8d8d8d] text-sm sm:text-base">
-            Choose a plan that fits your facility. Scale branches and features as your community expands.
+            Choose a plan that fits your facility. Scale branches and features
+            as your community expands.
           </p>
         </div>
 
@@ -586,28 +972,48 @@ function MarketingPortal() {
               price: "1,500",
               period: "month",
               desc: "Essential features for managing a single-location gym.",
-              features: ["Up to 200 members active", "RFID Scanner Integration", "Daily Attendance Logger", "Standard Dashboard Reports", "Email Sign-In Authentication"],
+              features: [
+                "Up to 200 members active",
+                "RFID Scanner Integration",
+                "Daily Attendance Logger",
+                "Standard Dashboard Reports",
+                "Email Sign-In Authentication",
+              ],
               cta: "Get Started",
-              popular: false
+              popular: false,
             },
             {
               name: "Silver Pro Plan",
               price: "4,000",
               period: "quarter",
               desc: "Complete operational control with automated reminders.",
-              features: ["Unlimited Active Members", "RFID Attendance + Live Sync", "Automated WhatsApp Webhooks", "Ghost Detection & Churn Alert", "Full Supplement POS Console", "A4 PDF Report Generation"],
+              features: [
+                "Unlimited Active Members",
+                "RFID Attendance + Live Sync",
+                "Automated WhatsApp Webhooks",
+                "Ghost Detection & Churn Alert",
+                "Full Supplement POS Console",
+                "A4 PDF Report Generation",
+              ],
               cta: "Go Pro",
-              popular: true
+              popular: true,
             },
             {
               name: "Gold Executive Plan",
               price: "13,000",
               period: "year",
               desc: "Ultimate performance tier with multi-branch management.",
-              features: ["All Silver Pro features", "Multi-Branch Network Support", "Physical Measurement Progress", "Custom 6-Day Workout Builder", "Advanced Cash Flow P&L Reports", "Dedicated Developer Support"],
+              features: [
+                "All Silver Pro features",
+                "Multi-Branch Network Support",
+                "Physical Measurement Progress",
+                "Custom 6-Day Workout Builder",
+                "Advanced Cash Flow P&L Reports",
+                "Dedicated Developer Support",
+              ],
               cta: "Join the Elite",
-              popular: false
-            }
+              popular: false,
+            },
           ].map((p) => (
             <div
               key={p.name}
@@ -625,18 +1031,29 @@ function MarketingPortal() {
               )}
 
               <div>
-                <p className="text-xs uppercase tracking-widest text-[#8d8d8d] font-extrabold">{p.name}</p>
+                <p className="text-xs uppercase tracking-widest text-[#8d8d8d] font-extrabold">
+                  {p.name}
+                </p>
                 <div className="mt-4 flex items-baseline gap-1 text-white">
-                  <span className="text-4xl sm:text-5xl font-heading font-black">₹{p.price}</span>
-                  <span className="text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">/{p.period}</span>
+                  <span className="text-4xl sm:text-5xl font-heading font-black">
+                    ₹{p.price}
+                  </span>
+                  <span className="text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">
+                    /{p.period}
+                  </span>
                 </div>
-                <p className="mt-3 text-xs text-[#8d8d8d] font-medium leading-relaxed">{p.desc}</p>
+                <p className="mt-3 text-xs text-[#8d8d8d] font-medium leading-relaxed">
+                  {p.desc}
+                </p>
 
                 <div className="my-8 border-t border-[#242424]" />
 
                 <ul className="space-y-3">
                   {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#8d8d8d] font-semibold">
+                    <li
+                      key={f}
+                      className="flex items-start gap-2.5 text-xs sm:text-sm text-[#8d8d8d] font-semibold"
+                    >
                       <Check className="size-4 text-[#ed3434] shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
@@ -666,15 +1083,19 @@ function MarketingPortal() {
       {/* SECTION 10.5: THE PROBLEM (New Section) */}
       <section className="py-24 bg-[#0a0a0a] border-y border-[#242424]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-start text-left">
-
           {/* Left Column: The Problem */}
           <div className="space-y-6">
-            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">The Security Problem</div>
+            <div className="text-[#ed3434] text-xs font-bold uppercase tracking-[0.25em]">
+              The Security Problem
+            </div>
             <h2 className="text-white uppercase leading-[0.9] tracking-tight font-heading text-4xl sm:text-5xl">
               FINGERPRINT SCANNERS LIE.
             </h2>
             <p className="text-[#8d8d8d] text-sm leading-relaxed max-w-lg">
-              Biometric bypass is incredibly common. When a membership expires, users simply stop scanning or avoid verification entirely. If the gym owner is absent for days, unauthorized entrances go completely undetected. ALPHA FITNESS catches these discrepancies instantly.
+              Biometric bypass is incredibly common. When a membership expires,
+              users simply stop scanning or avoid verification entirely. If the
+              gym owner is absent for days, unauthorized entrances go completely
+              undetected. ALPHA FITNESS catches these discrepancies instantly.
             </p>
             <div className="space-y-3 pt-4 border-t border-[#242424] max-w-md">
               {[
@@ -682,9 +1103,12 @@ function MarketingPortal() {
                 { label: "7 days to expiry", action: "WhatsApp Nudge" },
                 { label: "Pending dues", action: "Daily Reminder Queue" },
                 { label: "Store stock low", action: "Dashboard Alert" },
-                { label: "Slot overbooked", action: "Capacity Warning" }
+                { label: "Slot overbooked", action: "Capacity Warning" },
               ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs font-bold uppercase tracking-wider border-b border-[#242424]/40 pb-2">
+                <div
+                  key={idx}
+                  className="flex items-center justify-between text-xs font-bold uppercase tracking-wider border-b border-[#242424]/40 pb-2"
+                >
                   <span className="text-white">{item.label}</span>
                   <span className="text-[#ed3434]">{item.action}</span>
                 </div>
@@ -697,25 +1121,37 @@ function MarketingPortal() {
             <div className="size-12 bg-[#ed3434]/10 text-[#ed3434] rounded-xl grid place-items-center mb-4">
               <ShieldCheck className="size-6" />
             </div>
-            <h3 className="font-heading text-2xl font-bold text-white uppercase">YOUR DATA, YOUR GYM</h3>
-            <p className="text-xs uppercase tracking-widest text-[#ed3434] font-extrabold">Multi-branch · isolated · exportable</p>
+            <h3 className="font-heading text-2xl font-bold text-white uppercase">
+              YOUR DATA, YOUR GYM
+            </h3>
+            <p className="text-xs uppercase tracking-widest text-[#ed3434] font-extrabold">
+              Multi-branch · isolated · exportable
+            </p>
             <p className="text-xs text-[#8d8d8d] leading-relaxed">
-              Each branch remains completely isolated — Branch 1 members will never leak into Branch 2. Export your CSV/JSON backups at any time. No lock-in.
+              Each branch remains completely isolated — Branch 1 members will
+              never leak into Branch 2. Export your CSV/JSON backups at any
+              time. No lock-in.
             </p>
 
             <div className="grid grid-cols-4 gap-2 pt-2 text-center text-[10px] uppercase font-bold tracking-wider text-white">
               {["Members", "Attendance", "Store", "Reports"].map((label) => (
-                <div key={label} className="p-2.5 bg-[#070707] border border-[#242424] rounded-lg">
+                <div
+                  key={label}
+                  className="p-2.5 bg-[#070707] border border-[#242424] rounded-lg"
+                >
                   {label}
                 </div>
               ))}
             </div>
 
-            <Link to="/auth" search={{ mode: "signup" }} className="w-full py-3 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-black text-center block uppercase tracking-widest shadow-[0_4px_15px_rgba(237,52,52,0.2)]">
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              className="w-full py-3 bg-[#ed3434] hover:bg-[#ff4b4b] text-white rounded-lg text-xs font-black text-center block uppercase tracking-widest shadow-[0_4px_15px_rgba(237,52,52,0.2)]"
+            >
               Start Free
             </Link>
           </div>
-
         </div>
       </section>
 
@@ -725,39 +1161,91 @@ function MarketingPortal() {
           <p className="font-heading text-3xl sm:text-6xl font-black text-[#070707] uppercase tracking-tight max-w-[950px] mx-auto leading-none">
             "THE BODY ACHIEVES WHAT THE MIND REFUSES TO QUIT."
           </p>
-          <small className="block mt-4 font-bold tracking-[0.25em] text-xs uppercase text-[#070707]/70">ALPHA FITNESS / THE STANDARD</small>
+          <small className="block mt-4 font-bold tracking-[0.25em] text-xs uppercase text-[#070707]/70">
+            ALPHA FITNESS / THE STANDARD
+          </small>
         </div>
       </section>
 
       {/* SECTION 12: FOOTER */}
-      <footer className="bg-[#050505] border-t border-[#242424] relative overflow-hidden" id="contact">
+      <footer
+        className="bg-[#050505] border-t border-[#242424] relative overflow-hidden"
+        id="contact"
+      >
         <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10 relative z-10 text-left">
           <div className="md:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
               <div>
-                <div className="text-2xl font-black tracking-tight text-white uppercase">ALPHA <span className="text-[#ed3434]">FITNESS</span></div>
-                <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">Your Gym Operating System</div>
+                <div className="text-2xl font-black tracking-tight text-white uppercase">
+                  ALPHA <span className="text-[#ed3434]">FITNESS</span>
+                </div>
+                <div className="text-[9px] uppercase tracking-wider text-[#8d8d8d] font-bold">
+                  Your Gym Operating System
+                </div>
               </div>
             </Link>
             <p className="text-xs text-[#8d8d8d] leading-relaxed max-w-sm font-medium">
-              A premium, comprehensive digital console managing RFID attendance logging, physical progress progressions, crowd-control time shifts, and supplement retail sales.
+              A premium, comprehensive digital console managing RFID attendance
+              logging, physical progress progressions, crowd-control time
+              shifts, and supplement retail sales.
             </p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-white font-bold">Navigation</p>
+            <p className="text-[10px] uppercase tracking-widest text-white font-bold">
+              Navigation
+            </p>
             <ul className="space-y-2 text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">
-              <li><a href="#features" className="hover:text-white transition-colors">System Features</a></li>
-              <li><a href="#testimonials" className="hover:text-white transition-colors">Owner Testimonials</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors">Pricing Structure</a></li>
+              <li>
+                <a
+                  href="#features"
+                  className="hover:text-white transition-colors"
+                >
+                  System Features
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#testimonials"
+                  className="hover:text-white transition-colors"
+                >
+                  Owner Testimonials
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#pricing"
+                  className="hover:text-white transition-colors"
+                >
+                  Pricing Structure
+                </a>
+              </li>
             </ul>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-white font-bold">Administrator</p>
+            <p className="text-[10px] uppercase tracking-widest text-white font-bold">
+              Administrator
+            </p>
             <ul className="space-y-2 text-xs text-[#8d8d8d] font-bold uppercase tracking-wider">
-              <li><Link to="/auth" search={{ mode: "login" }} className="hover:text-white transition-colors">Access Console</Link></li>
-              <li><Link to="/auth" search={{ mode: "signup" }} className="hover:text-white transition-colors">Register Account</Link></li>
+              <li>
+                <Link
+                  to="/auth"
+                  search={{ mode: "login" }}
+                  className="hover:text-white transition-colors"
+                >
+                  Access Console
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className="hover:text-white transition-colors"
+                >
+                  Register Account
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -769,7 +1257,13 @@ function MarketingPortal() {
             <div className="flex gap-4">
               <span>Tahseen Ashrafi</span>
               <span>•</span>
-              <Link to="/auth" search={{ mode: "login" }} className="hover:text-white transition-colors">Sign In Portal</Link>
+              <Link
+                to="/auth"
+                search={{ mode: "login" }}
+                className="hover:text-white transition-colors"
+              >
+                Sign In Portal
+              </Link>
             </div>
           </div>
         </div>
@@ -901,7 +1395,9 @@ function Dashboard() {
       const salesData = salesRes.data ?? [];
       const newMembers = membersRes.data ?? [];
 
-      const existingPaymentMemberIds = new Set(payData.map((p: any) => p.member_id));
+      const existingPaymentMemberIds = new Set(
+        payData.map((p: any) => p.member_id),
+      );
 
       const extraPayments = newMembers
         .filter((m: any) => {
@@ -940,9 +1436,12 @@ function Dashboard() {
           if (row.branch_id === branchId) {
             setTodayLogs((prev) => [...prev, row]);
             setChartLogs((prev) => [...prev, row]);
-            setAllLogs((prev) => [...prev, { member_id: row.member_id, checked_in_at: row.checked_in_at }]);
+            setAllLogs((prev) => [
+              ...prev,
+              { member_id: row.member_id, checked_in_at: row.checked_in_at },
+            ]);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -953,7 +1452,9 @@ function Dashboard() {
   }, [cycleStart, fetchDashboardData]);
 
   const settings = useGym((s) => s.settings);
-  const layout = settings.dashboardLayout?.length ? settings.dashboardLayout : DEFAULT_LAYOUT;
+  const layout = settings.dashboardLayout?.length
+    ? settings.dashboardLayout
+    : DEFAULT_LAYOUT;
   const [customize, setCustomize] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
@@ -977,7 +1478,10 @@ function Dashboard() {
   }, [storeSales, products]);
 
   const stats = useMemo(() => {
-    let active = 0, expiring = 0, expired = 0, pendingAmt = 0;
+    let active = 0,
+      expiring = 0,
+      expired = 0,
+      pendingAmt = 0;
 
     members.forEach((m: any) => {
       const expiryDate = m.expiry_date ?? m.expiryDate;
@@ -996,9 +1500,15 @@ function Dashboard() {
       if (!feePaid && d >= 0) pendingAmt += feeAmount;
     });
 
-    const memberRevenue = payments.reduce((a: number, p: any) => a + (p.amount ?? 0), 0);
+    const memberRevenue = payments.reduce(
+      (a: number, p: any) => a + (p.amount ?? 0),
+      0,
+    );
     const totalCycleRevenue = memberRevenue + storeRevenue;
-    const expenseTotal = expenses.reduce((a: number, e: any) => a + (e.amount ?? 0), 0);
+    const expenseTotal = expenses.reduce(
+      (a: number, e: any) => a + (e.amount ?? 0),
+      0,
+    );
 
     return {
       active,
@@ -1017,7 +1527,7 @@ function Dashboard() {
     const inMemberIds = new Set(
       todayLogs
         .filter((l: any) => (l.punch_type ?? "in") === "in")
-        .map((l: any) => l.member_id)
+        .map((l: any) => l.member_id),
     );
     return inMemberIds.size;
   }, [todayLogs]);
@@ -1028,7 +1538,10 @@ function Dashboard() {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
-      const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const label = date.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      });
 
       const visits = chartLogs.filter((l: any) => {
         const logDate = new Date(l.checked_in_at).toISOString().split("T")[0];
@@ -1069,16 +1582,21 @@ function Dashboard() {
     })
     .sort(
       (a, b) =>
-        daysUntil(a.expiry_date ?? a.expiryDate) - daysUntil(b.expiry_date ?? b.expiryDate)
+        daysUntil(a.expiry_date ?? a.expiryDate) -
+        daysUntil(b.expiry_date ?? b.expiryDate),
     )
     .slice(0, 5);
 
   const openTodos = todos.slice(0, 4);
 
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const cycleLabel = cycleStart.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  const cycleLabel = cycleStart.toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+  });
 
   function move(from: number, to: number) {
     if (to < 0 || to >= layout.length) return;
@@ -1088,7 +1606,9 @@ function Dashboard() {
     gym.setLayout(next);
   }
   function toggle(id: WidgetId) {
-    gym.setLayout(layout.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w)));
+    gym.setLayout(
+      layout.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w)),
+    );
   }
   function onDrop(targetId: WidgetId) {
     if (!dragId || dragId === targetId) return;
@@ -1101,12 +1621,52 @@ function Dashboard() {
   const widgets: Record<WidgetId, React.ReactNode> = {
     kpi: (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <Kpi to="/members" label="Total Members" value={members.length} icon={<Users className="size-4" />} />
-        <Kpi to="/members" search={{ filter: "active" }} label="Active" value={stats.active} icon={<CheckCircle2 className="size-4" />} accent="text-brand" />
-        <Kpi to="/members" search={{ filter: "expiring" }} label="Expiring (7d)" value={stats.expiring} icon={<Clock className="size-4" />} accent="text-warn" />
-        <Kpi to="/members" search={{ filter: "expired" }} label="Expired" value={stats.expired} icon={<AlertTriangle className="size-4" />} accent="text-danger" />
-        <Kpi to="/members" search={{ filter: "ghost" }} label="Ghosts" value={ghostList.length} icon={<Bell className="size-4" />} accent="text-danger" hint="No-shows 4d+" />
-        <Kpi to="/attendance" label="Today In" value={todayCheckIns} icon={<Activity className="size-4" />} accent="text-info" />
+        <Kpi
+          to="/members"
+          label="Total Members"
+          value={members.length}
+          icon={<Users className="size-4" />}
+        />
+        <Kpi
+          to="/members"
+          search={{ filter: "active" }}
+          label="Active"
+          value={stats.active}
+          icon={<CheckCircle2 className="size-4" />}
+          accent="text-brand"
+        />
+        <Kpi
+          to="/members"
+          search={{ filter: "expiring" }}
+          label="Expiring (7d)"
+          value={stats.expiring}
+          icon={<Clock className="size-4" />}
+          accent="text-warn"
+        />
+        <Kpi
+          to="/members"
+          search={{ filter: "expired" }}
+          label="Expired"
+          value={stats.expired}
+          icon={<AlertTriangle className="size-4" />}
+          accent="text-danger"
+        />
+        <Kpi
+          to="/members"
+          search={{ filter: "ghost" }}
+          label="Ghosts"
+          value={ghostList.length}
+          icon={<Bell className="size-4" />}
+          accent="text-danger"
+          hint="No-shows 4d+"
+        />
+        <Kpi
+          to="/attendance"
+          label="Today In"
+          value={todayCheckIns}
+          icon={<Activity className="size-4" />}
+          accent="text-info"
+        />
       </div>
     ),
     money: (
@@ -1142,29 +1702,66 @@ function Dashboard() {
       <div className="bg-card border border-border rounded-2xl p-4 sm:p-6">
         <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
           <div>
-            <h2 className="text-lg font-heading text-foreground">Footfall & Revenue</h2>
+            <h2 className="text-lg font-heading text-foreground">
+              Footfall & Revenue
+            </h2>
             <p className="text-xs text-muted-foreground">Last 14 days</p>
           </div>
-          <Link to="/analytics" className="text-xs text-brand hover:underline inline-flex items-center gap-1">
+          <Link
+            to="/analytics"
+            className="text-xs text-brand hover:underline inline-flex items-center gap-1"
+          >
             Open analytics <ArrowUpRight className="size-3" />
           </Link>
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend} margin={{ left: -25, right: 8, top: 8, bottom: 0 }}>
+            <AreaChart
+              data={trend}
+              margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="var(--color-brand)" stopOpacity={0} />
+                  <stop
+                    offset="0%"
+                    stopColor="var(--color-brand)"
+                    stopOpacity={0.5}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="var(--color-brand)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
                 <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-accent)" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0} />
+                  <stop
+                    offset="0%"
+                    stopColor="var(--color-accent)"
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="var(--color-accent)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} />
-              <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border)"
+              />
+              <XAxis
+                dataKey="d"
+                stroke="var(--color-muted-foreground)"
+                fontSize={10}
+                tickLine={false}
+              />
+              <YAxis
+                stroke="var(--color-muted-foreground)"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
               <Tooltip
                 contentStyle={{
                   background: "var(--color-popover)",
@@ -1173,32 +1770,57 @@ function Dashboard() {
                   fontSize: 12,
                 }}
               />
-              <Area type="monotone" dataKey="visits" stroke="var(--color-accent)" fill="url(#g2)" strokeWidth={2} />
-              <Area type="monotone" dataKey="revenue" stroke="var(--color-brand)" fill="url(#g1)" strokeWidth={2} />
+              <Area
+                type="monotone"
+                dataKey="visits"
+                stroke="var(--color-accent)"
+                fill="url(#g2)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="var(--color-brand)"
+                fill="url(#g1)"
+                strokeWidth={2}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
     ),
     maintenance: (
-      <Link to="/todos" className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block">
+      <Link
+        to="/todos"
+        className="bg-card border border-border rounded-2xl p-4 sm:p-6 hover:border-brand/30 transition-colors block"
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-foreground">Maintenance</h3>
           <span className="text-xs text-muted-foreground">All</span>
         </div>
         <div className="space-y-2">
-          {openTodos.length === 0 && <p className="text-sm text-muted-foreground">All caught up</p>}
+          {openTodos.length === 0 && (
+            <p className="text-sm text-muted-foreground">All caught up</p>
+          )}
           {openTodos.map((t) => (
             <div
               key={t.id}
               className={
                 "p-3 bg-secondary/40 rounded-lg border-l-2 flex items-start justify-between gap-3 " +
-                (t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent")
+                (t.priority === "high"
+                  ? "border-danger"
+                  : t.priority === "med"
+                    ? "border-warn"
+                    : "border-accent")
               }
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{t.title}</p>
-                {t.note && <p className="text-xs text-muted-foreground truncate">{t.note}</p>}
+                {t.note && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {t.note}
+                  </p>
+                )}
               </div>
               <button
                 onClick={(e) => {
@@ -1221,18 +1843,29 @@ function Dashboard() {
               <span className="size-2 rounded-full bg-danger animate-pulse" />
               Scan Bypass Alerts
             </h2>
-            <p className="text-xs text-muted-foreground">Active members with no RFID punch in last 4 days</p>
+            <p className="text-xs text-muted-foreground">
+              Active members with no RFID punch in last 4 days
+            </p>
           </div>
-          <Link to="/members" search={{ filter: "ghost" }} className="text-xs text-brand hover:underline">
+          <Link
+            to="/members"
+            search={{ filter: "ghost" }}
+            className="text-xs text-brand hover:underline"
+          >
             View all
           </Link>
         </div>
         {ghostList.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">Everyone is regular.</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            Everyone is regular.
+          </p>
         ) : (
           <div className="divide-y divide-border">
             {ghostList.map((m) => (
-              <div key={m.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div
+                key={m.id}
+                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
                 <div className="flex items-center gap-3">
                   {m.photo ? (
                     <img
@@ -1259,7 +1892,10 @@ function Dashboard() {
                   <span className="px-2 py-0.5 bg-danger/10 text-danger text-[9px] rounded uppercase font-bold tracking-wider">
                     4d+ no show
                   </span>
-                  <Link to="/reminders" className="text-xs text-brand hover:underline shrink-0">
+                  <Link
+                    to="/reminders"
+                    className="text-xs text-brand hover:underline shrink-0"
+                  >
                     Remind
                   </Link>
                 </div>
@@ -1271,12 +1907,17 @@ function Dashboard() {
     ),
     expiring: (
       <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 block">
-        <h3 className="font-heading text-lg text-foreground mb-4">Expiring / Expired</h3>
+        <h3 className="font-heading text-lg text-foreground mb-4">
+          Expiring / Expired
+        </h3>
         <div className="space-y-3">
           {expiringList.map((m) => {
             const d = daysUntil(m.expiry_date ?? m.expiryDate);
             return (
-              <div key={m.id} className="flex items-center justify-between gap-3">
+              <div
+                key={m.id}
+                className="flex items-center justify-between gap-3"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   {m.photo ? (
                     <img
@@ -1295,7 +1936,11 @@ function Dashboard() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{m.name}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {d < 0 ? `Expired ${-d}d ago` : d === 0 ? "Expires today" : `${d}d left`}
+                      {d < 0
+                        ? `Expired ${-d}d ago`
+                        : d === 0
+                          ? "Expires today"
+                          : `${d}d left`}
                     </p>
                   </div>
                 </div>
@@ -1327,7 +1972,8 @@ function Dashboard() {
               onClick={() => setCustomize((v) => !v)}
               className="px-4 py-2.5 bg-secondary text-foreground font-semibold rounded-xl text-sm inline-flex items-center gap-2 hover:bg-brand/10 hover:text-brand flex-1 sm:flex-initial justify-center"
             >
-              <GripVertical className="size-4" /> {customize ? "Done" : "Customize"}
+              <GripVertical className="size-4" />{" "}
+              {customize ? "Done" : "Customize"}
             </button>
             <Link
               to="/attendance"
@@ -1350,7 +1996,9 @@ function Dashboard() {
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
               <h3 className="font-heading text-base">Customize Dashboard</h3>
-              <p className="text-xs text-muted-foreground">Drag widgets to reorder, eye-icon to show/hide</p>
+              <p className="text-xs text-muted-foreground">
+                Drag widgets to reorder, eye-icon to show/hide
+              </p>
             </div>
             <button
               onClick={() => gym.setLayout(DEFAULT_LAYOUT)}
@@ -1361,20 +2009,41 @@ function Dashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {layout.map((w, i) => (
-              <div key={w.id} className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg justify-between">
+              <div
+                key={w.id}
+                className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg justify-between"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <GripVertical className="size-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm truncate">{WIDGET_LABELS[w.id]}</span>
+                  <span className="text-sm truncate">
+                    {WIDGET_LABELS[w.id]}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => move(i, i - 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move up">
+                  <button
+                    onClick={() => move(i, i - 1)}
+                    className="text-xs text-muted-foreground hover:text-brand px-1"
+                    aria-label="Move up"
+                  >
                     ↑
                   </button>
-                  <button onClick={() => move(i, i + 1)} className="text-xs text-muted-foreground hover:text-brand px-1" aria-label="Move down">
+                  <button
+                    onClick={() => move(i, i + 1)}
+                    className="text-xs text-muted-foreground hover:text-brand px-1"
+                    aria-label="Move down"
+                  >
                     ↓
                   </button>
-                  <button onClick={() => toggle(w.id)} className="size-7 grid place-items-center rounded hover:bg-secondary" aria-label="Toggle visibility">
-                    {w.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                  <button
+                    onClick={() => toggle(w.id)}
+                    className="size-7 grid place-items-center rounded hover:bg-secondary"
+                    aria-label="Toggle visibility"
+                  >
+                    {w.visible ? (
+                      <Eye className="size-3.5" />
+                    ) : (
+                      <EyeOff className="size-3.5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -1398,7 +2067,7 @@ function Dashboard() {
               className={
                 customize
                   ? "relative ring-2 ring-dashed ring-border rounded-2xl cursor-move transition " +
-                  (dragId === w.id ? "opacity-50" : "")
+                    (dragId === w.id ? "opacity-50" : "")
                   : ""
               }
             >
@@ -1427,8 +2096,18 @@ function Dashboard() {
 }
 
 // Reusable Plan Renewal Modal Component
-export function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () => void; onRenewed: () => void }) {
-  const [plan, setPlan] = useState<PlanType>(member.plan as PlanType || "Monthly");
+export function RenewModal({
+  member,
+  onClose,
+  onRenewed,
+}: {
+  member: any;
+  onClose: () => void;
+  onRenewed: () => void;
+}) {
+  const [plan, setPlan] = useState<PlanType>(
+    (member.plan as PlanType) || "Monthly",
+  );
   const [planPrices, setPlanPrices] = useState<Record<PlanType, number>>({
     Monthly: 1500,
     Quarterly: 4000,
@@ -1464,13 +2143,15 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
   const handleSave = async () => {
     setSaving(true);
     const DAYS: Record<string, number> = {
-      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
+      Monthly: 30,
+      Quarterly: 90,
+      HalfYearly: 180,
+      Yearly: 365,
     };
 
     const expiryRaw = member.expiry_date ?? member.expiryDate;
-    const baseDate = new Date(expiryRaw) > new Date()
-      ? new Date(expiryRaw)
-      : new Date();
+    const baseDate =
+      new Date(expiryRaw) > new Date() ? new Date(expiryRaw) : new Date();
 
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
@@ -1510,9 +2191,18 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+    <div
+      className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+        >
           <X className="size-5" />
         </button>
 
@@ -1522,30 +2212,45 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
           </div>
           <div>
             <h3 className="font-heading text-lg text-foreground">Renew Plan</h3>
-            <p className="text-xs text-muted-foreground">Select plan for {member.name}</p>
+            <p className="text-xs text-muted-foreground">
+              Select plan for {member.name}
+            </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Select Plan</label>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">
+              Select Plan
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {PLAN_ORDER.map((p) => (
                 <button
                   type="button"
                   key={p}
                   onClick={() => setPlan(p)}
-                  className={"p-3 rounded-xl border text-left transition " + (plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                  className={
+                    "p-3 rounded-xl border text-left transition " +
+                    (plan === p
+                      ? "border-brand bg-brand/10"
+                      : "border-border bg-secondary/40 hover:border-brand/40")
+                  }
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p}</p>
-                  <p className="text-base font-heading mt-0.5">₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {p}
+                  </p>
+                  <p className="text-base font-heading mt-0.5">
+                    ₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}
+                  </p>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1">Fee Amount (INR)</label>
+            <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1">
+              Fee Amount (INR)
+            </label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-bold">₹</span>
               <input
@@ -1568,13 +2273,19 @@ export function RenewModal({ member, onClose, onRenewed }: { member: any; onClos
           </label>
 
           <div className="flex gap-2 pt-2">
-            <button onClick={onClose} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold"
+            >
+              Cancel
+            </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
             >
-              <Save className="size-4" /> {saving ? "Renewing..." : "Renew Plan"}
+              <Save className="size-4" />{" "}
+              {saving ? "Renewing..." : "Renew Plan"}
             </button>
           </div>
         </div>
@@ -1607,11 +2318,25 @@ function Kpi({
       className="p-4 sm:p-5 bg-card border border-border rounded-xl hover:border-brand/40 hover:bg-card/80 transition block group"
     >
       <div className="flex items-center justify-between text-muted-foreground mb-2">
-        <span className="text-[10px] uppercase tracking-widest truncate">{label}</span>
-        <span className="group-hover:text-brand transition shrink-0">{icon}</span>
+        <span className="text-[10px] uppercase tracking-widest truncate">
+          {label}
+        </span>
+        <span className="group-hover:text-brand transition shrink-0">
+          {icon}
+        </span>
       </div>
-      <p className={"text-2xl sm:text-3xl font-heading " + (accent ?? "text-foreground")}>{value}</p>
-      {hint && <p className="text-[10px] text-muted-foreground mt-1 truncate">{hint}</p>}
+      <p
+        className={
+          "text-2xl sm:text-3xl font-heading " + (accent ?? "text-foreground")
+        }
+      >
+        {value}
+      </p>
+      {hint && (
+        <p className="text-[10px] text-muted-foreground mt-1 truncate">
+          {hint}
+        </p>
+      )}
     </Link>
   );
 }
@@ -1646,10 +2371,20 @@ function MoneyCard({
       search={search as never}
       className="p-4 sm:p-6 bg-card border border-border rounded-2xl flex items-center gap-4 hover:border-brand/30 transition"
     >
-      <div className={"size-12 rounded-xl grid place-items-center shrink-0 " + accent}>{icon}</div>
+      <div
+        className={
+          "size-12 rounded-xl grid place-items-center shrink-0 " + accent
+        }
+      >
+        {icon}
+      </div>
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest truncate">{label}</p>
-        <p className="text-xl sm:text-2xl font-heading text-foreground mt-1">{value}</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest truncate">
+          {label}
+        </p>
+        <p className="text-xl sm:text-2xl font-heading text-foreground mt-1">
+          {value}
+        </p>
         <p className="text-[11px] text-[#8d8d8d] truncate">{sub}</p>
       </div>
     </Link>
