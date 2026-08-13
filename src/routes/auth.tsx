@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useSignIn, useSignUp } from "@clerk/tanstack-react-start";
 import {
   Mail, Lock, User, Phone, Eye, EyeOff, ArrowLeft,
   Building2, ShieldCheck, Trophy, Sparkles, KeyRound
@@ -10,6 +9,8 @@ import {
 import logoPng from "@/assets/logo.png";
 import logintitan from "@/assets/login-titan.jpg";
 import { FireSparksOverlay } from "@/components/FireSparksOverlay";
+import { supabase } from "@/lib/supabase";
+import { signUp, signIn } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Access Portal — ALPHA FITNESS" }] }),
@@ -20,6 +21,14 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
+function getLockoutDuration(fails: number): number {
+  if (fails >= 16) return 24 * 60 * 60 * 1000; // 24 hours lockout
+  if (fails >= 11) return 60 * 60 * 1000;      // 1 hour lockout
+  if (fails >= 8)  return 30 * 60 * 1000;      // 30 minutes lockout
+  if (fails >= 5)  return 15 * 60 * 1000;      // 15 minutes lockout
+  return 0;
+}
+
 function Auth() {
   const search = Route.useSearch();
   const nav = useNavigate();
@@ -27,9 +36,6 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
-
-  const { signIn, isLoaded: isSignInLoaded, setActive: setActiveSignIn } = useSignIn();
-  const { signUp, isLoaded: isSignUpLoaded, setActive: setActiveSignUp } = useSignUp();
 
   // Form states
   const [form, setForm] = useState({
@@ -41,38 +47,48 @@ function Auth() {
     gymName: "",
     terms: false,
     rememberMe: true,
-    resetCode: "",
     newPassword: "",
     confirmNewPassword: ""
   });
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Synchronize initial component mode
+  // Detect recovery mode from URL hash or query parameters on mount and load
   useEffect(() => {
-    if (search.mode) {
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    const searchParams = typeof window !== "undefined" ? window.location.search : "";
+    const isRecovery = hash.includes("type=recovery") || searchParams.includes("type=recovery");
+
+    if (isRecovery) {
+      setMode("reset-password");
+    } else if (search.mode) {
       setMode(search.mode as any);
     } else {
       setMode("login");
     }
   }, [search.mode]);
 
+  // Subscribe to password recovery state changes via Supabase Auth
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("reset-password");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // ============================================
-  // ACTION HANDLERS WITH CLERK HEADLESS API
+  // ACTION HANDLERS WITH SUPABASE AUTH API
   // ============================================
 
   // 1. SUBMIT LOGIN OR SIGNUP
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
 
-    if (mode === "login") {
-      if (!isSignInLoaded) {
-        toast.error("Sign-in system is still booting. Please wait a moment.");
-        return;
-      }
-
-      setLoading(true);
-      try {
+    try {
+      if (mode === "login") {
         const email = form.email.trim();
         if (!email) {
           toast.error("Please enter your email");
@@ -80,36 +96,54 @@ function Auth() {
           return;
         }
 
-        // Initialize sign in with password using Clerk
-        const result = await signIn.create({
-          identifier: email,
-          password: form.password,
-        });
+        const emailKey = `alpha_fails_${email}`;
+        const lockKey = `alpha_lock_${email}`;
 
-        if (result.status === "complete") {
-          await setActiveSignIn({ session: result.createdSessionId });
+        // Check if locked
+        const lockUntil = localStorage.getItem(lockKey);
+        if (lockUntil) {
+          const waitTime = parseInt(lockUntil, 10) - Date.now();
+          if (waitTime > 0) {
+            const minutes = Math.ceil(waitTime / 60000);
+            toast.error(`Too many attempts. Try again after ${minutes} minutes.`);
+            setLoading(false);
+            return;
+          } else {
+            // Lock expired, clean up
+            localStorage.removeItem(lockKey);
+          }
+        }
+
+        try {
+          await signIn(email, form.password);
+
+          // Clear failures on success
+          localStorage.removeItem(emailKey);
+          localStorage.removeItem(lockKey);
+
           toast.success("Welcome back! Loading console...");
           await new Promise((r) => setTimeout(r, 600));
           nav({ to: "/" });
-        } else {
-          toast.error(`Authentication incomplete: status is ${result.status}`);
+        } catch (err: any) {
+          // Increment fails
+          const currentFails = parseInt(localStorage.getItem(emailKey) || "0", 10) + 1;
+          localStorage.setItem(emailKey, currentFails.toString());
+
+          const duration = getLockoutDuration(currentFails);
+          if (duration > 0) {
+            const lockTime = Date.now() + duration;
+            localStorage.setItem(lockKey, lockTime.toString());
+            const minutes = duration / 60000;
+            toast.error(`Too many attempts. Try again after ${minutes} minutes.`);
+          } else {
+            const rawMsg = err?.message || "Invalid credentials.";
+            toast.error(rawMsg);
+          }
         }
-      } catch (err: any) {
-        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
 
-    } else if (mode === "signup") {
-      if (!isSignUpLoaded) {
-        toast.error("Sign-up system is still booting. Please wait a moment.");
-        return;
-      }
-
-      setLoading(true);
-      try {
+      } else if (mode === "signup") {
         if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
+        if (!form.gymName.trim()) { toast.error("Please enter your gym name"); setLoading(false); return; }
         if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
         if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); setLoading(false); return; }
         if (!form.email.trim()) { toast.error("Email is required"); setLoading(false); return; }
@@ -121,72 +155,29 @@ function Auth() {
           return;
         }
 
-        // Initialize SignUp through Clerk
-        await signUp.create({
-          emailAddress: form.email.trim(),
-          password: form.password,
-          firstName: form.name.split(" ")[0] || "",
-          lastName: form.name.split(" ").slice(1).join(" ") || "",
-        });
+        await signUp(form.email.trim(), form.password, form.name.trim(), form.phone);
 
-        // Send email verification code
-        await signUp.prepareEmailAddressVerification({
-          strategy: "email_code",
-        });
-
-        setMode("verify");
-        nav({ search: { mode: "verify" } as any });
-        toast.success("Verification code sent! Please check your email.");
-      } catch (err: any) {
-        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    }
-  }
-
-  // 2. VERIFY SIGNUP EMAIL CODE
-  async function handleVerifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    if (!isSignUpLoaded) {
-      toast.error("Authentication system is booting. Please wait a moment.");
-      return;
-    }
-    if (!form.resetCode.trim()) {
-      toast.error("Please enter the verification code");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await signUp.attemptEmailAddressVerification({
-        code: form.resetCode.trim(),
-      });
-
-      if (result.status === "complete") {
-        await setActiveSignUp({ session: result.createdSessionId });
-        toast.success("Verification successful!");
-        nav({ to: "/onboarding" });
-      } else {
-        toast.error(`Signup status: ${result.status}`);
+        toast.success("Verification email sent! Please check your email then log in.");
+        setMode("login");
+        nav({ search: { mode: "login" } as any });
       }
     } catch (err: any) {
-      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Invalid or expired code.";
-      toast.error(msg);
+      // Avoid empty {} errors by always surfacing a clean string
+      const rawMsg = err?.message || err?.error_description || (typeof err === "string" ? err : "");
+      const msg = rawMsg || "An authentication error occurred.";
+      if (msg.includes("User already registered") || msg.includes("already exists")) {
+        toast.error("Account already exists. Please log in.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  // 3. FORGOT PASSWORD REQUEST
+  // 2. FORGOT PASSWORD REQUEST
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault();
-    if (!isSignInLoaded) {
-      toast.error("Sign-in system is booting. Please wait a moment.");
-      return;
-    }
-
     const email = form.email.trim();
     if (!email) {
       toast.error("Please enter your email address");
@@ -195,40 +186,24 @@ function Auth() {
 
     setLoading(true);
     try {
-      await signIn.create({
-        identifier: email,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/auth?type=recovery",
       });
+      if (error) throw error;
 
-      await signIn.resetPasswordEmailCode.sendCode();
-
-      toast.success("Password reset code sent! Check your inbox.");
-      setMode("reset-password");
-      nav({ search: { mode: "reset-password" } as any });
+      toast.success("Password reset link sent! Check your inbox.");
+      setMode("login");
+      nav({ search: { mode: "login" } as any });
     } catch (err: any) {
-      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Failed to send reset code.";
-      toast.error(msg);
+      toast.error(err?.message || "Failed to send reset email.");
     } finally {
       setLoading(false);
     }
   }
 
-  // 4. SET NEW PASSWORD (AFTER RECOVERY LINK CODE)
+  // 3. SET NEW PASSWORD (AFTER RECOVERY LINK CLICK)
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
-    if (!isSignInLoaded) {
-      toast.error("Sign-in system is booting. Please wait a moment.");
-      return;
-    }
-
-    const email = form.email.trim();
-    if (!email) {
-      toast.error("Please enter your registered email address");
-      return;
-    }
-    if (!form.resetCode.trim()) {
-      toast.error("Please enter the reset code sent to your email");
-      return;
-    }
     if (form.newPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
@@ -240,112 +215,46 @@ function Auth() {
 
     setLoading(true);
     try {
-      // Robust Session Gate: If no active sign-in session is found for this email, establish it first
-      if (!signIn.identifier || signIn.identifier !== email) {
-        await signIn.create({
-          identifier: email,
-        });
-      }
-
-      await signIn.resetPasswordEmailCode.verifyCode({
-        code: form.resetCode.trim(),
-      });
-
-      const submitResult = await signIn.resetPasswordEmailCode.submitPassword({
+      const { error } = await supabase.auth.updateUser({
         password: form.newPassword,
-        signOutOfOtherSessions: true,
       });
+      if (error) throw error;
 
-      if (submitResult.status === "complete") {
-        toast.success("Password updated successfully! Please log in.");
-        setMode("login");
-        nav({ search: { mode: "login" } as any });
-      } else {
-        toast.error(`Reset incomplete: status is ${submitResult.status}`);
+      toast.success("Password updated successfully! Please log in.");
+
+      // Call sign out to cleanly terminate any recovery session state
+      await supabase.auth.signOut();
+
+      // Clear hash and query params
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", window.location.pathname);
       }
+
+      setMode("login");
+      nav({ search: { mode: "login" } as any });
     } catch (err: any) {
-      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Failed to reset password.";
-      toast.error(msg);
+      toast.error(err?.message || "Failed to save new password.");
     } finally {
       setLoading(false);
     }
   }
 
-  // 5. GOOGLE OAUTH WITH CLERK
+  // 4. GOOGLE OAUTH WITH SUPABASE
   async function handleGoogleLogin() {
-    if (!isSignInLoaded) {
-      toast.error("Sign-in system is booting. Please wait a moment.");
-      return;
-    }
-
     try {
-      await signIn.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: window.location.origin + "/auth",
-        redirectUrlComplete: window.location.origin + "/",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/",
+        },
       });
+      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Failed to initialize Google Authentication");
     }
   }
 
-  // ============================================
-  // UI RENDERING VIEWS
-  // ============================================
-
-  // VERIFY MODE VIEW (OTP CHECK CODE VIEW)
-  if (mode === "verify") {
-    return (
-      <div className="min-h-screen bg-[#070707] text-[#f4f4f2] flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center bg-[#111]/90 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
-          <div className="size-16 bg-[#ed3434]/10 rounded-xl grid place-items-center mx-auto mb-5">
-            <Mail className="size-8 text-[#ed3434] animate-pulse" />
-          </div>
-          <h1 className="text-2xl font-heading mb-2 font-bold text-white uppercase tracking-tight">Verify your email</h1>
-          <p className="text-[#8d8d8d] mb-1 text-sm">
-            We have sent a verification code to your email <strong className="text-white">{form.email}</strong>
-          </p>
-          <p className="text-sm text-[#8d8d8d] mb-6">
-            Enter the verification code below to authorize your gym console.
-          </p>
-
-          <form onSubmit={handleVerifyCode} className="space-y-4">
-            <div className="relative">
-              <KeyRound className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
-              <input
-                type="text"
-                placeholder="6-digit verification code"
-                value={form.resetCode}
-                onChange={(e) => set("resetCode", e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none border border-white/8 text-white placeholder:text-[#555]"
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <button
-                type="submit"
-                disabled={loading || !isSignUpLoaded}
-                className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
-              >
-                {loading ? "Verifying..." : "Verify Code"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  nav({ search: { mode: "login" } as any });
-                }}
-                className="w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-[11px]"
-              >
-                Back to Login
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const isRecoveryMode = mode === "reset-password";
 
   return (
     <div className="min-h-screen w-full bg-[#070707] text-[#f4f4f2] grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden relative select-none">
@@ -425,7 +334,7 @@ function Auth() {
             </div>
 
             {/* MAIN SWITCHER (ONLY FOR LOGIN / SIGNUP) */}
-            {(mode === "login" || mode === "signup") && (
+            {!isRecoveryMode && (mode === "login" || mode === "signup") && (
               <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
                 <button
                   onClick={() => { setMode("login"); nav({ search: { mode: "login" } as any }); }}
@@ -603,15 +512,13 @@ function Auth() {
 
                 <button
                   type="submit"
-                  disabled={loading || (mode === "login" ? !isSignInLoaded : !isSignUpLoaded)}
+                  disabled={loading}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm active:scale-[0.98]"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
                   {loading
                     ? "Authorizing..."
-                    : mode === "login"
-                      ? (isSignInLoaded ? "LOGIN" : "Loading...")
-                      : (isSignUpLoaded ? "Create My Console" : "Loading...")}
+                    : mode === "login" ? "LOGIN" : "Create My Console"}
                 </button>
               </form>
             )}
@@ -632,11 +539,11 @@ function Auth() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !isSignInLoaded}
+                  disabled={loading}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading ? "Sending link..." : (isSignInLoaded ? "Send Reset Code" : "Loading...")}
+                  {loading ? "Sending link..." : "Send Reset Link"}
                 </button>
                 <div className="text-center pt-1">
                   <button
@@ -656,30 +563,6 @@ function Auth() {
             {/* ==================== RESET PASSWORD VIEW (SET NEW PASSWORD) ==================== */}
             {mode === "reset-password" && (
               <form onSubmit={handleResetPassword} className="space-y-3">
-                <div className="relative">
-                  <Mail className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => set("email", e.target.value)}
-                    placeholder="Registered Email"
-                    className={inp}
-                    required
-                  />
-                </div>
-
-                <div className="relative">
-                  <KeyRound className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
-                  <input
-                    type="text"
-                    value={form.resetCode}
-                    onChange={(e) => set("resetCode", e.target.value)}
-                    placeholder="Reset Code from Email"
-                    className={inp}
-                    required
-                  />
-                </div>
-
                 <div className="relative">
                   <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
                   <input
@@ -720,17 +603,17 @@ function Auth() {
 
                 <button
                   type="submit"
-                  disabled={loading || !isSignInLoaded}
+                  disabled={loading}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading ? "Updating password..." : (isSignInLoaded ? "Update Password" : "Loading...")}
+                  {loading ? "Updating password..." : "Update Password"}
                 </button>
               </form>
             )}
 
-            {/* GOOGLE / OR BLOCK (ONLY RENDER IN LOGIN OR SIGNUP MODE) */}
-            {(mode === "login" || mode === "signup") && (
+            {/* GOOGLE / OR BLOCK (ONLY RENDER IN LOGIN OR SIGNUP MODE IF NOT IN RECOVERY) */}
+            {!isRecoveryMode && (mode === "login" || mode === "signup") && (
               <>
                 <div className="relative flex items-center justify-center my-3.5">
                   <div className="absolute inset-0 flex items-center">
@@ -744,8 +627,7 @@ function Auth() {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  disabled={!isSignInLoaded}
-                  className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer disabled:opacity-60"
+                  className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer"
                 >
                   <svg className="size-4.5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -753,13 +635,13 @@ function Auth() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  {isSignInLoaded ? "Login with Google" : "Loading..."}
+                  Login with Google
                 </button>
               </>
             )}
 
             {/* Footer switcher links (only if not reset-password) */}
-            {mode !== "reset-password" && (
+            {!isRecoveryMode && mode !== "reset-password" && (
               <div className="text-center mt-4 text-[12px] text-[#8d8d8d]">
                 {mode === "login" ? (
                   <p>
@@ -806,11 +688,14 @@ function Auth() {
             ))}
           </div>
 
-          <div className="text-center mt-3">
-            <Link to="/" className="text-[11px] text-[#666] hover:text-white font-medium transition inline-flex items-center gap-1.5 uppercase tracking-wider">
-              <ArrowLeft className="size-3.5" /> Return to Main Entrance
-            </Link>
-          </div>
+          {/* Do not show Return link in recovery mode to keep focus isolated */}
+          {!isRecoveryMode && (
+            <div className="text-center mt-3">
+              <Link to="/" className="text-[11px] text-[#666] hover:text-white font-medium transition inline-flex items-center gap-1.5 uppercase tracking-wider">
+                <ArrowLeft className="size-3.5" /> Return to Main Entrance
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

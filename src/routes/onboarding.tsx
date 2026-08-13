@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useAuth, useUser } from "@clerk/tanstack-react-start";
 import { supabase, setActiveBranchId } from "@/lib/supabase";
 import { Building2, Landmark, Phone, MapPin, ArrowRight, Dumbbell, Award, Landmark as MultiBranchIcon } from "lucide-react";
 
@@ -17,6 +16,7 @@ function Onboarding() {
     search?.skipChoice ? "form" : "choice"
   );
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [form, setForm] = useState({
     gymName: "",
     branchName: "Main Branch",
@@ -24,9 +24,14 @@ function Onboarding() {
     phone: "",
   });
 
-  const { userId } = useAuth();
-  const { user } = useUser();
+  // Get active Supabase Auth user on mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
 
+  const userId = user?.id;
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function createBranch() {
@@ -45,7 +50,7 @@ function Onboarding() {
       await supabase.from("gym_owners").upsert({
         id: userId,
         name: form.gymName,
-        email: user?.primaryEmailAddress?.emailAddress || "",
+        email: user?.email || "",
         phone: form.phone,
       });
 

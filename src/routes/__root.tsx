@@ -4,7 +4,6 @@ import {
   useRouter, useRouterState, HeadContent, Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { ClerkProvider, useAuth, useUser } from "@clerk/tanstack-react-start";
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
@@ -45,74 +44,13 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
-
-  // Log presence of key in dev
-  if (import.meta.env.DEV) {
-    console.log("[Dev] Clerk Publishable Key present:", !!publishableKey);
-  }
-
-  // Only block in production. In development, allow Clerk's automatic Keyless Mode to boot up
-  if (!publishableKey && import.meta.env.PROD) {
-    return (
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#111] border border-white/10 p-8 rounded-2xl text-center shadow-2xl space-y-4">
-          <div className="size-16 bg-[#ed3434]/10 rounded-xl grid place-items-center mx-auto">
-            <span className="text-2xl">⚠️</span>
-          </div>
-          <h1 className="text-xl font-heading font-bold text-white uppercase tracking-tight">
-            Configuration Error
-          </h1>
-          <p className="text-sm text-[#8d8d8d]">
-            The <code className="text-white bg-white/5 px-1.5 py-0.5 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> is missing from your environment variables.
-          </p>
-          <p className="text-xs text-[#666]">
-            Please add this variable to your environment or <code className="text-white">.env</code> file to enable ALPHA FITNESS console authorization.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ClerkProvider publishableKey={publishableKey || undefined}>
-      <RootInner />
-    </ClerkProvider>
-  );
-}
-
-// Safely retrieve token, falling back to standard Clerk token if supabase template is not configured yet
-async function safelyGetToken(getToken: any) {
-  // If no publishable key is configured in the environment, we are in Keyless Mode.
-  // Avoid calling getToken to prevent infinite redirect loops on transient dev sessions.
-  if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
-    return null;
-  }
-
-  try {
-    const token = await getToken({ template: "supabase" });
-    if (token) return token;
-  } catch (err) {
-    console.warn("Supabase JWT template not configured in Clerk dashboard, falling back to standard session token.", err);
-  }
-  try {
-    return await getToken();
-  } catch (err) {
-    console.error("Failed to retrieve Clerk session token:", err);
-    return null;
-  }
-}
-
-function RootInner() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [coords, setCoords] = useState({ x: -100, y: -100 });
+  const [session, setSession] = useState<any>(null);
   const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
-
-  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
-  const { user } = useUser();
 
   // Apply theme & preset globally at root level, ensuring perfect persistence
   useApplyTheme();
@@ -125,12 +63,23 @@ function RootInner() {
     return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
+  // Subscribe and manage Supabase session
   useEffect(() => {
-    if (!isLoaded) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     async function checkAuthAndSync() {
       // 1. Signed-out handling
-      if (!isSignedIn) {
+      if (!session) {
         setSyncedUserId(null);
         const isPublic = PUBLIC_PATHS.includes(pathname);
         if (!isPublic) {
@@ -140,30 +89,25 @@ function RootInner() {
         return;
       }
 
-      // 2. Signed-in handling
-      try {
-        // Sync active Clerk session token to Supabase client so RLS rules evaluate correctly
-        const token = await safelyGetToken(getToken);
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: "",
-          });
-        }
+      // 2. Recovery handling (CRITICAL PASSWORD RESET FIX: lock them to /auth without redirect)
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      const searchParams = typeof window !== "undefined" ? window.location.search : "";
+      const isRecovery = hash.includes("type=recovery") || searchParams.includes("type=recovery") || pathname.includes("type=recovery");
 
-        // Only hit the database (upsert & fetch branches) if not already synced for this user
+      if (isRecovery) {
+        setReady(true);
+        return;
+      }
+
+      // 3. Signed-in handling
+      try {
+        const userId = session.user?.id;
+
+        // Only hit the database (fetch branches) if not already synced for this user
         // Or if we are transitioning away from onboarding and need to verify the new branch
         if (userId && (syncedUserId !== userId || (pathname !== "/onboarding" && syncedUserId === "onboarding"))) {
-          // Upsert gym_owner metadata mapping the Clerk User ID
-          if (user) {
-            await supabase.from("gym_owners").upsert({
-              id: userId,
-              name: user.fullName || user.firstName || "",
-              email: user.primaryEmailAddress?.emailAddress || "",
-            });
-          }
 
-          // Fetch branches for active Clerk user
+          // Fetch branches for active user
           const branches = await fetchBranchesForUser(userId);
 
           if (branches.length === 0) {
@@ -209,36 +153,17 @@ function RootInner() {
         }
         setReady(true);
       } catch (err) {
-        console.error("Error synchronizing Clerk auth with Supabase:", err);
+        console.error("Error synchronizing Supabase auth state:", err);
         setReady(true);
       }
     }
 
     checkAuthAndSync();
-  }, [isLoaded, isSignedIn, userId, user, pathname, syncedUserId]);
-
-  // Sync token periodically on session transitions or layout renders
-  useEffect(() => {
-    if (!isSignedIn) return;
-    const interval = setInterval(async () => {
-      try {
-        const token = await safelyGetToken(getToken);
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: "",
-          });
-        }
-      } catch (err) {
-        console.error("Failed to refresh Supabase session token from Clerk:", err);
-      }
-    }, 4 * 60 * 1000); // 4 minutes
-    return () => clearInterval(interval);
-  }, [isSignedIn]);
+  }, [session, pathname, syncedUserId]);
 
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
-  if (!isPublic && (!isLoaded || !ready)) {
+  if (!isPublic && !ready) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">

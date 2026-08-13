@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useAuth } from "@clerk/tanstack-react-start";
 import {
   Users, TrendingUp, AlertTriangle, Wallet, CheckCircle2,
   Activity, ArrowUpRight, Bell, Clock, Radio, GripVertical, Eye, EyeOff, RotateCcw, X, CreditCard, Save,
@@ -38,9 +37,23 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  if (!isLoaded) {
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
         <div className="flex flex-col items-center space-y-4">
@@ -53,7 +66,7 @@ function Home() {
     );
   }
 
-  return isSignedIn ? <AppShell><Dashboard /></AppShell> : <MarketingPortal />;
+  return user ? <AppShell><Dashboard /></AppShell> : <MarketingPortal />;
 }
 
 /* =========================================================================

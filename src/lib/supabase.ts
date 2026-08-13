@@ -38,18 +38,18 @@ export function clearActiveBranch() {
 // ==================== Branch Queries ====================
 
 /**
- * Fetch all branches for the current user (using Clerk ID)
- * @param clerkUserId - Current active Clerk User ID
+ * Fetch all branches for the current user (using Supabase User ID)
+ * @param userId - Current active User ID
  * @returns Array of branch objects or empty array on error
  */
-export async function fetchBranches(clerkUserId?: string) {
+export async function fetchBranches(userId?: string) {
   try {
-    if (!clerkUserId) return [];
+    if (!userId) return [];
 
     const { data, error } = await supabase
       .from("branches")
       .select("*")
-      .eq("owner_id", clerkUserId)
+      .eq("owner_id", userId)
       .order("created_at", { ascending: true });
     if (error) { console.error(error); return []; }
     return data ?? [];
@@ -60,16 +60,16 @@ export async function fetchBranches(clerkUserId?: string) {
 }
 
 /**
- * Fetch all branches directly by Clerk user ID (deterministic fallback)
- * @param clerkUserId - Clerk user ID
+ * Fetch all branches directly by Supabase user ID (deterministic fallback)
+ * @param userId - Supabase user ID
  * @returns Array of branch objects
  */
-export async function fetchBranchesForUser(clerkUserId: string) {
+export async function fetchBranchesForUser(userId: string) {
   try {
     const { data, error } = await supabase
       .from("branches")
       .select("*")
-      .eq("owner_id", clerkUserId)
+      .eq("owner_id", userId)
       .order("created_at", { ascending: true });
     if (error) { console.error(error); return []; }
     return data ?? [];

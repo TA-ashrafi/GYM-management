@@ -26,7 +26,6 @@ import {
 import { type ReactNode, useState, useEffect } from "react";
 import { useGym, gym } from "@/lib/gym-store";
 import { NotificationsBell } from "@/components/NotificationsBell";
-import { useAuth, useUser } from "@clerk/tanstack-react-start";
 import { supabase, getActiveBranchId, clearActiveBranch } from "@/lib/supabase";
 
 // Navigation configuration
@@ -63,13 +62,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settings = useGym((s) => s.settings);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-
-  const { signOut } = useAuth();
-  const { user } = useUser();
+  const [user, setUser] = useState<any>(null);
   
   // Real-time capacity statistics from Supabase
   const [liveMemberCount, setLiveMemberCount] = useState(0);
   const [liveCheckInCount, setLiveCheckInCount] = useState(0);
+
+  // Load user session
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const branchId = getActiveBranchId();
@@ -130,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   async function handleLogout() {
     clearActiveBranch();
     gym.reset(); // Completely wipe the local cache state on log out
-    await signOut();
+    await supabase.auth.signOut();
     navigate({ to: "/auth" });
   }
 
@@ -139,7 +149,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  const initials = (user?.fullName?.[0] || user?.primaryEmailAddress?.emailAddress?.[0] || "O").toUpperCase();
+  const name = user?.user_metadata?.name || user?.email?.split("@")[0] || "Gym Owner";
+  const initials = (name[0] || "O").toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground transition-colors duration-300">
@@ -251,10 +262,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-xs text-foreground truncate">
-                {user?.fullName || "Gym Owner"}
+                {name}
               </p>
               <p className="text-[9px] text-muted-foreground truncate">
-                {user?.primaryEmailAddress?.emailAddress || ""}
+                {user?.email || ""}
               </p>
             </div>
           </div>
@@ -327,10 +338,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-foreground truncate">
-                        {user?.fullName || "Gym Owner"}
+                        {name}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {user?.primaryEmailAddress?.emailAddress || ""}
+                        {user?.email || ""}
                       </p>
                     </div>
                   </div>
