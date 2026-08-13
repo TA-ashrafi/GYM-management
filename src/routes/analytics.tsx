@@ -42,6 +42,11 @@ function Analytics() {
   const [members, setMembers] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch actual data from Supabase for the active branch
   useEffect(() => {
@@ -137,67 +142,77 @@ function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Peak Hours" subtitle="Busiest hours of the day">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={peakHours}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="hour" stroke="var(--color-muted-foreground)" fontSize={10} />
-              <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
-              <Tooltip contentStyle={tt} />
-              <Bar dataKey="visits" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={peakHours}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis dataKey="hour" stroke="var(--color-muted-foreground)" fontSize={10} />
+                <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                <Tooltip contentStyle={tt} />
+                <Bar dataKey="visits" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
         <Card title="Last 30 Days Footfall">
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={last30}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={9} interval={3} />
-              <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
-              <Tooltip contentStyle={tt} />
-              <Line type="monotone" dataKey="visits" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={last30}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={9} interval={3} />
+                <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                <Tooltip contentStyle={tt} />
+                <Line type="monotone" dataKey="visits" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
         <Card title="Membership Plan Distribution">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={planSplit} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
-                {planSplit.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tt} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={planSplit} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
+                  {planSplit.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tt} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
         <Card title="Member Status Distribution">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={statusSplit} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
-                {statusSplit.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tt} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={statusSplit} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
+                  {statusSplit.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tt} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
         <Card title="Fitness Goals Split" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={goalSplit} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis type="number" stroke="var(--color-muted-foreground)" fontSize={10} />
-              <YAxis type="category" dataKey="name" stroke="var(--color-muted-foreground)" fontSize={11} width={115} />
-              <Tooltip contentStyle={tt} />
-              <Bar dataKey="value" fill="var(--color-accent)" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={goalSplit} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis type="number" stroke="var(--color-muted-foreground)" fontSize={10} />
+                <YAxis type="category" dataKey="name" stroke="var(--color-muted-foreground)" fontSize={11} width={115} />
+                <Tooltip contentStyle={tt} />
+                <Bar dataKey="value" fill="var(--color-accent)" radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </Card>
       </div>
     </div>

@@ -309,6 +309,11 @@ function MemberReport() {
   const [q, setQ] = useState(initial ?? "");
   const [members, setMembers] = useState<any[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // States for Modals
   const [workoutOpen, setWorkoutOpen] = useState(false);
@@ -630,17 +635,19 @@ function MemberReport() {
                 <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Weight & Muscle Progression (kg)</span>
                   <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={progressLogs.slice(-10)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <Tooltip contentStyle={tt} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" name="Weight (kg)" dataKey="weight" stroke="var(--color-brand)" strokeWidth={2.5} />
-                        <Line type="monotone" name="Muscle Mass (kg)" dataKey="muscle_mass" stroke="var(--color-accent)" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {mounted && (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={progressLogs.slice(-10)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                          <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
+                          <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                          <Tooltip contentStyle={tt} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Line type="monotone" name="Weight (kg)" dataKey="weight" stroke="var(--color-brand)" strokeWidth={2.5} />
+                          <Line type="monotone" name="Muscle Mass (kg)" dataKey="muscle_mass" stroke="var(--color-accent)" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </div>
 
@@ -648,18 +655,20 @@ function MemberReport() {
                 <div className="bg-secondary/20 border border-border/40 rounded-2xl p-4 sm:p-5">
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 block font-bold">Body Fat % and Core Dimensions (inches)</span>
                   <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={progressLogs.slice(-10)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
-                        <Tooltip contentStyle={tt} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" name="Body Fat %" dataKey="body_fat" stroke="var(--color-danger)" strokeWidth={2} />
-                        <Line type="monotone" name="Chest (in)" dataKey="chest" stroke="var(--color-warn)" strokeWidth={1.5} />
-                        <Line type="monotone" name="Waist (in)" dataKey="waist" stroke="var(--color-info)" strokeWidth={1.5} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {mounted && (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={progressLogs.slice(-10)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                          <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={10} />
+                          <YAxis stroke="var(--color-muted-foreground)" fontSize={10} />
+                          <Tooltip contentStyle={tt} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Line type="monotone" name="Body Fat %" dataKey="body_fat" stroke="var(--color-danger)" strokeWidth={2} />
+                          <Line type="monotone" name="Chest (in)" dataKey="chest" stroke="var(--color-warn)" strokeWidth={1.5} />
+                          <Line type="monotone" name="Waist (in)" dataKey="waist" stroke="var(--color-info)" strokeWidth={1.5} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </div>
               </div>

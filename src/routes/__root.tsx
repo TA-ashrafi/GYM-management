@@ -61,52 +61,59 @@ function RootComponent() {
   useEffect(() => {
     // Run only once on initial mount — do not re-run on tab or window switch.
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
+        if (!session) {
+          const isPublic = PUBLIC_PATHS.includes(pathname);
+          if (!isPublic) router.navigate({ to: "/landing" });
+          setReady(true);
+          return;
+        }
+
+        const branches = await fetchBranches();
+
+        if (branches.length === 0) {
+          localStorage.removeItem("fs_active_branch"); // Safe cleanup
+          gym.reset(); // Wipe any old cached records
+          if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
+          setReady(true);
+          return;
+        }
+
+        const activeBranchId = getActiveBranchId();
+        let validBranch = branches.find((b: any) => b.id === activeBranchId);
+
+        if (!validBranch && branches.length > 0) {
+          setActiveBranchId(branches[0].id);
+          validBranch = branches[0];
+        }
+
+        // Synchronize active branch settings and theme on load so appearance stays persisted
+        const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
+        if (currentBranch) {
+          gym.updateSettings({
+            gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
+            theme: currentBranch.theme ?? "dark",
+            preset: currentBranch.preset ?? "lime",
+            slotDurationMin: currentBranch.slot_duration_min ?? 60,
+            slotCapacity: currentBranch.slot_capacity ?? 20,
+            currency: currentBranch.currency ?? "INR",
+            language: currentBranch.language ?? "hinglish",
+          });
+        }
+
+        const isPublic = PUBLIC_PATHS.includes(pathname);
+        if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
+          router.navigate({ to: "/" });
+        }
+      } catch (err) {
+        console.error("Authentication error during boot phase:", err);
         const isPublic = PUBLIC_PATHS.includes(pathname);
         if (!isPublic) router.navigate({ to: "/landing" });
+      } finally {
         setReady(true);
-        return;
       }
-
-      const branches = await fetchBranches();
-
-      if (branches.length === 0) {
-        localStorage.removeItem("fs_active_branch"); // Safe cleanup
-        gym.reset(); // Wipe any old cached records
-        if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
-        setReady(true);
-        return;
-      }
-
-      const activeBranchId = getActiveBranchId();
-      let validBranch = branches.find((b: any) => b.id === activeBranchId);
-
-      if (!validBranch && branches.length > 0) {
-        setActiveBranchId(branches[0].id);
-        validBranch = branches[0];
-      }
-
-      // Synchronize active branch settings and theme on load so appearance stays persisted
-      const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
-      if (currentBranch) {
-        gym.updateSettings({
-          gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
-          theme: currentBranch.theme ?? "dark",
-          preset: currentBranch.preset ?? "lime",
-          slotDurationMin: currentBranch.slot_duration_min ?? 60,
-          slotCapacity: currentBranch.slot_capacity ?? 20,
-          currency: currentBranch.currency ?? "INR",
-          language: currentBranch.language ?? "hinglish",
-        });
-      }
-
-      const isPublic = PUBLIC_PATHS.includes(pathname);
-      if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
-        router.navigate({ to: "/" });
-      }
-      setReady(true);
     }
 
     checkAuth();

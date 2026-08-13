@@ -76,8 +76,13 @@ function Home() {
 function MarketingPortal() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [visibleNavbar, setVisibleNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Hide Navbar on Scroll Down, Show on Scroll Up, and Track Scroll Progress
   useEffect(() => {
@@ -91,17 +96,17 @@ function MarketingPortal() {
       }
 
       // Hide / Show logic
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      if (currentScrollY > lastScrollYRef.current && currentScrollY > 100) {
         setVisibleNavbar(false);
       } else {
         setVisibleNavbar(true);
       }
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
@@ -343,41 +348,43 @@ function MarketingPortal() {
           <div className="pt-4 space-y-2">
             <span className="text-[9px] uppercase tracking-widest text-[#8d8d8d] font-bold block mb-4">LIVE FOOTFALL TREND 6AM–10PM</span>
             <div className="h-44 w-full border-t border-[#242424] pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={[
-                    { hour: "6AM", footfall: 20 },
-                    { hour: "8AM", footfall: 55 },
-                    { hour: "10AM", footfall: 80 },
-                    { hour: "12PM", footfall: 45 },
-                    { hour: "2PM", footfall: 30 },
-                    { hour: "4PM", footfall: 65 },
-                    { hour: "6PM", footfall: 95 },
-                    { hour: "8PM", footfall: 85 },
-                    { hour: "10PM", footfall: 40 }
-                  ]}
-                  margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ed3434" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#ed3434" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
-                  <XAxis dataKey="hour" stroke="#8d8d8d" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#8d8d8d" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#101010",
-                      border: "1px solid #242424",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Area type="monotone" dataKey="footfall" stroke="#ed3434" fill="url(#glow)" strokeWidth={3} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={[
+                      { hour: "6AM", footfall: 20 },
+                      { hour: "8AM", footfall: 55 },
+                      { hour: "10AM", footfall: 80 },
+                      { hour: "12PM", footfall: 45 },
+                      { hour: "2PM", footfall: 30 },
+                      { hour: "4PM", footfall: 65 },
+                      { hour: "6PM", footfall: 95 },
+                      { hour: "8PM", footfall: 85 },
+                      { hour: "10PM", footfall: 40 }
+                    ]}
+                    margin={{ left: -25, right: 8, top: 8, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ed3434" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="#ed3434" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
+                    <XAxis dataKey="hour" stroke="#8d8d8d" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#8d8d8d" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "#101010",
+                        border: "1px solid #242424",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Area type="monotone" dataKey="footfall" stroke="#ed3434" fill="url(#glow)" strokeWidth={3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
@@ -808,6 +815,11 @@ function Dashboard() {
   const [storeSales, setStoreSales] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [renewingMember, setRenewingMember] = useState<any | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [cycleStart] = useState(() => {
     const d = new Date();
@@ -1150,33 +1162,35 @@ function Dashboard() {
           </Link>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend} margin={{ left: -25, right: 8, top: 8, bottom: 0 }}>
-              <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="var(--color-brand)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-accent)" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} />
-              <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--color-popover)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Area type="monotone" dataKey="visits" stroke="var(--color-accent)" fill="url(#g2)" strokeWidth={2} />
-              <Area type="monotone" dataKey="revenue" stroke="var(--color-brand)" fill="url(#g1)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {mounted && (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trend} margin={{ left: -25, right: 8, top: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="var(--color-brand)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-accent)" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis dataKey="d" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} />
+                <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--color-popover)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Area type="monotone" dataKey="visits" stroke="var(--color-accent)" fill="url(#g2)" strokeWidth={2} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--color-brand)" fill="url(#g1)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     ),
