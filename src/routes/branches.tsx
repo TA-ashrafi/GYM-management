@@ -51,6 +51,9 @@ function Branches() {
         if (remaining.length > 0) setActiveBranchId(remaining[0].id);
         else localStorage.removeItem("fs_active_branch");
       }
+      // Invalidate auth cache so __root can fetch the updated branches on next check
+      const { invalidateAuthCache } = await import("./__root");
+      invalidateAuthCache();
       toast.success("Branch deleted successfully");
     } else {
       toast.error(error.message);

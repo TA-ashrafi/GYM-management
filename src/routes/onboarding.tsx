@@ -69,6 +69,9 @@ function Onboarding() {
       if (error) throw error;
 
       setActiveBranchId(data.id);
+      // Invalidate auth cache so __root can fetch the new branches on transition
+      const { invalidateAuthCache } = await import("./__root");
+      invalidateAuthCache();
       toast.success("Gym setup complete. Please setup your RFID scanner now.");
       nav({ to: "/" });
     } catch (err: any) {

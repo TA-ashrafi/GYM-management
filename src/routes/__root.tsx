@@ -22,6 +22,17 @@ import { useApplyTheme } from "@/lib/theme";
 
 const PUBLIC_PATHS = ["/auth", "/landing", "/login", "/onboarding"];
 
+// Session-level caching layer to prevent redundant Supabase queries and heavy lag/hang on page transitions
+let cachedSession: any = null;
+let cachedBranches: any[] | null = null;
+let hasLoadedInitialAuth = false;
+
+export function invalidateAuthCache() {
+  cachedSession = null;
+  cachedBranches = null;
+  hasLoadedInitialAuth = false;
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
     head: () => ({
@@ -97,9 +108,22 @@ function RootComponent() {
         return;
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      let session = cachedSession;
+      let branches = cachedBranches;
+
+      if (!hasLoadedInitialAuth) {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+        session = currentSession;
+        cachedSession = currentSession;
+
+        if (currentSession) {
+          branches = await fetchBranches();
+          cachedBranches = branches;
+        }
+        hasLoadedInitialAuth = true;
+      }
 
       // 2. No session
       if (!session) {
@@ -111,10 +135,8 @@ function RootComponent() {
         return;
       }
 
-      const branches = await fetchBranches();
-
       // 3. Session + 0 branches
-      if (branches.length === 0) {
+      if (!branches || branches.length === 0) {
         localStorage.removeItem("fs_active_branch"); // Safe cleanup
         gym.reset(); // Wipe any old cached records
         if (pathname !== "/onboarding") {
@@ -129,15 +151,22 @@ function RootComponent() {
         const singleBranch = branches[0];
         setActiveBranchId(singleBranch.id);
 
-        gym.updateSettings({
-          gymName: singleBranch.gym_name ?? "ALPHA FITNESS",
-          theme: singleBranch.theme ?? "dark",
-          preset: singleBranch.preset ?? "lime",
-          slotDurationMin: singleBranch.slot_duration_min ?? 60,
-          slotCapacity: singleBranch.slot_capacity ?? 20,
-          currency: singleBranch.currency ?? "INR",
-          language: singleBranch.language ?? "hinglish",
-        });
+        const currentSettings = gym.getSettings();
+        if (
+          currentSettings.gymName !== (singleBranch.gym_name ?? "ALPHA FITNESS") ||
+          currentSettings.theme !== (singleBranch.theme ?? "dark") ||
+          currentSettings.preset !== (singleBranch.preset ?? "lime")
+        ) {
+          gym.updateSettings({
+            gymName: singleBranch.gym_name ?? "ALPHA FITNESS",
+            theme: singleBranch.theme ?? "dark",
+            preset: singleBranch.preset ?? "lime",
+            slotDurationMin: singleBranch.slot_duration_min ?? 60,
+            slotCapacity: singleBranch.slot_capacity ?? 20,
+            currency: singleBranch.currency ?? "INR",
+            language: singleBranch.language ?? "hinglish",
+          });
+        }
 
         const isPublic = PUBLIC_PATHS.includes(pathname);
         if (isPublic) {
@@ -157,15 +186,22 @@ function RootComponent() {
             router.navigate({ to: "/branches" });
           }
         } else {
-          gym.updateSettings({
-            gymName: validBranch.gym_name ?? "ALPHA FITNESS",
-            theme: validBranch.theme ?? "dark",
-            preset: validBranch.preset ?? "lime",
-            slotDurationMin: validBranch.slot_duration_min ?? 60,
-            slotCapacity: validBranch.slot_capacity ?? 20,
-            currency: validBranch.currency ?? "INR",
-            language: validBranch.language ?? "hinglish",
-          });
+          const currentSettings = gym.getSettings();
+          if (
+            currentSettings.gymName !== (validBranch.gym_name ?? "ALPHA FITNESS") ||
+            currentSettings.theme !== (validBranch.theme ?? "dark") ||
+            currentSettings.preset !== (validBranch.preset ?? "lime")
+          ) {
+            gym.updateSettings({
+              gymName: validBranch.gym_name ?? "ALPHA FITNESS",
+              theme: validBranch.theme ?? "dark",
+              preset: validBranch.preset ?? "lime",
+              slotDurationMin: validBranch.slot_duration_min ?? 60,
+              slotCapacity: validBranch.slot_capacity ?? 20,
+              currency: validBranch.currency ?? "INR",
+              language: validBranch.language ?? "hinglish",
+            });
+          }
 
           const isPublic = PUBLIC_PATHS.includes(pathname);
           if (isPublic) {
@@ -191,6 +227,9 @@ function RootComponent() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
+        cachedSession = null;
+        cachedBranches = null;
+        hasLoadedInitialAuth = false;
         localStorage.removeItem("fs_active_branch");
         gym.reset();
         router.navigate({ to: "/landing" });
@@ -199,6 +238,10 @@ function RootComponent() {
           window.location.hash.includes("type=recovery") ||
           window.location.search.includes("type=recovery");
         if (isRecovery) return;
+
+        cachedSession = session;
+        cachedBranches = await fetchBranches();
+        hasLoadedInitialAuth = true;
 
         if (currentUserId && currentUserId !== session.user.id) {
           localStorage.removeItem("fs_active_branch");
