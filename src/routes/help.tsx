@@ -164,7 +164,8 @@ function HelpPage() {
       <section className="mt-8 bg-card border border-border rounded-2xl p-6 lg:p-8">
         <h2 className="font-heading text-xl mb-1">Send us your query</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Submitting this form will forward your query directly to WhatsApp support.
+          Submitting this form will forward your query directly to WhatsApp
+          support.
         </p>
         <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4">
           <Field label="Your Name *">

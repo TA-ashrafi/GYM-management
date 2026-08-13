@@ -102,7 +102,9 @@ export function SmokeOverlay({
       };
     };
 
-    puffsRef.current = Array.from({ length: intensity }, () => createPuff(true));
+    puffsRef.current = Array.from({ length: intensity }, () =>
+      createPuff(true),
+    );
 
     const drawPuff = (p: Puff) => {
       const t = p.life / p.maxLife;
@@ -125,7 +127,14 @@ export function SmokeOverlay({
       const rx = currentSize * (1.6 + wobble);
       const ry = currentSize * (0.75 - wobble * 0.25);
 
-      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize);
+      const gradient = ctx.createRadialGradient(
+        p.x,
+        p.y,
+        0,
+        p.x,
+        p.y,
+        currentSize,
+      );
       gradient.addColorStop(0, `${prefix}${a})`);
       gradient.addColorStop(0.35, `${prefix}${a * 0.6})`);
       gradient.addColorStop(0.7, `${prefix}${a * 0.22})`);

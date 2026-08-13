@@ -2,7 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Building2, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
+import {
+  supabase,
+  fetchBranches,
+  getActiveBranchId,
+  setActiveBranchId,
+} from "@/lib/supabase";
 
 export const Route = createFileRoute("/branches")({
   head: () => ({ meta: [{ title: "Branches — ALPHA FITNESS" }] }),
@@ -32,7 +37,12 @@ function Branches() {
 
   // Delete a branch
   async function deleteBranch(id: string, name: string) {
-    if (!confirm(`Delete "${name}"? All associated data will be permanently removed.`)) return;
+    if (
+      !confirm(
+        `Delete "${name}"? All associated data will be permanently removed.`,
+      )
+    )
+      return;
     const { error } = await supabase.from("branches").delete().eq("id", id);
     if (!error) {
       setBranches((prev) => prev.filter((b) => b.id !== id));
@@ -41,6 +51,9 @@ function Branches() {
         if (remaining.length > 0) setActiveBranchId(remaining[0].id);
         else localStorage.removeItem("fs_active_branch");
       }
+      // Invalidate auth cache so __root can fetch the updated branches on next check
+      const { invalidateAuthCache } = await import("./__root");
+      invalidateAuthCache();
       toast.success("Branch deleted successfully");
     } else {
       toast.error(error.message);
@@ -62,10 +75,14 @@ function Branches() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-heading">Your Branches</h1>
-            <p className="text-muted-foreground mt-1">{branches.length} branch{branches.length !== 1 ? "es" : ""}</p>
+            <p className="text-muted-foreground mt-1">
+              {branches.length} branch{branches.length !== 1 ? "es" : ""}
+            </p>
           </div>
           <button
-            onClick={() => nav({ to: "/onboarding", search: { skipChoice: true } as any })}
+            onClick={() =>
+              nav({ to: "/onboarding", search: { skipChoice: true } as any })
+            }
             className="flex items-center gap-2 px-4 py-2 bg-brand text-brand-foreground rounded-xl text-sm font-semibold"
           >
             <Plus className="size-4" /> New Branch
@@ -79,21 +96,33 @@ function Branches() {
             return (
               <div
                 key={b.id}
-                className={"p-5 bg-card border rounded-2xl flex items-center gap-4 transition " +
-                  (isActive ? "border-brand/60 bg-brand/5" : "border-border hover:border-border/80")}
+                className={
+                  "p-5 bg-card border rounded-2xl flex items-center gap-4 transition " +
+                  (isActive
+                    ? "border-brand/60 bg-brand/5"
+                    : "border-border hover:border-border/80")
+                }
               >
                 {/* Branch Icon */}
-                <div className={"size-12 rounded-xl grid place-items-center shrink-0 " +
-                  (isActive ? "bg-brand text-brand-foreground" : "bg-secondary text-muted-foreground")}>
+                <div
+                  className={
+                    "size-12 rounded-xl grid place-items-center shrink-0 " +
+                    (isActive
+                      ? "bg-brand text-brand-foreground"
+                      : "bg-secondary text-muted-foreground")
+                  }
+                >
                   <Building2 className="size-6" />
                 </div>
-                
+
                 {/* Branch Details */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-lg">{b.gym_name}</p>
-                  <p className="text-sm text-muted-foreground">{b.branch_name} {b.address ? `· ${b.address}` : ""}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {b.branch_name} {b.address ? `· ${b.address}` : ""}
+                  </p>
                 </div>
-                
+
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
                   {isActive ? (

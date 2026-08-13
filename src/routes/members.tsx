@@ -1,10 +1,33 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Search, Trash2, Star, RefreshCw, Phone, User, Calendar, ShieldCheck, X, Save, CreditCard } from "lucide-react";
+import {
+  Search,
+  Trash2,
+  Star,
+  RefreshCw,
+  Phone,
+  User,
+  Calendar,
+  ShieldCheck,
+  X,
+  Save,
+  CreditCard,
+} from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
-import { useGym, daysUntil, money, generateSlots, type PlanType } from "@/lib/gym-store";
+import {
+  useGym,
+  daysUntil,
+  money,
+  generateSlots,
+  type PlanType,
+} from "@/lib/gym-store";
 import { fetchMembers, supabase, getActiveBranchId } from "@/lib/supabase";
 
 function statusOf(m: any): "active" | "expiring" | "expired" {
@@ -26,9 +49,13 @@ export const Route = createFileRoute("/members")({
     meta: [{ title: "Members — ALPHA FITNESS" }],
   }),
   validateSearch: (s: Record<string, unknown>) =>
-    z.object({
-      filter: z.enum(["all", "active", "expiring", "expired", "ghost", "unpaid"]).optional(),
-    }).parse(s),
+    z
+      .object({
+        filter: z
+          .enum(["all", "active", "expiring", "expired", "ghost", "unpaid"])
+          .optional(),
+      })
+      .parse(s),
   component: MembersRoot,
 });
 
@@ -104,7 +131,12 @@ function MembersPage() {
     const s = statusOf(m);
     const matchesSearch =
       !q ||
-      ((m.name ?? "") + (m.rollNo ?? m.roll_no ?? "") + (m.phone ?? "") + (m.rfid ?? ""))
+      (
+        (m.name ?? "") +
+        (m.rollNo ?? m.roll_no ?? "") +
+        (m.phone ?? "") +
+        (m.rfid ?? "")
+      )
         .toLowerCase()
         .includes(q.toLowerCase());
 
@@ -148,7 +180,16 @@ function MembersPage() {
             />
           </div>
           <div className="flex gap-1 flex-wrap">
-            {(["all", "active", "expiring", "expired", "ghost", "unpaid"] as const).map((f) => (
+            {(
+              [
+                "all",
+                "active",
+                "expiring",
+                "expired",
+                "ghost",
+                "unpaid",
+              ] as const
+            ).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -208,7 +249,9 @@ function MembersPage() {
                     key={m.id}
                     className={
                       "transition-colors " +
-                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/30")
+                      (rowRed
+                        ? "bg-danger/10 hover:bg-danger/15"
+                        : "hover:bg-secondary/30")
                     }
                   >
                     <td className="px-6 py-3">
@@ -234,12 +277,19 @@ function MembersPage() {
                               <span
                                 className={
                                   "inline-flex items-center " +
-                                  (badge.golden ? "text-yellow-400" : "text-warn")
+                                  (badge.golden
+                                    ? "text-yellow-400"
+                                    : "text-warn")
                                 }
                               >
-                                {Array.from({ length: badge.stars }).map((_, i) => (
-                                  <Star key={i} className="size-3 fill-current" />
-                                ))}
+                                {Array.from({ length: badge.stars }).map(
+                                  (_, i) => (
+                                    <Star
+                                      key={i}
+                                      className="size-3 fill-current"
+                                    />
+                                  ),
+                                )}
                               </span>
                             )}
                           </p>
@@ -304,7 +354,10 @@ function MembersPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
+                  <td
+                    colSpan={8}
+                    className="text-center py-12 text-muted-foreground text-sm"
+                  >
                     {members.length === 0
                       ? "No members found. Click + Add Member!"
                       : "No members match your search criteria."}
@@ -329,7 +382,11 @@ function MembersPage() {
                 ? "px-1.5 py-0.5 rounded bg-gradient-to-r from-yellow-500/20 to-amber-400/20 text-yellow-300 ring-1 ring-yellow-400/30 text-xs"
                 : "");
             const expiryText =
-              d < 0 ? `Expired ${overdueDays}d ago` : d === 0 ? "Expires today" : `${d}d left`;
+              d < 0
+                ? `Expired ${overdueDays}d ago`
+                : d === 0
+                  ? "Expires today"
+                  : `${d}d left`;
             const expiryCls =
               d < 0
                 ? "text-danger font-bold"
@@ -399,19 +456,34 @@ function MembersPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs bg-secondary/35 p-3 rounded-xl border border-border/10">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <User className="size-3.5" />
-                    <span>{m.gender} · {m.age} years</span>
+                    <span>
+                      {m.gender} · {m.age} years
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <ShieldCheck className="size-3.5" strokeWidth={2.5} />
-                    <span>RFID: <span className="font-mono text-[10px] text-brand">{m.rfid || "None"}</span></span>
+                    <span>
+                      RFID:{" "}
+                      <span className="font-mono text-[10px] text-brand">
+                        {m.rfid || "None"}
+                      </span>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Calendar className="size-3.5" />
                     <span className={expiryCls}>{expiryText}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="font-bold text-[10px] bg-secondary px-1.5 py-0.5 rounded text-foreground uppercase tracking-wider">{m.plan}</span>
-                    <span className={feePaid ? "text-brand font-semibold" : "text-danger font-bold"}>
+                    <span className="font-bold text-[10px] bg-secondary px-1.5 py-0.5 rounded text-foreground uppercase tracking-wider">
+                      {m.plan}
+                    </span>
+                    <span
+                      className={
+                        feePaid
+                          ? "text-brand font-semibold"
+                          : "text-danger font-bold"
+                      }
+                    >
                       {money(feeAmount)} {feePaid ? "Paid" : "Due"}
                     </span>
                   </div>
@@ -476,8 +548,18 @@ function MembersPage() {
 }
 
 // Reusable Renewal Modal directly embedded to avoid circular dependencies
-function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () => void; onRenewed: () => void }) {
-  const [plan, setPlan] = useState<PlanType>(member.plan as PlanType || "Monthly");
+function RenewModal({
+  member,
+  onClose,
+  onRenewed,
+}: {
+  member: any;
+  onClose: () => void;
+  onRenewed: () => void;
+}) {
+  const [plan, setPlan] = useState<PlanType>(
+    (member.plan as PlanType) || "Monthly",
+  );
   const [planPrices, setPlanPrices] = useState<Record<PlanType, number>>({
     Monthly: 1500,
     Quarterly: 4000,
@@ -513,13 +595,15 @@ function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () =
   const handleSave = async () => {
     setSaving(true);
     const DAYS: Record<string, number> = {
-      Monthly: 30, Quarterly: 90, HalfYearly: 180, Yearly: 365,
+      Monthly: 30,
+      Quarterly: 90,
+      HalfYearly: 180,
+      Yearly: 365,
     };
 
     const expiryRaw = member.expiry_date ?? member.expiryDate;
-    const baseDate = new Date(expiryRaw) > new Date()
-      ? new Date(expiryRaw)
-      : new Date();
+    const baseDate =
+      new Date(expiryRaw) > new Date() ? new Date(expiryRaw) : new Date();
 
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + DAYS[plan]);
@@ -559,9 +643,18 @@ function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+    <div
+      className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+        >
           <X className="size-5" />
         </button>
 
@@ -571,30 +664,45 @@ function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () =
           </div>
           <div>
             <h3 className="font-heading text-lg text-foreground">Renew Plan</h3>
-            <p className="text-xs text-muted-foreground">Select plan for {member.name}</p>
+            <p className="text-xs text-muted-foreground">
+              Select plan for {member.name}
+            </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Select Plan</label>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">
+              Select Plan
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {PLAN_ORDER.map((p) => (
                 <button
                   type="button"
                   key={p}
                   onClick={() => setPlan(p)}
-                  className={"p-3 rounded-xl border text-left transition " + (plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                  className={
+                    "p-3 rounded-xl border text-left transition " +
+                    (plan === p
+                      ? "border-brand bg-brand/10"
+                      : "border-border bg-secondary/40 hover:border-brand/40")
+                  }
                 >
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{p}</p>
-                  <p className="text-base font-heading mt-0.5">₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {p}
+                  </p>
+                  <p className="text-base font-heading mt-0.5">
+                    ₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}
+                  </p>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">Fee Amount (INR)</label>
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-1">
+              Fee Amount (INR)
+            </label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-bold">₹</span>
               <input
@@ -617,13 +725,19 @@ function RenewModal({ member, onClose, onRenewed }: { member: any; onClose: () =
           </label>
 
           <div className="flex gap-2 pt-2">
-            <button onClick={onClose} className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold">Cancel</button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-semibold"
+            >
+              Cancel
+            </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="flex-1 py-2.5 bg-brand text-brand-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
             >
-              <Save className="size-4" /> {saving ? "Renewing..." : "Renew Plan"}
+              <Save className="size-4" />{" "}
+              {saving ? "Renewing..." : "Renew Plan"}
             </button>
           </div>
         </div>

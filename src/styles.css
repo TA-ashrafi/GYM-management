@@ -59,11 +59,11 @@ html.dark {
   --ring: var(--brand);
 
   /* Fallback Defaults (Red/Black) */
-  --brand: #EB5757;
-  --brand-gradient: linear-gradient(135deg, #000000 0%, #EB5757 100%);
+  --brand: #eb5757;
+  --brand-gradient: linear-gradient(135deg, #000000 0%, #eb5757 100%);
   --brand-foreground: #000000;
-  --accent: #EB5757;
-  --primary: #EB5757;
+  --accent: #eb5757;
+  --primary: #eb5757;
   --primary-foreground: #000000;
   --destructive: oklch(0.593 0.221 26.3);
   --destructive-foreground: oklch(0.99 0 0);
@@ -96,7 +96,8 @@ html.light {
 }
 
 /* ---------- PREMIUM RADICAL GRADIENTS PRESETS WITH HIGH SPECIFICITY ---------- */
-html[data-preset="lime"], html.dark[data-preset="lime"] {
+html[data-preset="lime"],
+html.dark[data-preset="lime"] {
   --brand: #22c55e;
   --brand-gradient: none;
   --accent: #22c55e;
@@ -104,7 +105,8 @@ html[data-preset="lime"], html.dark[data-preset="lime"] {
   --primary-foreground: #052e16;
 }
 
-html[data-preset="gold"], html.dark[data-preset="gold"] {
+html[data-preset="gold"],
+html.dark[data-preset="gold"] {
   --brand: #eab308;
   --brand-gradient: none;
   --accent: #eab308;
@@ -112,7 +114,8 @@ html[data-preset="gold"], html.dark[data-preset="gold"] {
   --primary-foreground: #422006;
 }
 
-html[data-preset="red"], html.dark[data-preset="red"] {
+html[data-preset="red"],
+html.dark[data-preset="red"] {
   --brand: #ef4444;
   --brand-gradient: none;
   --accent: #ef4444;
@@ -120,7 +123,8 @@ html[data-preset="red"], html.dark[data-preset="red"] {
   --primary-foreground: #450a0a;
 }
 
-html[data-preset="blue"], html.dark[data-preset="blue"] {
+html[data-preset="blue"],
+html.dark[data-preset="blue"] {
   --brand: #3b82f6;
   --brand-gradient: none;
   --accent: #3b82f6;
@@ -128,7 +132,8 @@ html[data-preset="blue"], html.dark[data-preset="blue"] {
   --primary-foreground: #172554;
 }
 
-html[data-preset="purple"], html.dark[data-preset="purple"] {
+html[data-preset="purple"],
+html.dark[data-preset="purple"] {
   --brand: #a855f7;
   --brand-gradient: none;
   --accent: #a855f7;
@@ -167,7 +172,10 @@ html[data-preset="purple"], html.dark[data-preset="purple"] {
     z-index: 1000;
   }
 
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-heading);
     letter-spacing: -0.01em;
     text-transform: uppercase;
@@ -188,7 +196,7 @@ html[data-preset="purple"], html.dark[data-preset="purple"] {
 }
 
 .skew-slab {
-  background: linear-gradient(135deg, #000000 0%, #EB5757 100%);
+  background: linear-gradient(135deg, #000000 0%, #eb5757 100%);
   transform: skewX(-9deg);
 }
 
@@ -199,11 +207,16 @@ html[data-preset="purple"], html.dark[data-preset="purple"] {
 }
 
 @keyframes marquee {
-  to { transform: translateX(-50%); }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .rise {
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 .rise:hover {
   transform: translateY(-6px);
@@ -220,23 +233,43 @@ html[data-preset="purple"], html.dark[data-preset="purple"] {
   scrollbar-color: var(--color-border) transparent;
 }
 
-/* Hide scrollbar globally */
+/* Custom scrollbar matching dark-neon aesthetics */
 ::-webkit-scrollbar {
-  display: none !important;
+  width: 8px;
+  height: 8px;
 }
-html, body {
-  -ms-overflow-style: none !important;  /* IE and Edge */
-  scrollbar-width: none !important;  /* Firefox */
+::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+::-webkit-scrollbar-thumb {
+  background: #ed3434;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff4b4b;
 }
 
 /* Premium blue neon flickering bulb animation */
 @keyframes blue-flicker {
-  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-    text-shadow: 0 0 4px #0891b2, 0 0 10px #22d3ee, 0 0 20px #06b6d4, 0 0 30px #0891b2;
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
+    text-shadow:
+      0 0 4px #0891b2,
+      0 0 10px #22d3ee,
+      0 0 20px #06b6d4,
+      0 0 30px #0891b2;
     opacity: 1;
     color: #e0f7fa;
   }
-  20%, 24%, 55% {
+  20%,
+  24%,
+  55% {
     text-shadow: none;
     opacity: 0.3;
     color: #0891b2;

@@ -78,7 +78,7 @@ function Todos() {
 
     if (!error) {
       setTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, done: !currentDone } : t))
+        prev.map((t) => (t.id === id ? { ...t, done: !currentDone } : t)),
       );
     } else {
       toast.error("Failed to update task status");
@@ -101,10 +101,16 @@ function Todos() {
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl w-full">
-      <PageHeader title="Maintenance & To-Do" subtitle="Machine repairs, bills, daily operations" />
+      <PageHeader
+        title="Maintenance & To-Do"
+        subtitle="Machine repairs, bills, daily operations"
+      />
 
       {/* Add Task Form */}
-      <form onSubmit={add} className="bg-card border border-border rounded-2xl p-4 mb-6 space-y-3">
+      <form
+        onSubmit={add}
+        className="bg-card border border-border rounded-2xl p-4 mb-6 space-y-3"
+      >
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -120,14 +126,16 @@ function Todos() {
           />
           <select
             value={priority}
-            onChange={(e) => setPriority(e.target.value as "low" | "med" | "high")}
+            onChange={(e) =>
+              setPriority(e.target.value as "low" | "med" | "high")
+            }
             className={inp}
           >
             <option value="low">Low</option>
             <option value="med">Medium</option>
             <option value="high">High</option>
           </select>
-          <button 
+          <button
             type="submit"
             className="px-5 py-2.5 bg-brand text-brand-foreground rounded-lg font-semibold text-sm hover:bg-brand/90 transition cursor-pointer text-center"
           >
@@ -138,7 +146,9 @@ function Todos() {
 
       {/* Open Tasks */}
       <section>
-        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">Open ({open.length})</h3>
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">
+          Open ({open.length})
+        </h3>
         <div className="space-y-2 mb-8">
           {open.map((t) => (
             <Row
@@ -148,11 +158,17 @@ function Todos() {
               onDelete={() => deleteTodo(t.id)}
             />
           ))}
-          {open.length === 0 && <p className="text-sm text-muted-foreground">No open tasks. All caught up!</p>}
+          {open.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No open tasks. All caught up!
+            </p>
+          )}
         </div>
 
         {/* Completed Tasks */}
-        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">Completed ({done.length})</h3>
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold">
+          Completed ({done.length})
+        </h3>
         <div className="space-y-2 opacity-60">
           {done.map((t) => (
             <Row
@@ -169,11 +185,29 @@ function Todos() {
 }
 
 // Task Row Component
-function Row({ t, onToggle, onDelete }: { t: any; onToggle: () => void; onDelete: () => void }) {
-  const tone = t.priority === "high" ? "border-danger" : t.priority === "med" ? "border-warn" : "border-accent";
+function Row({
+  t,
+  onToggle,
+  onDelete,
+}: {
+  t: any;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  const tone =
+    t.priority === "high"
+      ? "border-danger"
+      : t.priority === "med"
+        ? "border-warn"
+        : "border-accent";
 
   return (
-    <div className={"p-4 bg-card border border-border rounded-xl border-l-2 flex items-center justify-between gap-3 " + tone}>
+    <div
+      className={
+        "p-4 bg-card border border-border rounded-xl border-l-2 flex items-center justify-between gap-3 " +
+        tone
+      }
+    >
       <div className="flex items-center gap-3 min-w-0">
         <input
           type="checkbox"
@@ -182,13 +216,27 @@ function Row({ t, onToggle, onDelete }: { t: any; onToggle: () => void; onDelete
           className="accent-brand size-4 cursor-pointer shrink-0"
         />
         <div className="min-w-0">
-          <p className={"font-medium text-sm sm:text-base " + (t.done ? "line-through text-muted-foreground" : "")}>{t.title}</p>
-          {t.note && <p className="text-xs text-muted-foreground truncate">{t.note}</p>}
+          <p
+            className={
+              "font-medium text-sm sm:text-base " +
+              (t.done ? "line-through text-muted-foreground" : "")
+            }
+          >
+            {t.title}
+          </p>
+          {t.note && (
+            <p className="text-xs text-muted-foreground truncate">{t.note}</p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground hidden sm:inline">{t.priority}</span>
-        <button onClick={onDelete} className="text-muted-foreground hover:text-danger p-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground hidden sm:inline">
+          {t.priority}
+        </span>
+        <button
+          onClick={onDelete}
+          className="text-muted-foreground hover:text-danger p-1"
+        >
           <Trash2 className="size-4" />
         </button>
       </div>
@@ -196,4 +244,5 @@ function Row({ t, onToggle, onDelete }: { t: any; onToggle: () => void; onDelete
   );
 }
 
-const inp = "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";
+const inp =
+  "px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40 w-full";

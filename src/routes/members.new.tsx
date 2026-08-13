@@ -1,7 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, IdCard, User, Activity, CreditCard, Heart, Radio, CheckCircle2, X, RefreshCw } from "lucide-react";
+import {
+  Camera,
+  IdCard,
+  User,
+  Activity,
+  CreditCard,
+  Heart,
+  Radio,
+  CheckCircle2,
+  X,
+  RefreshCw,
+} from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useGym, generateSlots, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
@@ -25,7 +36,10 @@ export const Route = createFileRoute("/members/new")({
 function NewMember() {
   const nav = useNavigate();
   const settings = useGym((s) => s.settings);
-  const slots = useMemo(() => generateSlots(settings.shifts, settings.slotDurationMin), [settings]);
+  const slots = useMemo(
+    () => generateSlots(settings.shifts, settings.slotDurationMin),
+    [settings],
+  );
 
   const [photoIdx, setPhotoIdx] = useState(0);
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
@@ -87,9 +101,19 @@ function NewMember() {
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const MAX = 200;
-      let w = img.width, h = img.height;
-      if (w > h) { if (w > MAX) { h = (h * MAX) / w; w = MAX; } }
-      else { if (h > MAX) { w = (w * MAX) / h; h = MAX; } }
+      let w = img.width,
+        h = img.height;
+      if (w > h) {
+        if (w > MAX) {
+          h = (h * MAX) / w;
+          w = MAX;
+        }
+      } else {
+        if (h > MAX) {
+          w = (w * MAX) / h;
+          h = MAX;
+        }
+      }
       canvas.width = w;
       canvas.height = h;
       canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
@@ -121,7 +145,13 @@ function NewMember() {
     const expiry = new Date();
     expiry.setDate(
       expiry.getDate() +
-        (form.plan === "Monthly" ? 30 : form.plan === "Quarterly" ? 90 : form.plan === "HalfYearly" ? 180 : 365)
+        (form.plan === "Monthly"
+          ? 30
+          : form.plan === "Quarterly"
+            ? 90
+            : form.plan === "HalfYearly"
+              ? 180
+              : 365),
     );
 
     const amount = planPrices[form.plan] ?? 0;
@@ -185,14 +215,19 @@ function NewMember() {
 
   return (
     <div className="p-8 max-w-6xl">
-      <PageHeader title="Add Member" subtitle="Register a new gym member with RFID card" />
+      <PageHeader
+        title="Add Member"
+        subtitle="Register a new gym member with RFID card"
+      />
 
       <form onSubmit={submit} className="grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center gap-2 text-muted-foreground mb-3">
               <Camera className="size-4" />
-              <span className="text-[10px] uppercase tracking-widest">Photo</span>
+              <span className="text-[10px] uppercase tracking-widest">
+                Photo
+              </span>
             </div>
             <img
               src={uploadedPhoto ?? PHOTOS[photoIdx]}
@@ -201,17 +236,34 @@ function NewMember() {
             />
             <label className="cursor-pointer block mt-4 px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 text-center">
               📷 Upload Photo
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhoto}
+              />
             </label>
             <div className="grid grid-cols-6 gap-2 mt-3">
               {PHOTOS.map((p, i) => (
                 <button
                   type="button"
                   key={i}
-                  onClick={() => { setPhotoIdx(i); setUploadedPhoto(null); }}
-                  className={"rounded-md overflow-hidden ring-2 transition " + (photoIdx === i && !uploadedPhoto ? "ring-brand" : "ring-transparent opacity-60 hover:opacity-100")}
+                  onClick={() => {
+                    setPhotoIdx(i);
+                    setUploadedPhoto(null);
+                  }}
+                  className={
+                    "rounded-md overflow-hidden ring-2 transition " +
+                    (photoIdx === i && !uploadedPhoto
+                      ? "ring-brand"
+                      : "ring-transparent opacity-60 hover:opacity-100")
+                  }
                 >
-                  <img src={p} alt="" className="w-full aspect-square object-cover" />
+                  <img
+                    src={p}
+                    alt=""
+                    className="w-full aspect-square object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -220,21 +272,35 @@ function NewMember() {
           <div className="bg-gradient-to-br from-brand/15 to-card border border-brand/30 rounded-2xl p-6">
             <div className="flex items-center gap-2 text-brand mb-3">
               <IdCard className="size-4" />
-              <span className="text-[10px] uppercase tracking-widest font-bold">RFID Card</span>
+              <span className="text-[10px] uppercase tracking-widest font-bold">
+                RFID Card
+              </span>
             </div>
             <Field label="Roll Number">
-              <input value={form.rollNo} onChange={(e) => set("rollNo", e.target.value)} className={input} />
+              <input
+                value={form.rollNo}
+                onChange={(e) => set("rollNo", e.target.value)}
+                className={input}
+              />
             </Field>
 
             <div className="mt-4">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">RFID Tag Code</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+                RFID Tag Code
+              </p>
               {form.rfid ? (
                 <div className="flex items-center gap-2 p-3 bg-brand/10 border border-brand/40 rounded-lg">
                   <CheckCircle2 className="size-4 text-brand shrink-0" />
-                  <span className="font-mono text-sm text-brand flex-1 truncate">{form.rfid}</span>
+                  <span className="font-mono text-sm text-brand flex-1 truncate">
+                    {form.rfid}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => { set("rfid", ""); setRfidAssigned(false); setScanOpen(true); }}
+                    onClick={() => {
+                      set("rfid", "");
+                      setRfidAssigned(false);
+                      setScanOpen(true);
+                    }}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <RefreshCw className="size-4" />
@@ -259,32 +325,68 @@ function NewMember() {
         </div>
 
         <div className="lg:col-span-8 space-y-6">
-          <Section icon={<User className="size-4" />} title="Personal Information">
+          <Section
+            icon={<User className="size-4" />}
+            title="Personal Information"
+          >
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Full Name *">
-                <input value={form.name} onChange={(e) => set("name", e.target.value)} className={input} required />
+                <input
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  className={input}
+                  required
+                />
               </Field>
               <Field label="Phone *">
-                <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className={input} required />
+                <input
+                  value={form.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                  className={input}
+                  required
+                />
               </Field>
               <Field label="Email">
-                <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={input} />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  className={input}
+                />
               </Field>
               <Field label="Emergency Contact">
-                <input value={form.emergencyContact} onChange={(e) => set("emergencyContact", e.target.value)} className={input} />
+                <input
+                  value={form.emergencyContact}
+                  onChange={(e) => set("emergencyContact", e.target.value)}
+                  className={input}
+                />
               </Field>
               <Field label="Gender">
                 <div className="flex gap-2">
                   {(["M", "F", "O"] as const).map((g) => (
-                    <button type="button" key={g} onClick={() => set("gender", g)}
-                      className={"flex-1 py-2 rounded-lg text-sm border " + (form.gender === g ? "bg-brand text-brand-foreground border-brand" : "bg-secondary border-border text-muted-foreground")}>
+                    <button
+                      type="button"
+                      key={g}
+                      onClick={() => set("gender", g)}
+                      className={
+                        "flex-1 py-2 rounded-lg text-sm border " +
+                        (form.gender === g
+                          ? "bg-brand text-brand-foreground border-brand"
+                          : "bg-secondary border-border text-muted-foreground")
+                      }
+                    >
                       {g === "M" ? "Male" : g === "F" ? "Female" : "Other"}
                     </button>
                   ))}
                 </div>
               </Field>
               <Field label="Age">
-                <input type="number" value={form.age} onChange={(e) => set("age", +e.target.value)} className={input} />
+                <input
+                  type="number"
+                  value={form.age}
+                  onChange={(e) => set("age", +e.target.value)}
+                  className={input}
+                />
               </Field>
               <Field label="Date of Joining">
                 <input
@@ -296,7 +398,11 @@ function NewMember() {
               </Field>
               <div className="sm:col-span-2">
                 <Field label="Address">
-                  <input value={form.address} onChange={(e) => set("address", e.target.value)} className={input} />
+                  <input
+                    value={form.address}
+                    onChange={(e) => set("address", e.target.value)}
+                    className={input}
+                  />
                 </Field>
               </div>
             </div>
@@ -305,19 +411,35 @@ function NewMember() {
           <Section icon={<Activity className="size-4" />} title="Body & Goals">
             <div className="grid sm:grid-cols-3 gap-4">
               <Field label="Height (cm)">
-                <input type="number" value={form.heightCm} onChange={(e) => set("heightCm", +e.target.value)} className={input} />
+                <input
+                  type="number"
+                  value={form.heightCm}
+                  onChange={(e) => set("heightCm", +e.target.value)}
+                  className={input}
+                />
               </Field>
               <Field label="Weight (kg)">
-                <input type="number" value={form.weightKg} onChange={(e) => set("weightKg", +e.target.value)} className={input} />
+                <input
+                  type="number"
+                  value={form.weightKg}
+                  onChange={(e) => set("weightKg", +e.target.value)}
+                  className={input}
+                />
               </Field>
               <Field label="Fitness Goal">
-                <select value={form.goal} onChange={(e) => set("goal", e.target.value)} className={input + " w-full"}>
+                <select
+                  value={form.goal}
+                  onChange={(e) => set("goal", e.target.value)}
+                  className={input + " w-full"}
+                >
                   <option value="Muscle Gain">Muscle Gain</option>
                   <option value="Fat Loss / Cuts">Fat Loss / Cuts</option>
                   <option value="Weight Loss">Weight Loss</option>
                   <option value="Calisthenics">Calisthenics</option>
                   <option value="Yoga">Yoga</option>
-                  <option value="General Fitness">General Fitness (Stay Fit)</option>
+                  <option value="General Fitness">
+                    General Fitness (Stay Fit)
+                  </option>
                   <option value="Strength Training">Strength Training</option>
                   <option value="Endurance">Endurance / Cardio</option>
                 </select>
@@ -325,42 +447,83 @@ function NewMember() {
             </div>
           </Section>
 
-          <Section icon={<Heart className="size-4" />} title="Medical (optional)">
+          <Section
+            icon={<Heart className="size-4" />}
+            title="Medical (optional)"
+          >
             <Field label="Medical conditions / Allergies / Injuries">
-              <textarea value={form.medical} onChange={(e) => set("medical", e.target.value)} rows={2} className={input + " resize-none"} />
+              <textarea
+                value={form.medical}
+                onChange={(e) => set("medical", e.target.value)}
+                rows={2}
+                className={input + " resize-none"}
+              />
             </Field>
           </Section>
 
-          <Section icon={<CreditCard className="size-4" />} title="Membership & Slot">
+          <Section
+            icon={<CreditCard className="size-4" />}
+            title="Membership & Slot"
+          >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {PLAN_ORDER.map((p) => (
                 <button
                   type="button"
                   key={p}
                   onClick={() => set("plan", p)}
-                  className={"p-4 rounded-xl border text-left transition " + (form.plan === p ? "border-brand bg-brand/10" : "border-border bg-secondary/40 hover:border-brand/40")}
+                  className={
+                    "p-4 rounded-xl border text-left transition " +
+                    (form.plan === p
+                      ? "border-brand bg-brand/10"
+                      : "border-border bg-secondary/40 hover:border-brand/40")
+                  }
                 >
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{p}</p>
-                  <p className="text-lg font-heading mt-1">₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {p}
+                  </p>
+                  <p className="text-lg font-heading mt-1">
+                    ₹{planPrices[p]?.toLocaleString("en-IN") ?? "—"}
+                  </p>
                 </button>
               ))}
             </div>
 
             <Field label="Preferred Slot">
-              <select value={form.preferredSlot} onChange={(e) => set("preferredSlot", e.target.value)} className={input}>
-                {slots.map((s) => <option key={s}>{s}</option>)}
+              <select
+                value={form.preferredSlot}
+                onChange={(e) => set("preferredSlot", e.target.value)}
+                className={input}
+              >
+                {slots.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
               </select>
             </Field>
 
             <label className="mt-4 flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.feePaid} onChange={(e) => set("feePaid", e.target.checked)} className="accent-brand size-4" />
-              Fee paid upfront (₹{planPrices[form.plan]?.toLocaleString("en-IN") ?? "—"})
+              <input
+                type="checkbox"
+                checked={form.feePaid}
+                onChange={(e) => set("feePaid", e.target.checked)}
+                className="accent-brand size-4"
+              />
+              Fee paid upfront (₹
+              {planPrices[form.plan]?.toLocaleString("en-IN") ?? "—"})
             </label>
           </Section>
 
           <div className="flex gap-3">
-            <button type="button" onClick={() => nav({ to: "/members" })} className="px-5 py-3 bg-secondary text-foreground rounded-xl text-sm">Cancel</button>
-            <button type="submit" className="flex-1 py-3 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-transform">
+            <button
+              type="button"
+              onClick={() => nav({ to: "/members" })}
+              className="px-5 py-3 bg-secondary text-foreground rounded-xl text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 bg-brand text-brand-foreground font-semibold rounded-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
+            >
               Add Member
             </button>
           </div>
@@ -370,13 +533,26 @@ function NewMember() {
       <RfidScanModal
         open={scanOpen}
         onClose={() => setScanOpen(false)}
-        onAssigned={(code) => { set("rfid", code); setRfidAssigned(true); setScanOpen(false); toast.success(`RFID ${code} assigned!`); }}
+        onAssigned={(code) => {
+          set("rfid", code);
+          setRfidAssigned(true);
+          setScanOpen(false);
+          toast.success(`RFID ${code} assigned!`);
+        }}
       />
     </div>
   );
 }
 
-function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: () => void; onAssigned: (code: string) => void }) {
+function RfidScanModal({
+  open,
+  onClose,
+  onAssigned,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAssigned: (code: string) => void;
+}) {
   const [phase, setPhase] = useState<"waiting" | "detected">("waiting");
   const [uid, setUid] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -407,7 +583,10 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
 
       if (data && data.length > 0) {
         const row = data[0];
-        await supabase.from("rfid_pending").update({ claimed: true }).eq("id", row.id);
+        await supabase
+          .from("rfid_pending")
+          .update({ claimed: true })
+          .eq("id", row.id);
         setUid(row.uid);
         setPhase("detected");
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -420,7 +599,11 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
   }, [open]);
 
   async function handleAssign() {
-    const { data } = await supabase.from("members").select("name").eq("rfid", uid).single();
+    const { data } = await supabase
+      .from("members")
+      .select("name")
+      .eq("rfid", uid)
+      .single();
     if (data) {
       toast.error(`This RFID is already assigned to ${data.name}!`);
       return;
@@ -431,31 +614,58 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-card border border-border rounded-3xl p-8 shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md bg-card border border-border rounded-3xl p-8 shadow-2xl"
+      >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-brand">
             <Radio className="size-5" />
             <span className="font-heading">RFID Scanner</span>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground"
+          >
             <X className="size-5" />
           </button>
         </div>
 
         <div className="aspect-square max-w-[200px] mx-auto relative mb-6">
-          <div className={"absolute inset-0 rounded-full border-4 transition-colors " + (phase === "waiting" ? "border-brand/30 animate-pulse" : "border-brand")} />
-          <div className={"absolute inset-4 rounded-full border-2 " + (phase === "waiting" ? "border-brand/20 animate-ping" : "border-brand/60")} />
+          <div
+            className={
+              "absolute inset-0 rounded-full border-4 transition-colors " +
+              (phase === "waiting"
+                ? "border-brand/30 animate-pulse"
+                : "border-brand")
+            }
+          />
+          <div
+            className={
+              "absolute inset-4 rounded-full border-2 " +
+              (phase === "waiting"
+                ? "border-brand/20 animate-ping"
+                : "border-brand/60")
+            }
+          />
           <div className="absolute inset-0 grid place-items-center">
             {phase === "waiting" ? (
               <div className="text-center">
                 <Radio className="size-12 text-brand mx-auto animate-pulse" />
-                <p className="mt-2 text-xs text-muted-foreground">Scanning...</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Scanning...
+                </p>
               </div>
             ) : (
               <div className="text-center">
                 <CheckCircle2 className="size-12 text-brand mx-auto" />
-                <p className="mt-2 text-xs text-brand font-bold">Card Detected!</p>
+                <p className="mt-2 text-xs text-brand font-bold">
+                  Card Detected!
+                </p>
                 <p className="font-mono text-sm mt-1">{uid}</p>
               </div>
             )}
@@ -463,11 +673,18 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
         </div>
 
         <p className="text-center text-sm text-muted-foreground mb-6">
-          {phase === "waiting" ? "Place the RFID card near the scanner..." : "Card read successfully. Assign it?"}
+          {phase === "waiting"
+            ? "Place the RFID card near the scanner..."
+            : "Card read successfully. Assign it?"}
         </p>
 
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-3 bg-secondary rounded-xl text-sm">Cancel</button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-secondary rounded-xl text-sm"
+          >
+            Cancel
+          </button>
           <button
             disabled={phase === "waiting"}
             onClick={handleAssign}
@@ -481,23 +698,41 @@ function RfidScanModal({ open, onClose, onAssigned }: { open: boolean; onClose: 
   );
 }
 
-const input = "w-full px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40";
+const input =
+  "w-full px-3 py-2 bg-secondary rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand/40 border border-transparent focus:border-brand/40";
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-center gap-2 text-muted-foreground mb-4">
-        {icon}<h2 className="font-heading text-base text-foreground">{title}</h2>
+        {icon}
+        <h2 className="font-heading text-base text-foreground">{title}</h2>
       </div>
       {children}
     </section>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
       <div className="mt-1">{children}</div>
     </label>
   );

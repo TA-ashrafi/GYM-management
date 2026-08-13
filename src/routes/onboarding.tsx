@@ -2,7 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase, setActiveBranchId } from "@/lib/supabase";
-import { Building2, Landmark, Phone, MapPin, ArrowRight, Dumbbell, Award, Landmark as MultiBranchIcon } from "lucide-react";
+import {
+  Building2,
+  Landmark,
+  Phone,
+  MapPin,
+  ArrowRight,
+  Dumbbell,
+  Award,
+  Landmark as MultiBranchIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Setup — ALPHA FITNESS" }] }),
@@ -13,7 +22,7 @@ function Onboarding() {
   const nav = useNavigate();
   const search = Route.useSearch() as any;
   const [step, setStep] = useState<"choice" | "form">(
-    search?.skipChoice ? "form" : "choice"
+    search?.skipChoice ? "form" : "choice",
   );
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -26,13 +35,15 @@ function Onboarding() {
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function createBranch() {
-    if (!form.gymName) { 
-      toast.error("Please enter your gym name"); 
-      return; 
+    if (!form.gymName) {
+      toast.error("Please enter your gym name");
+      return;
     }
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
       // Ensure gym_owner record exists
@@ -43,17 +54,24 @@ function Onboarding() {
         phone: form.phone,
       });
 
-      const { data, error } = await supabase.from("branches").insert({
-        owner_id: user.id,
-        gym_name: form.gymName,
-        branch_name: form.branchName,
-        address: form.address,
-        phone: form.phone,
-      }).select().single();
+      const { data, error } = await supabase
+        .from("branches")
+        .insert({
+          owner_id: user.id,
+          gym_name: form.gymName,
+          branch_name: form.branchName,
+          address: form.address,
+          phone: form.phone,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
-      
+
       setActiveBranchId(data.id);
+      // Invalidate auth cache so __root can fetch the new branches on transition
+      const { invalidateAuthCache } = await import("./__root");
+      invalidateAuthCache();
       toast.success("Gym setup complete. Please setup your RFID scanner now.");
       nav({ to: "/" });
     } catch (err: any) {
@@ -73,13 +91,19 @@ function Onboarding() {
             <div className="size-16 bg-[#ed3434]/10 text-[#ed3434] rounded-2xl grid place-items-center mx-auto mb-4 shadow-[0_0_20px_rgba(237,52,52,0.25)] animate-pulse">
               <Dumbbell className="size-8" />
             </div>
-            <h1 className="text-3xl font-heading font-extrabold text-white uppercase tracking-tight">Gym Configuration</h1>
-            <p className="text-[#8d8d8d] text-xs uppercase tracking-wider font-semibold mt-1">Configure your main console settings</p>
+            <h1 className="text-3xl font-heading font-extrabold text-white uppercase tracking-tight">
+              Gym Configuration
+            </h1>
+            <p className="text-[#8d8d8d] text-xs uppercase tracking-wider font-semibold mt-1">
+              Configure your main console settings
+            </p>
           </div>
 
           <div className="bg-[#101010] border border-[#242424] p-6 sm:p-8 rounded-2xl shadow-2xl space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">Gym Name *</label>
+              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">
+                Gym Name *
+              </label>
               <div className="relative">
                 <Building2 className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                 <input
@@ -92,7 +116,9 @@ function Onboarding() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">Branch Name</label>
+              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">
+                Branch Name
+              </label>
               <div className="relative">
                 <Landmark className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                 <input
@@ -104,7 +130,9 @@ function Onboarding() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">Address</label>
+              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">
+                Address
+              </label>
               <div className="relative">
                 <MapPin className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                 <input
@@ -116,7 +144,9 @@ function Onboarding() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">Phone Contact</label>
+              <label className="text-[10px] uppercase tracking-widest text-[#8d8d8d] block mb-1.5 font-bold">
+                Phone Contact
+              </label>
               <div className="relative">
                 <Phone className="size-4.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8d8d8d]" />
                 <input
@@ -135,7 +165,7 @@ function Onboarding() {
             >
               {loading ? "Initializing..." : "Launch ALPHA FITNESS Console"}
             </button>
-            
+
             {!search?.skipChoice && (
               <button
                 onClick={() => setStep("choice")}
@@ -159,8 +189,12 @@ function Onboarding() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#ed3434]/10 border border-[#ed3434]/20 text-[#ed3434] text-xs font-bold rounded-full uppercase tracking-wider mb-4 select-none">
             Welcome to ALPHA FITNESS
           </div>
-          <h1 className="text-3xl sm:text-5xl font-heading font-extrabold text-white uppercase tracking-tight">Onboard Your Gym</h1>
-          <p className="text-[#8d8d8d] text-xs sm:text-sm font-semibold uppercase tracking-wider mt-2">Choose how you plan to manage your gym network</p>
+          <h1 className="text-3xl sm:text-5xl font-heading font-extrabold text-white uppercase tracking-tight">
+            Onboard Your Gym
+          </h1>
+          <p className="text-[#8d8d8d] text-xs sm:text-sm font-semibold uppercase tracking-wider mt-2">
+            Choose how you plan to manage your gym network
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -172,10 +206,12 @@ function Onboarding() {
               <Award className="size-6" />
             </div>
             <h2 className="text-xl font-heading font-bold text-white uppercase flex items-center gap-1.5">
-              Single Gym <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-[#ed3434] shrink-0" />
+              Single Gym{" "}
+              <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-[#ed3434] shrink-0" />
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-[#8d8d8d] leading-relaxed font-medium">
-              Perfect setup for managing one primary location. Quick setup under 1 minute.
+              Perfect setup for managing one primary location. Quick setup under
+              1 minute.
             </p>
           </button>
 
@@ -187,10 +223,12 @@ function Onboarding() {
               <MultiBranchIcon className="size-6" />
             </div>
             <h2 className="text-xl font-heading font-bold text-white uppercase flex items-center gap-1.5">
-              Multi-Branch Network <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-[#ed3434] shrink-0" />
+              Multi-Branch Network{" "}
+              <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-[#ed3434] shrink-0" />
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-[#8d8d8d] leading-relaxed font-medium">
-              Manage multiple locations. Each branch has its own isolated staff, data, time slots, and attendance logs.
+              Manage multiple locations. Each branch has its own isolated staff,
+              data, time slots, and attendance logs.
             </p>
           </button>
         </div>
@@ -199,4 +237,5 @@ function Onboarding() {
   );
 }
 
-const inp = "w-full px-4 py-3 bg-[#070707] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ed3434]/45 border border-[#242424] text-[#f4f4f2] transition-all";
+const inp =
+  "w-full px-4 py-3 bg-[#070707] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ed3434]/45 border border-[#242424] text-[#f4f4f2] transition-all";

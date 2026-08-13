@@ -8,7 +8,12 @@ import { supabase } from "@/lib/supabase";
  * @param phone - User's phone number
  * @returns The authentication data from Supabase
  */
-export async function signUp(email: string, password: string, name: string, phone: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  name: string,
+  phone: string,
+) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -18,6 +23,24 @@ export async function signUp(email: string, password: string, name: string, phon
     },
   });
   if (error) throw error;
+
+  // Insert into gym_owners table as required
+  if (data?.user) {
+    try {
+      await supabase.from("gym_owners").insert({
+        id: data.user.id,
+        name,
+        email,
+        phone,
+      });
+    } catch (e) {
+      console.warn(
+        "Could not insert directly into gym_owners on signUp. This is normal if email confirmation is required, onboarding will handle it:",
+        e,
+      );
+    }
+  }
+
   return data;
 }
 
@@ -28,7 +51,10 @@ export async function signUp(email: string, password: string, name: string, phon
  * @returns The session data from Supabase
  */
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) throw error;
   return data;
 }
