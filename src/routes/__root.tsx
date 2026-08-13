@@ -83,6 +83,12 @@ function RootComponent() {
 
 // Safely retrieve token, falling back to standard Clerk token if supabase template is not configured yet
 async function safelyGetToken(getToken: any) {
+  // If no publishable key is configured in the environment, we are in Keyless Mode.
+  // Avoid calling getToken to prevent infinite redirect loops on transient dev sessions.
+  if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    return null;
+  }
+
   try {
     const token = await getToken({ template: "supabase" });
     if (token) return token;
@@ -230,6 +236,8 @@ function RootInner() {
     return () => clearInterval(interval);
   }, [isSignedIn]);
 
+  const isPublic = PUBLIC_PATHS.includes(pathname);
+
   if (!isPublic && (!isLoaded || !ready)) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -245,8 +253,6 @@ function RootInner() {
       </QueryClientProvider>
     );
   }
-
-  const isPublic = PUBLIC_PATHS.includes(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
