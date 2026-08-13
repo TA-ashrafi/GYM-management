@@ -233,14 +233,20 @@ html.dark[data-preset="purple"] {
   scrollbar-color: var(--color-border) transparent;
 }
 
-/* Hide scrollbar globally */
+/* Custom scrollbar matching dark-neon aesthetics */
 ::-webkit-scrollbar {
-  display: none !important;
+  width: 8px;
+  height: 8px;
 }
-html,
-body {
-  -ms-overflow-style: none !important; /* IE and Edge */
-  scrollbar-width: none !important; /* Firefox */
+::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+::-webkit-scrollbar-thumb {
+  background: #ed3434;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff4b4b;
 }
 
 /* Premium blue neon flickering bulb animation */
