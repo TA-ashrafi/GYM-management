@@ -64,15 +64,15 @@ function Auth() {
   // 1. SUBMIT LOGIN OR SIGNUP
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isSignInLoaded || !isSignUpLoaded) {
-      toast.error("Authentication system is booting. Please wait a second.");
-      return;
-    }
 
-    setLoading(true);
+    if (mode === "login") {
+      if (!isSignInLoaded) {
+        toast.error("Sign-in system is still booting. Please wait a moment.");
+        return;
+      }
 
-    try {
-      if (mode === "login") {
+      setLoading(true);
+      try {
         const email = form.email.trim();
         if (!email) {
           toast.error("Please enter your email");
@@ -94,8 +94,21 @@ function Auth() {
         } else {
           toast.error(`Authentication incomplete: status is ${result.status}`);
         }
+      } catch (err: any) {
+        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
+        toast.error(msg);
+      } finally {
+        setLoading(false);
+      }
 
-      } else if (mode === "signup") {
+    } else if (mode === "signup") {
+      if (!isSignUpLoaded) {
+        toast.error("Sign-up system is still booting. Please wait a moment.");
+        return;
+      }
+
+      setLoading(true);
+      try {
         if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
         if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
         if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); setLoading(false); return; }
@@ -124,18 +137,22 @@ function Auth() {
         setMode("verify");
         nav({ search: { mode: "verify" } as any });
         toast.success("Verification code sent! Please check your email.");
+      } catch (err: any) {
+        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
+        toast.error(msg);
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "An authentication error occurred.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
     }
   }
 
   // 2. VERIFY SIGNUP EMAIL CODE
   async function handleVerifyCode(e: React.FormEvent) {
     e.preventDefault();
+    if (!isSignUpLoaded) {
+      toast.error("Authentication system is booting. Please wait a moment.");
+      return;
+    }
     if (!form.resetCode.trim()) {
       toast.error("Please enter the verification code");
       return;
@@ -165,6 +182,11 @@ function Auth() {
   // 3. FORGOT PASSWORD REQUEST
   async function handleForgotPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (!isSignInLoaded) {
+      toast.error("Sign-in system is booting. Please wait a moment.");
+      return;
+    }
+
     const email = form.email.trim();
     if (!email) {
       toast.error("Please enter your email address");
@@ -193,6 +215,16 @@ function Auth() {
   // 4. SET NEW PASSWORD (AFTER RECOVERY LINK CODE)
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (!isSignInLoaded) {
+      toast.error("Sign-in system is booting. Please wait a moment.");
+      return;
+    }
+
+    const email = form.email.trim();
+    if (!email) {
+      toast.error("Please enter your registered email address");
+      return;
+    }
     if (!form.resetCode.trim()) {
       toast.error("Please enter the reset code sent to your email");
       return;
@@ -208,6 +240,13 @@ function Auth() {
 
     setLoading(true);
     try {
+      // Robust Session Gate: If no active sign-in session is found for this email, establish it first
+      if (!signIn.identifier || signIn.identifier !== email) {
+        await signIn.create({
+          identifier: email,
+        });
+      }
+
       await signIn.resetPasswordEmailCode.verifyCode({
         code: form.resetCode.trim(),
       });
@@ -234,6 +273,11 @@ function Auth() {
 
   // 5. GOOGLE OAUTH WITH CLERK
   async function handleGoogleLogin() {
+    if (!isSignInLoaded) {
+      toast.error("Sign-in system is booting. Please wait a moment.");
+      return;
+    }
+
     try {
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
@@ -281,8 +325,8 @@ function Auth() {
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98]"
+                disabled={loading || !isSignUpLoaded}
+                className="w-full py-3 text-white rounded-xl font-bold transition cursor-pointer uppercase tracking-wider text-xs bg-gradient-to-r from-red-800 to-red-600 hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
               >
                 {loading ? "Verifying..." : "Verify Code"}
               </button>
@@ -559,13 +603,15 @@ function Auth() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (mode === "login" ? !isSignInLoaded : !isSignUpLoaded)}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm active:scale-[0.98]"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
                   {loading
                     ? "Authorizing..."
-                    : mode === "login" ? "LOGIN" : "Create My Console"}
+                    : mode === "login"
+                      ? (isSignInLoaded ? "LOGIN" : "Loading...")
+                      : (isSignUpLoaded ? "Create My Console" : "Loading...")}
                 </button>
               </form>
             )}
@@ -586,11 +632,11 @@ function Auth() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !isSignInLoaded}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading ? "Sending link..." : "Send Reset Code"}
+                  {loading ? "Sending link..." : (isSignInLoaded ? "Send Reset Code" : "Loading...")}
                 </button>
                 <div className="text-center pt-1">
                   <button
@@ -610,6 +656,18 @@ function Auth() {
             {/* ==================== RESET PASSWORD VIEW (SET NEW PASSWORD) ==================== */}
             {mode === "reset-password" && (
               <form onSubmit={handleResetPassword} className="space-y-3">
+                <div className="relative">
+                  <Mail className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    placeholder="Registered Email"
+                    className={inp}
+                    required
+                  />
+                </div>
+
                 <div className="relative">
                   <KeyRound className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" />
                   <input
@@ -662,11 +720,11 @@ function Auth() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !isSignInLoaded}
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading ? "Updating password..." : "Update Password"}
+                  {loading ? "Updating password..." : (isSignInLoaded ? "Update Password" : "Loading...")}
                 </button>
               </form>
             )}
@@ -686,7 +744,8 @@ function Auth() {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer"
+                  disabled={!isSignInLoaded}
+                  className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer disabled:opacity-60"
                 >
                   <svg className="size-4.5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -694,7 +753,7 @@ function Auth() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Login with Google
+                  {isSignInLoaded ? "Login with Google" : "Loading..."}
                 </button>
               </>
             )}
