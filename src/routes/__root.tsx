@@ -45,9 +45,37 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const publishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string) || "pk_test_YWN0aXZlLWNoaW1wLTI2LmNsZXJrLmFjY291bnRzLmRldiQ";
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+
+  // Log presence of key in dev
+  if (import.meta.env.DEV) {
+    console.log("[Dev] Clerk Publishable Key present:", !!publishableKey);
+  }
+
+  // Only block in production. In development, allow Clerk's automatic Keyless Mode to boot up
+  if (!publishableKey && import.meta.env.PROD) {
+    return (
+      <div className="min-h-screen bg-[#070707] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#111] border border-white/10 p-8 rounded-2xl text-center shadow-2xl space-y-4">
+          <div className="size-16 bg-[#ed3434]/10 rounded-xl grid place-items-center mx-auto">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <h1 className="text-xl font-heading font-bold text-white uppercase tracking-tight">
+            Configuration Error
+          </h1>
+          <p className="text-sm text-[#8d8d8d]">
+            The <code className="text-white bg-white/5 px-1.5 py-0.5 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> is missing from your environment variables.
+          </p>
+          <p className="text-xs text-[#666]">
+            Please add this variable to your environment or <code className="text-white">.env</code> file to enable ALPHA FITNESS console authorization.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider publishableKey={publishableKey || undefined}>
       <RootInner />
     </ClerkProvider>
   );
@@ -202,7 +230,7 @@ function RootInner() {
     return () => clearInterval(interval);
   }, [isSignedIn]);
 
-  if (!isLoaded || !ready) {
+  if (!isPublic && (!isLoaded || !ready)) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
