@@ -56,9 +56,10 @@ export async function getUser() {
  * @returns The subscription object for cleanup
  */
 export function onAuthChange(cb: (userId: string | null) => void) {
-  return supabase.auth.onAuthStateChange((_evt, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, session) => {
     cb(session?.user?.id ?? null);
   });
+  return subscription;
 }
 
 /**

@@ -89,3 +89,5 @@ coverage
 *.cert
 Unconfirmed*
 *.crdownload
+# clerk configuration (can include secrets)
+/.clerk/

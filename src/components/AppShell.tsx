@@ -26,8 +26,7 @@ import {
 import { type ReactNode, useState, useEffect } from "react";
 import { useGym, gym } from "@/lib/gym-store";
 import { NotificationsBell } from "@/components/NotificationsBell";
-import { logout } from "@/lib/auth";
-import { supabase, getActiveBranchId } from "@/lib/supabase";
+import { supabase, getActiveBranchId, clearActiveBranch } from "@/lib/supabase";
 
 // Navigation configuration
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
@@ -63,16 +62,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settings = useGym((s) => s.settings);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   
   // Real-time capacity statistics from Supabase
   const [liveMemberCount, setLiveMemberCount] = useState(0);
   const [liveCheckInCount, setLiveCheckInCount] = useState(0);
 
+  // Load user session
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUser(user);
+      setUser(user);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -132,8 +138,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Handle user logout
   async function handleLogout() {
-    await logout();
+    clearActiveBranch();
     gym.reset(); // Completely wipe the local cache state on log out
+    await supabase.auth.signOut();
     navigate({ to: "/auth" });
   }
 
@@ -141,6 +148,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  const name = user?.user_metadata?.name || user?.email?.split("@")[0] || "Gym Owner";
+  const initials = (name[0] || "O").toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground transition-colors duration-300">
@@ -248,14 +258,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="p-3 bg-secondary/40 border border-border/40 rounded-2xl flex items-center gap-3 justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <div className="size-8 bg-brand/10 text-brand rounded-lg grid place-items-center text-[10px] font-bold shrink-0">
-              {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+              {initials}
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-xs text-foreground truncate">
-                {currentUser?.user_metadata?.name || "Gym Owner"}
+                {name}
               </p>
               <p className="text-[9px] text-muted-foreground truncate">
-                {currentUser?.email || ""}
+                {user?.email || ""}
               </p>
             </div>
           </div>
@@ -310,7 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-label="Account Menu"
             >
               <div className="size-6 bg-brand/10 text-brand rounded-lg grid place-items-center text-xs font-bold">
-                {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+                {initials}
               </div>
               <span className="hidden sm:inline">Account</span>
             </button>
@@ -324,14 +334,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-2xl p-4 shadow-2xl z-50 animate-fade-in text-left">
                   <div className="flex items-center gap-3 pb-3 border-b border-border/60">
                     <div className="size-10 bg-brand/10 text-brand rounded-xl grid place-items-center text-sm font-bold shrink-0">
-                      {(currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0] || "O").toUpperCase()}
+                      {initials}
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-foreground truncate">
-                        {currentUser?.user_metadata?.name || "Gym Owner"}
+                        {name}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {currentUser?.email || ""}
+                        {user?.email || ""}
                       </p>
                     </div>
                   </div>

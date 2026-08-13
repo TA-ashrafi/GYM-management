@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Building2, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
+import { supabase, fetchBranchesForUser, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
 
 export const Route = createFileRoute("/branches")({
   head: () => ({ meta: [{ title: "Branches — ALPHA FITNESS" }] }),
@@ -17,9 +17,15 @@ function Branches() {
 
   // Fetch branches on component mount
   useEffect(() => {
-    fetchBranches().then((data) => {
-      setBranches(data);
-      setLoading(false);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      fetchBranchesForUser(user.id).then((data) => {
+        setBranches(data);
+        setLoading(false);
+      });
     });
   }, []);
 

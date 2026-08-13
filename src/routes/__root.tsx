@@ -7,7 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase, getActiveBranchId, fetchBranches, setActiveBranchId } from "@/lib/supabase";
+import { supabase, getActiveBranchId, fetchBranchesForUser, setActiveBranchId } from "@/lib/supabase";
 import { gym } from "@/lib/gym-store";
 import { useApplyTheme } from "@/lib/theme";
 
@@ -35,7 +35,10 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -46,8 +49,10 @@ function RootComponent() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [coords, setCoords] = useState({ x: -100, y: -100 });
+  const [session, setSession] = useState<any>(null);
+  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
 
-  // Apply theme & preset globally at root level, ensuring perfect persistence across logins, logouts, reloads, and landing/auth screens instantly!
+  // Apply theme & preset globally at root level, ensuring perfect persistence
   useApplyTheme();
 
   useEffect(() => {
@@ -58,85 +63,107 @@ function RootComponent() {
     return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
+  // Subscribe and manage Supabase session
   useEffect(() => {
-    // Run only once on initial mount — do not re-run on tab or window switch.
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        const isPublic = PUBLIC_PATHS.includes(pathname);
-        if (!isPublic) router.navigate({ to: "/landing" });
-        setReady(true);
-        return;
-      }
-
-      const branches = await fetchBranches();
-
-      if (branches.length === 0) {
-        localStorage.removeItem("fs_active_branch"); // Safe cleanup
-        gym.reset(); // Wipe any old cached records
-        if (pathname !== "/onboarding") router.navigate({ to: "/onboarding" });
-        setReady(true);
-        return;
-      }
-
-      const activeBranchId = getActiveBranchId();
-      let validBranch = branches.find((b: any) => b.id === activeBranchId);
-
-      if (!validBranch && branches.length > 0) {
-        setActiveBranchId(branches[0].id);
-        validBranch = branches[0];
-      }
-
-      // Synchronize active branch settings and theme on load so appearance stays persisted
-      const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
-      if (currentBranch) {
-        gym.updateSettings({
-          gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
-          theme: currentBranch.theme ?? "dark",
-          preset: currentBranch.preset ?? "lime",
-          slotDurationMin: currentBranch.slot_duration_min ?? 60,
-          slotCapacity: currentBranch.slot_capacity ?? 20,
-          currency: currentBranch.currency ?? "INR",
-          language: currentBranch.language ?? "hinglish",
-        });
-      }
-
-      const isPublic = PUBLIC_PATHS.includes(pathname);
-      if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
-        router.navigate({ to: "/" });
-      }
-      setReady(true);
-    }
-
-    checkAuth();
-
-    // Track user session changes to prevent profile cross-leakage on same browser
-    let currentUserId = "";
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) currentUserId = session.user.id;
+      setSession(session);
     });
 
-    // Listen only for authentication events (login/logout), not tab switching.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
-        localStorage.removeItem("fs_active_branch");
-        gym.reset();
-        router.navigate({ to: "/landing" });
-      } else if (event === "SIGNED_IN" && session?.user) {
-        if (currentUserId && currentUserId !== session.user.id) {
-          localStorage.removeItem("fs_active_branch");
-          gym.reset();
-          window.location.reload();
-        }
-        currentUserId = session.user.id;
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
 
     return () => subscription.unsubscribe();
-  }, []); // Run only once when the component mounts.
+  }, []);
 
-  if (!ready) {
+  useEffect(() => {
+    async function checkAuthAndSync() {
+      // 1. Signed-out handling
+      if (!session) {
+        setSyncedUserId(null);
+        const isPublic = PUBLIC_PATHS.includes(pathname);
+        if (!isPublic) {
+          router.navigate({ to: "/landing" });
+        }
+        setReady(true);
+        return;
+      }
+
+      // 2. Recovery handling (CRITICAL PASSWORD RESET FIX: lock them to /auth without redirect)
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      const searchParams = typeof window !== "undefined" ? window.location.search : "";
+      const isRecovery = hash.includes("type=recovery") || searchParams.includes("type=recovery") || pathname.includes("type=recovery");
+
+      if (isRecovery) {
+        setReady(true);
+        return;
+      }
+
+      // 3. Signed-in handling
+      try {
+        const userId = session.user?.id;
+
+        // Only hit the database (fetch branches) if not already synced for this user
+        // Or if we are transitioning away from onboarding and need to verify the new branch
+        if (userId && (syncedUserId !== userId || (pathname !== "/onboarding" && syncedUserId === "onboarding"))) {
+
+          // Fetch branches for active user
+          const branches = await fetchBranchesForUser(userId);
+
+          if (branches.length === 0) {
+            localStorage.removeItem("fs_active_branch"); // Safe cleanup
+            gym.reset(); // Wipe any old cached records
+            setSyncedUserId("onboarding");
+            if (pathname !== "/onboarding") {
+              router.navigate({ to: "/onboarding" });
+            }
+            setReady(true);
+            return;
+          }
+
+          const activeBranchId = getActiveBranchId();
+          let validBranch = branches.find((b: any) => b.id === activeBranchId);
+
+          if (!validBranch && branches.length > 0) {
+            setActiveBranchId(branches[0].id);
+            validBranch = branches[0];
+          }
+
+          // Synchronize active branch settings and theme on load
+          const currentBranch = validBranch || (branches.length === 1 ? branches[0] : null);
+          if (currentBranch) {
+            gym.updateSettings({
+              gymName: currentBranch.gym_name ?? "ALPHA FITNESS",
+              theme: currentBranch.theme ?? "dark",
+              preset: currentBranch.preset ?? "lime",
+              slotDurationMin: currentBranch.slot_duration_min ?? 60,
+              slotCapacity: currentBranch.slot_capacity ?? 20,
+              currency: currentBranch.currency ?? "INR",
+              language: currentBranch.language ?? "hinglish",
+            });
+          }
+
+          setSyncedUserId(userId);
+        }
+
+        // Route protection checks (always runs on pathname change)
+        const isPublic = PUBLIC_PATHS.includes(pathname);
+        if (isPublic && pathname !== "/branches" && pathname !== "/onboarding") {
+          router.navigate({ to: "/" });
+        }
+        setReady(true);
+      } catch (err) {
+        console.error("Error synchronizing Supabase auth state:", err);
+        setReady(true);
+      }
+    }
+
+    checkAuthAndSync();
+  }, [session, pathname, syncedUserId]);
+
+  const isPublic = PUBLIC_PATHS.includes(pathname);
+
+  if (!isPublic && !ready) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
@@ -151,8 +178,6 @@ function RootComponent() {
       </QueryClientProvider>
     );
   }
-
-  const isPublic = PUBLIC_PATHS.includes(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>

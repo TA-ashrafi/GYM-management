@@ -38,23 +38,43 @@ export function clearActiveBranch() {
 // ==================== Branch Queries ====================
 
 /**
- * Fetch all branches for the current user
+ * Fetch all branches for the current user (using Supabase User ID)
+ * @param userId - Current active User ID
  * @returns Array of branch objects or empty array on error
  */
-export async function fetchBranches() {
+export async function fetchBranches(userId?: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!userId) return [];
 
     const { data, error } = await supabase
       .from("branches")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("owner_id", userId)
       .order("created_at", { ascending: true });
     if (error) { console.error(error); return []; }
     return data ?? [];
   } catch (err) {
     console.error("Error in fetchBranches:", err);
+    return [];
+  }
+}
+
+/**
+ * Fetch all branches directly by Supabase user ID (deterministic fallback)
+ * @param userId - Supabase user ID
+ * @returns Array of branch objects
+ */
+export async function fetchBranchesForUser(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data ?? [];
+  } catch (err) {
+    console.error("Error in fetchBranchesForUser:", err);
     return [];
   }
 }
