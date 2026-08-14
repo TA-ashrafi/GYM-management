@@ -83,6 +83,13 @@ function MembersPage() {
 
   useEffect(() => {
     loadMembersData();
+
+    // Quiet background updater that fetches members list and recent ghost scanner activity log every 5 seconds
+    const pollInterval = setInterval(() => {
+      loadMembersData();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   async function handleDelete(id: string, name: string) {

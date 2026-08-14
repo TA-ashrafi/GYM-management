@@ -76,7 +76,7 @@ export type Sale = {
 };
 
 export type ThemeMode = "dark" | "light";
-export type ThemePreset = "lime" | "red" | "blue" | "gold";
+export type ThemePreset = "lime" | "red" | "blue" | "gold" | "purple";
 export type DesignStyle = "glass" | "neo" | "classic";
 
 export type WidgetId = "kpi" | "money" | "chart" | "maintenance" | "ghosts" | "expiring";
@@ -147,7 +147,7 @@ export const DEFAULT_LAYOUT: DashboardWidget[] = [
 const DEFAULT_SETTINGS: Settings = {
   gymName: "ALPHA FITNESS",
   ownerName: "Owner",
-  language: "hinglish",
+  language: "en",
   currency: "INR",
   address: "",
   phone: "",
@@ -162,6 +162,7 @@ const DEFAULT_SETTINGS: Settings = {
   dashboardLayout: DEFAULT_LAYOUT,
   dismissedNotifIds: [],
   designStyle: "glass",
+  timeFormat: "12h"
 };
 
 // ==================== State Management ====================

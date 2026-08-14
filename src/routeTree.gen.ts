@@ -14,6 +14,7 @@ import { Route as TodosRouteImport } from './routes/todos'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -53,6 +54,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/reminders': typeof RemindersRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/reminders': typeof RemindersRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/reminders': typeof RemindersRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reminders'
     | '/reports'
+    | '/reset-password'
     | '/schedule'
     | '/settings'
     | '/store'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reminders'
     | '/reports'
+    | '/reset-password'
     | '/schedule'
     | '/settings'
     | '/store'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/reminders'
     | '/reports'
+    | '/reset-password'
     | '/schedule'
     | '/settings'
     | '/store'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   RemindersRoute: typeof RemindersRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ScheduleRoute: typeof ScheduleRoute
   SettingsRoute: typeof SettingsRoute
   StoreRoute: typeof StoreRoute
@@ -324,6 +337,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -460,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   RemindersRoute: RemindersRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ScheduleRoute: ScheduleRoute,
   SettingsRoute: SettingsRoute,
   StoreRoute: StoreRoute,

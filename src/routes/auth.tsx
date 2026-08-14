@@ -38,8 +38,33 @@ function Auth() {
     confirmPassword: "",
     gymName: "",
     terms: false,
-    rememberMe: true
+    rememberMe: true,
   });
+
+  const getLoginAttempts = (): { count: number; lockedUntil: number | null } => {
+    try {
+      const stored = localStorage.getItem("alpha_login_attempts");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return { count: 0, lockedUntil: null };
+  };
+
+  const clearAttempts = () => {
+    localStorage.removeItem("alpha_login_attempts");
+  };
+
+  const checkLockStatus = (): boolean => {
+    const data = getLoginAttempts();
+    if (data.lockedUntil && Date.now() < data.lockedUntil) {
+      const hoursRemaining = Math.ceil((data.lockedUntil - Date.now()) / 3600000);
+      toast.error(`Login is temporarily locked. Try again in ${hoursRemaining} hours.`);
+      return true;
+    }
+    if (data.lockedUntil && Date.now() >= data.lockedUntil) {
+      clearAttempts();
+    }
+    return false;
+  };
 
   useEffect(() => {
     if (search.mode === "signup") {
@@ -55,26 +80,66 @@ function Auth() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "login" && checkLockStatus()) {
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "login") {
-        await signIn(form.email, form.password);
-        await new Promise((r) => setTimeout(r, 500));
-        
-        const branches = await fetchBranches();
-        if (branches.length === 0) {
-          nav({ to: "/onboarding" });
-        } else {
-          const activeBranchId = getActiveBranchId();
-          const valid = branches.find((b: any) => b.id === activeBranchId);
-          if (!valid) setActiveBranchId(branches[0].id);
-          nav({ to: "/" });
+        try {
+          await signIn(form.email, form.password);
+          clearAttempts();
+          await new Promise((r) => setTimeout(r, 500));
+          const branches = await fetchBranches();
+          if (branches.length === 0) {
+            nav({ to: "/onboarding" });
+          } else {
+            const activeBranchId = getActiveBranchId();
+            const valid = branches.find((b: any) => b.id === activeBranchId);
+            if (!valid) setActiveBranchId(branches[0].id);
+            nav({ to: "/" });
+          }
+        } catch (err: any) {
+          const data = getLoginAttempts();
+          data.count += 1;
+          const attemptsLeft = 5 - data.count;
+          if (data.count >= 5) {
+            data.lockedUntil = Date.now() + 86400000;
+            localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+            toast.error("Too many failed attempts. Locked for 24 hours.");
+          } else {
+            localStorage.setItem("alpha_login_attempts", JSON.stringify(data));
+            const msg = err?.message || "";
+            if (msg.includes("No account found")) {
+              toast.error("No account found with this email. Please sign up first.");
+            } else {
+              toast.error(`Wrong password. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`);
+            }
+          }
+          setLoading(false);
+          return;
         }
       } else {
-        if (!form.name.trim()) { toast.error("Please enter your name"); setLoading(false); return; }
-        if (!form.gymName.trim()) { toast.error("Please enter your gym name"); setLoading(false); return; }
-        if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); setLoading(false); return; }
-        if (!form.terms) { toast.error("Please accept the terms and conditions"); setLoading(false); return; }
+        if (!form.name.trim()) {
+          toast.error("Please enter your name");
+          setLoading(false);
+          return;
+        }
+        if (!form.gymName.trim()) {
+          toast.error("Please enter your gym name");
+          setLoading(false);
+          return;
+        }
+        if (form.password.length < 6) {
+          toast.error("Password must be at least 6 characters");
+          setLoading(false);
+          return;
+        }
+        if (!form.terms) {
+          toast.error("Please accept the terms and conditions");
+          setLoading(false);
+          return;
+        }
 
         await signUp(form.email, form.password, form.name, form.phone);
         setMode("verify");
@@ -82,7 +147,7 @@ function Auth() {
       }
     } catch (err: any) {
       console.error("Auth action failed:", err);
-      toast.error(err.message || "An authentication error occurred.");
+      toast.error(err?.message || "An authentication error occurred.");
     }
     setLoading(false);
   }
@@ -99,13 +164,13 @@ function Auth() {
         email: form.email.trim(),
         options: {
           emailRedirectTo: window.location.origin + "/auth",
-        }
+        },
       });
       if (error) throw error;
       setOtpSent(true);
       toast.success("OTP verification code sent to your email.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP code.");
+      toast.error(err?.message || "Failed to send OTP code.");
     } finally {
       setOtpLoading(false);
     }
@@ -122,7 +187,7 @@ function Auth() {
       const { error } = await supabase.auth.verifyOtp({
         email: form.email.trim(),
         token: otpCode.trim(),
-        type: "email"
+        type: "email",
       });
       if (error) throw error;
 
@@ -138,7 +203,7 @@ function Auth() {
         nav({ to: "/" });
       }
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP code.");
+      toast.error(err?.message || "Invalid OTP code.");
     } finally {
       setOtpLoading(false);
     }
@@ -150,11 +215,11 @@ function Auth() {
         provider: "google",
         options: {
           redirectTo: window.location.origin + "/auth",
-        }
+        },
       });
       if (error) throw error;
     } catch (err: any) {
-      toast.error(err.message || "Failed to initialize Google Authentication");
+      toast.error(err?.message || "Failed to initialize Google Authentication");
     }
   }
 
@@ -186,11 +251,8 @@ function Auth() {
 
   return (
     <div className="min-h-screen w-full bg-[#070707] text-[#f4f4f2] grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden relative select-none">
-
-      {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
       <FireSparksOverlay intensity={35} color="red" speed={0.8} />
 
-      {/* ==================== LEFT PANEL ==================== */}
       <div className="hidden lg:flex relative h-full w-full overflow-hidden bg-black select-none z-0">
         <img
           src={logintitan}
@@ -224,87 +286,101 @@ function Auth() {
         </div>
       </div>
 
-      {/* ==================== RIGHT PANEL ==================== */}
       <div className="flex items-center justify-center p-4 sm:p-6 lg:h-full z-10 bg-[#070707] relative overflow-hidden">
-
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#6f0000]/15 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="w-full max-w-[380px] relative z-10">
-
-          {/* FORM CARD */}
           <div
             className="relative rounded-2xl p-5 sm:p-6 overflow-hidden"
             style={{
               background: "linear-gradient(to top right, #000000, #2a2a2a)",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px -10px rgba(111,0,0,0.25)",
+              boxShadow:
+                "0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px -10px rgba(111,0,0,0.25)",
             }}
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-            {/* LOGO ONLY */}
             <div className="flex justify-center mb-4">
               <img src={logoPng} alt="Alpha Fitness" className="h-20 object-contain drop-shadow-[0_5px_8px_rgba(0,0,0,0.45)]" />
             </div>
 
-            {/* Title */}
             <div className="text-center mb-4">
               <h1 className="text-xl sm:text-2xl font-heading font-bold text-white uppercase tracking-tight">
                 {mode === "login" ? (
-                  <>WELCOME <span className="text-[#ed3434]">BACK</span></>
+                  <>
+                    WELCOME <span className="text-[#ed3434]">BACK</span>
+                  </>
                 ) : (
-                  <>CREATE <span className="text-[#ed3434]">CONSOLE</span></>
+                  <>
+                    CREATE <span className="text-[#ed3434]">CONSOLE</span>
+                  </>
                 )}
               </h1>
               <p className="text-[#8d8d8d] text-[12px] mt-0.5">
-                {mode === "login"
-                  ? "Login to continue your fitness journey"
-                  : "Establish your gym operating system"}
+                {mode === "login" ? "You have 5 attempts to login" : "Establish your gym operating system"}
               </p>
             </div>
 
-            {/* Mode Switcher */}
             <div className="flex gap-1 bg-black/50 rounded-xl p-1 mb-3.5">
               <button
-                onClick={() => { setMode("login"); setAuthMethod("password"); }}
-                className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
-                  (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
+                onClick={() => {
+                  setMode("login");
+                  setAuthMethod("password");
+                }}
+                className={
+                  "flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
+                  (mode === "login" ? "text-white" : "text-[#8d8d8d] hover:text-white")
+                }
                 style={mode === "login" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
               >
                 Login
               </button>
               <button
-                onClick={() => { setMode("signup"); setAuthMethod("password"); }}
-                className={"flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
-                  (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")}
+                onClick={() => {
+                  setMode("signup");
+                  setAuthMethod("password");
+                }}
+                className={
+                  "flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer uppercase tracking-wider " +
+                  (mode === "signup" ? "text-white" : "text-[#8d8d8d] hover:text-white")
+                }
                 style={mode === "signup" ? { background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" } : {}}
               >
                 Sign Up
               </button>
             </div>
 
-            {/* Password / OTP Switcher */}
             {mode === "login" && (
               <div className="flex gap-1 bg-black/40 rounded-lg p-0.5 mb-3.5">
                 <button
                   type="button"
-                  onClick={() => { setAuthMethod("password"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
-                    (authMethod === "password" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
+                  onClick={() => {
+                    setAuthMethod("password");
+                    setOtpSent(false);
+                  }}
+                  className={
+                    "flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
+                    (authMethod === "password" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")
+                  }
                 >
                   Password
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setAuthMethod("otp"); setOtpSent(false); }}
-                  className={"flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
-                    (authMethod === "otp" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")}
+                  onClick={() => {
+                    setAuthMethod("otp");
+                    setOtpSent(false);
+                  }}
+                  className={
+                    "flex-1 py-1.5 rounded text-[10px] font-bold transition uppercase tracking-widest cursor-pointer " +
+                    (authMethod === "otp" ? "bg-[#6f0000]/30 text-[#ed3434]" : "text-[#8d8d8d] hover:text-white")
+                  }
                 >
                   OTP
                 </button>
               </div>
             )}
 
-            {/* ===== FORMS ===== */}
             {mode === "login" && authMethod === "otp" ? (
               <div className="space-y-3">
                 {!otpSent ? (
@@ -498,7 +574,7 @@ function Auth() {
                             redirectTo: window.location.origin + "/auth",
                           });
                           if (!error) toast.success("Password reset link sent to your email.");
-                          else toast.error(error.message);
+                          else toast.error(error.message || "Failed to send reset email.");
                         }}
                         className="text-[#ed3434] hover:underline font-medium bg-transparent border-0 cursor-pointer"
                       >
@@ -514,14 +590,11 @@ function Auth() {
                   className="w-full py-2.5 text-white font-extrabold rounded-xl transition disabled:opacity-60 cursor-pointer uppercase tracking-widest text-sm active:scale-[0.98]"
                   style={{ background: "linear-gradient(to right, rgb(111, 0, 0), rgb(186, 0, 0))" }}
                 >
-                  {loading
-                    ? "Authorizing..."
-                    : mode === "login" ? "LOGIN" : "Create My Console"}
+                  {loading ? "Authorizing..." : mode === "login" ? "LOGIN" : "Create My Console"}
                 </button>
               </form>
             )}
 
-            {/* Divider */}
             <div className="relative flex items-center justify-center my-3.5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10" />
@@ -531,22 +604,20 @@ function Auth() {
               </span>
             </div>
 
-            {/* Google Button */}
             <button
               type="button"
               onClick={handleGoogleLogin}
               className="w-full h-10 rounded-xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 transition hover:bg-gray-100 active:scale-[0.98] cursor-pointer"
             >
               <svg className="size-4.5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Login with Google
             </button>
 
-            {/* Footer */}
             <div className="text-center mt-4 text-[12px] text-[#8d8d8d]">
               {mode === "login" ? (
                 <p>
@@ -566,12 +637,11 @@ function Auth() {
             </div>
           </div>
 
-          {/* Bottom features */}
           <div className="flex justify-center gap-6 mt-5">
             {[
               { icon: Trophy, label: "ELITE TRAINING" },
               { icon: ShieldCheck, label: "SECURE & PRIVATE" },
-              { icon: User, label: "ACHIEVE MORE" }
+              { icon: User, label: "ACHIEVE MORE" },
             ].map((item) => (
               <div key={item.label} className="flex flex-col items-center gap-1">
                 <item.icon className="size-4 text-[#ed3434]" />
@@ -591,5 +661,7 @@ function Auth() {
   );
 }
 
-const inp = "w-full pl-9 pr-3 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none focus:ring-1 focus:ring-[#6f0000]/60 border border-white/8 text-white placeholder:text-[#555] transition-all";
-const inpCompact = "w-full pl-8 pr-2.5 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none focus:ring-1 focus:ring-[#6f0000]/60 border border-white/8 text-white placeholder:text-[#555] transition-all";
+const inp =
+  "w-full pl-9 pr-3 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none focus:ring-1 focus:ring-[#6f0000]/60 border border-white/8 text-white placeholder:text-[#555] transition-all";
+const inpCompact =
+  "w-full pl-8 pr-2.5 py-2.5 bg-[#1c1c1c] rounded-xl text-sm outline-none focus:ring-1 focus:ring-[#6f0000]/60 border border-white/8 text-white placeholder:text-[#555] transition-all";
