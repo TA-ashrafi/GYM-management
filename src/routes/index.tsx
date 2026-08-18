@@ -76,13 +76,8 @@ function Home() {
 function MarketingPortal() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [visibleNavbar, setVisibleNavbar] = useState(true);
-  const lastScrollYRef = useRef(0);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Hide Navbar on Scroll Down, Show on Scroll Up, and Track Scroll Progress
   useEffect(() => {
@@ -96,17 +91,17 @@ function MarketingPortal() {
       }
 
       // Hide / Show logic
-      if (currentScrollY > lastScrollYRef.current && currentScrollY > 100) {
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setVisibleNavbar(false);
       } else {
         setVisibleNavbar(true);
       }
-      lastScrollYRef.current = currentScrollY;
+      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
