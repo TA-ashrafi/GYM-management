@@ -97,13 +97,37 @@ function Attendance() {
 
     if (!error) {
       const type: "IN" | "OUT" = punchType === "in" ? "IN" : "OUT";
+      const punchTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
       setLast({
         name: m.name,
-        time: new Date().toLocaleTimeString("en-IN"),
+        time: punchTime,
         photo: m.photo || "",
         type,
       });
-      toast.success(type === "IN" ? `✓ ${m.name} — Punch IN` : `👋 ${m.name} — Punch OUT`);
+
+      // Rich Sonner Toast Notification with avatar badge
+      toast.custom(() => (
+        <div className="flex items-center gap-3 bg-[#111111] border border-white/10 text-white p-3.5 rounded-2xl shadow-2xl backdrop-blur-md min-w-[280px]">
+          {m.photo ? (
+            <img src={m.photo} alt={m.name} className="size-11 rounded-xl object-cover ring-2 ring-brand/50 shrink-0" />
+          ) : (
+            <div className="size-11 rounded-xl bg-brand/20 text-brand font-black grid place-items-center shrink-0 text-base">
+              {m.name?.[0] ?? "A"}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-heading font-extrabold text-sm truncate">{m.name}</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${type === "IN" ? "bg-brand/20 text-brand" : "bg-amber-500/20 text-amber-400"}`}>
+                {type === "IN" ? "PUNCH IN" : "PUNCH OUT"}
+              </span>
+            </div>
+            <p className="text-[11px] text-white/60 font-mono mt-0.5">
+              Roll #{m.rollNo || m.roll_no || "N/A"} · {punchTime}
+            </p>
+          </div>
+        </div>
+      ), { duration: 4000 });
 
       // Trigger Automated WhatsApp Webhook dynamically (Zero-click alert feature)
       supabase

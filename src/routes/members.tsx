@@ -165,135 +165,130 @@ function MembersPage() {
           </div>
         </div>
 
-        {/* Desktop View Table */}
+        {/* HeroUI Inspired Table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                <th className="px-6 py-3">Member</th>
-                <th className="px-4 py-3">Roll / RFID</th>
-                <th className="px-4 py-3">Plan</th>
-                <th className="px-4 py-3">Fee</th>
-                <th className="px-4 py-3">Expiry</th>
-                <th className="px-4 py-3">Slot</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+              <tr className="text-left text-[11px] font-semibold text-muted-foreground/80 border-b border-border/60 bg-secondary/20">
+                <th className="px-6 py-3.5">Member ID</th>
+                <th className="px-6 py-3.5">Member</th>
+                <th className="px-4 py-3.5">Plan</th>
+                <th className="px-4 py-3.5">Status / Fee</th>
+                <th className="px-4 py-3.5">Expiry</th>
+                <th className="px-4 py-3.5">Slot</th>
+                <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/40">
               {filtered.map((m) => {
                 const s = statusOf(m);
                 const d = daysUntil(m.expiryDate ?? m.expiry_date);
                 const overdueDays = d < 0 ? -d : 0;
                 const rowRed = d < 0 && overdueDays >= 5;
                 const badge = planBadge(m.plan);
-                const nameCls =
-                  "font-semibold " +
-                  (badge.golden
-                    ? "px-2 py-0.5 rounded-md bg-gradient-to-r from-yellow-500/30 to-amber-400/30 text-yellow-200 ring-1 ring-yellow-400/50"
-                    : "");
-                const expiryText =
-                  d < 0 ? `+${overdueDays}d` : d === 0 ? "Today" : `${d}d`;
-                const expiryCls =
-                  d < 0
-                    ? "text-danger font-bold"
-                    : d <= 7
-                      ? "text-warn font-semibold"
-                      : "text-brand";
+                const expiryText = d < 0 ? `+${overdueDays}d overdue` : d === 0 ? "Expires Today" : `${d}d remaining`;
+                const expiryCls = d < 0 ? "text-danger font-bold" : d <= 7 ? "text-warn font-semibold" : "text-brand";
                 const feePaid = m.feePaid ?? m.fee_paid;
                 const feeAmount = m.feeAmount ?? m.fee_amount ?? 0;
+                const rollNum = m.rollNo ?? m.roll_no ?? m.id.substring(0, 8);
 
                 return (
                   <tr
                     key={m.id}
                     className={
-                      "transition-colors " +
-                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/30")
+                      "transition-colors group " +
+                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/40")
                     }
                   >
-                    <td className="px-6 py-3">
+                    <td className="px-6 py-4 font-mono text-xs font-bold text-foreground/90">
+                      <div className="flex items-center gap-2">
+                        <span className="text-brand">#{rollNum}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(rollNum);
+                            toast.success(`Copied Roll ID #${rollNum}`);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition cursor-pointer"
+                          title="Copy ID"
+                        >
+                          <CreditCard className="size-3.5" />
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">RFID: {m.rfid || "N/A"}</div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {m.photo ? (
                           <img
                             src={m.photo}
                             alt={m.name}
-                            className="size-10 rounded-full object-cover ring-1 ring-border"
+                            className="size-10 rounded-full object-cover ring-2 ring-brand/30 shadow-md"
                             width={40}
                             height={40}
                             loading="lazy"
                           />
                         ) : (
-                          <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
+                          <div className="size-10 rounded-full bg-gradient-to-tr from-brand/30 to-purple-500/30 grid place-items-center text-brand font-black text-sm ring-1 ring-brand/20">
                             {m.name?.[0] ?? "?"}
                           </div>
                         )}
                         <div>
-                          <p className="flex items-center gap-1.5 flex-wrap">
-                            <span className={nameCls}>{m.name}</span>
+                          <p className="font-semibold text-foreground flex items-center gap-1.5">
+                            {m.name}
                             {badge.stars > 0 && (
-                              <span
-                                className={
-                                  "inline-flex items-center " +
-                                  (badge.golden ? "text-yellow-400" : "text-warn")
-                                }
-                              >
+                              <span className="inline-flex text-amber-400">
                                 {Array.from({ length: badge.stars }).map((_, i) => (
                                   <Star key={i} className="size-3 fill-current" />
                                 ))}
                               </span>
                             )}
                           </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {m.phone} · {m.gender} · {m.age}y
+                          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                            {m.phone} · {m.gender}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                      <div>{m.rollNo ?? m.roll_no}</div>
-                      <div className="text-brand">{m.rfid}</div>
-                    </td>
-                    <td className="px-4 py-3">{m.plan}</td>
-                    <td className="px-4 py-3">
-                      <span className={feePaid ? "text-brand" : "text-danger"}>
-                        {money(feeAmount)} {feePaid ? "✓" : "·due"}
+                    <td className="px-4 py-4">
+                      <span className="px-2.5 py-1 bg-secondary border border-border/60 text-foreground font-semibold text-xs rounded-lg">
+                        {m.plan}
                       </span>
                     </td>
-                    <td className={"px-4 py-3 " + expiryCls}>{expiryText}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-muted-foreground">
-                        {m.preferredSlot ?? m.preferred_slot}
-                      </span>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className={"px-2.5 py-0.5 text-[10px] rounded-full uppercase font-black tracking-wider w-fit " + statusStyles[s]}>
+                          {s}
+                        </span>
+                        <span className={"text-xs font-semibold " + (feePaid ? "text-brand" : "text-danger")}>
+                          {money(feeAmount)} {feePaid ? "✓ Paid" : "· Unpaid"}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          "px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider inline-block w-fit " +
-                          statusStyles[s]
-                        }
-                      >
-                        {s}
-                      </span>
+                    <td className={"px-4 py-4 text-xs " + expiryCls}>{expiryText}</td>
+                    <td className="px-4 py-4 text-xs text-muted-foreground font-medium">
+                      {m.preferredSlot ?? m.preferred_slot}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex gap-2">
+                    <td className="px-6 py-4 text-right">
+                      <div className="inline-flex items-center gap-1.5">
                         <Link
                           to="/reports"
                           search={{ q: m.rollNo ?? m.roll_no }}
-                          className="size-8 rounded-md bg-secondary hover:bg-accent/10 hover:text-accent grid place-items-center text-[10px] font-bold"
+                          className="size-8 rounded-full bg-secondary hover:bg-white/10 hover:text-white grid place-items-center text-muted-foreground transition"
+                          title="View Member Report"
                         >
-                          R
+                          <User className="size-4" />
                         </Link>
                         <button
                           onClick={() => setRenewingMember(m)}
-                          className="size-8 rounded-md bg-secondary hover:bg-brand/10 hover:text-brand grid place-items-center transition cursor-pointer"
+                          className="size-8 rounded-full bg-secondary hover:bg-brand/20 hover:text-brand grid place-items-center text-muted-foreground transition cursor-pointer"
                           title="Renew Plan"
                         >
                           <RefreshCw className="size-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(m.id, m.name)}
-                          className="size-8 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center transition cursor-pointer"
+                          className="size-8 rounded-full bg-secondary hover:bg-danger/20 hover:text-danger grid place-items-center text-muted-foreground transition cursor-pointer"
+                          title="Delete Member"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -304,7 +299,7 @@ function MembersPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
+                  <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
                     {members.length === 0
                       ? "No members found. Click + Add Member!"
                       : "No members match your search criteria."}
