@@ -4,69 +4,66 @@ A high-performance Gym Management Platform with real-time RFID attendance integr
 
 ---
 
-## 🏗️ Architecture Diagram & Folder Structure
-
-Here is how your repository is organized and how you can separate `frontend/` and `backend/` manually:
+## 📁 Repository Structure
 
 ```
 ALPHA_FITNESS_PROJECT/
-│
-├── 🎨 FRONTEND / WEB CONSOLE (TanStack Start + React + Vite + Tailwind)
-│   ├── src/
-│   │   ├── assets/              # Logo, images, athlete poses
-│   │   ├── components/          # Reusable AppShell, FireSparksOverlay
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── lib/                 # Supabase client, Gym store
-│   │   ├── routes/              # TanStack File-Based Router Pages
-│   │   │   ├── index.tsx        # Public Marketing Portal + Dashboard
-│   │   │   ├── auth.tsx         # Login, Sign Up & OTP Verification
-│   │   │   ├── attendance.tsx   # Real-Time RFID Attendance Monitor
-│   │   │   ├── members.tsx      # Member Roster & Progress Logs
-│   │   │   ├── settings.tsx     # Branch Settings & Copyable Branch ID
-│   │   │   └── ...
-│   │   ├── router.tsx
-│   │   └── styles.css           # Global Theme System & Custom Animations
-│   ├── package.json
-│   ├── vite.config.ts
+├── frontend/               # Full Web Application Console (React, TanStack Start, Tailwind)
+│   ├── src/                # Complete Source Code (Pages, Components, Assets)
+│   ├── package.json        # Dependencies & Build Scripts
+│   ├── vite.config.ts      # Vite & TanStack Router Configuration
 │   └── tsconfig.json
 │
-└── ⚡ BACKEND & HARDWARE INTEGRATION (Supabase PostgreSQL + Arduino ESP32)
-    ├── SUPABASE_SQL.md          # PostgreSQL Schema, RLS & Realtime Triggers
-    └── Arduino Hardware Code    # C++ Firmware for ESP32 + MFRC522 RFID Reader
+├── backend/                # Database SQL Schemas & Hardware ESP32 Specs
+│   ├── SUPABASE_SQL.md     # PostgreSQL Database Schema & Realtime Triggers
+│   └── README.md           # Database setup instructions
+│
+├── vercel.json             # Root Vercel Deployment Configuration
+└── README.md
 ```
 
 ---
 
-## 🛠️ Step-by-Step Guide for Separate Frontend & Backend Setup
+## 🚀 How to Run & Install After Downloading from GitHub
 
-### Option 1: Standard Unified Run (Recommended)
-1. **Install Dependencies:**
-   ```bash
-   bun install   # or npm install
-   ```
-2. **Start Dev Server:**
-   ```bash
-   bun dev       # or npm run dev
-   ```
+### 1️⃣ Setting Up the Frontend (Web Console)
+
+Open your terminal or command prompt and run the following commands step-by-step:
+
+```bash
+# Step 1: Navigate into the frontend folder
+cd frontend
+
+# Step 2: Install all dependencies
+bun install
+# (If you use npm, run: npm install)
+
+# Step 3: Run the local development server
+bun dev
+# (If you use npm, run: npm run dev)
+```
+
+Now open your browser and navigate to `http://localhost:3000` to view your application!
 
 ---
 
-### Option 2: Manually Separating into `frontend/` and `backend/` Folders
+### 2️⃣ Setting Up the Backend & Database (Supabase)
 
-If you want to move files into `frontend/` and `backend/` subdirectories manually on your machine:
+```bash
+# Step 1: Navigate into the backend folder
+cd backend
+```
 
-1. **Create folders:**
-   ```bash
-   mkdir frontend backend
-   ```
-2. **Move Web Code into `frontend/`:**
-   ```bash
-   mv src package.json vite.config.ts tsconfig.json bun.lock bunfig.toml components.json frontend/
-   ```
-3. **Move Database SQL into `backend/`:**
-   ```bash
-   cp SUPABASE_SQL.md backend/
-   ```
-4. **Deploying on Vercel:**
-   - In your Vercel Project Settings, set **Root Directory** to `frontend`.
-   - Vercel will automatically run `bun install` and `bun run build` inside `frontend` without any errors!
+1. Open [Supabase.com](https://supabase.com) and log in to your project dashboard.
+2. Go to **SQL Editor** -> **New Query**.
+3. Open `backend/SUPABASE_SQL.md`, copy all the SQL code, paste it into Supabase, and click **Run**.
+4. This instantly sets up your database tables, real-time subscriptions, and security rules!
+
+---
+
+### 3️⃣ Deploying to Vercel (1-Click Deployment)
+
+When deploying to Vercel:
+1. Push your code to GitHub.
+2. Import the repository into **Vercel**.
+3. Vercel will automatically read `vercel.json`, navigate to `frontend/`, install dependencies, and deploy your web console with zero build errors!
