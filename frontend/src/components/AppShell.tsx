@@ -54,7 +54,7 @@ const nav: NavItem[] = [
 /**
  * Main application shell component that provides the sidebar layout
  * and global navigation for the gym management application.
- * 
+ *
  * @param children - The page content to render within the shell
  */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // Real-time capacity statistics from Supabase
   const [liveMemberCount, setLiveMemberCount] = useState(0);
   const [liveCheckInCount, setLiveCheckInCount] = useState(0);
@@ -298,10 +298,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {settings.theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
-          
+
           {/* Notifications */}
           <NotificationsBell />
-          
+
           {/* Account Profile Menu Dropdown */}
           <div className="relative">
             <button
@@ -374,7 +374,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 /**
  * Page header component with title, subtitle, and optional action buttons
- * 
+ *
  * @param title - The main page title
  * @param subtitle - Optional subtitle text
  * @param actions - Optional action buttons or elements

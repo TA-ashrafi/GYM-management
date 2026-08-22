@@ -26,9 +26,9 @@ function Onboarding() {
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function createBranch() {
-    if (!form.gymName) { 
-      toast.error("Please enter your gym name"); 
-      return; 
+    if (!form.gymName) {
+      toast.error("Please enter your gym name");
+      return;
     }
     setLoading(true);
     try {
@@ -52,7 +52,7 @@ function Onboarding() {
       }).select().single();
 
       if (error) throw error;
-      
+
       setActiveBranchId(data.id);
       toast.success("Gym setup complete. Please setup your RFID scanner now.");
       nav({ to: "/" });
@@ -135,7 +135,7 @@ function Onboarding() {
             >
               {loading ? "Initializing..." : "Launch ALPHA FITNESS Console"}
             </button>
-            
+
             {!search?.skipChoice && (
               <button
                 onClick={() => setStep("choice")}

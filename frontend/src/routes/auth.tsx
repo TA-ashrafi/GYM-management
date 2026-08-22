@@ -60,7 +60,7 @@ function Auth() {
       if (mode === "login") {
         await signIn(form.email, form.password);
         await new Promise((r) => setTimeout(r, 500));
-        
+
         const branches = await fetchBranches();
         if (branches.length === 0) {
           nav({ to: "/onboarding" });

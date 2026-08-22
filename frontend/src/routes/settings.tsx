@@ -472,7 +472,7 @@ function SettingsPage() {
         <section className="bg-card border border-border rounded-2xl p-4 sm:p-6 lg:col-span-2">
           <h2 className="font-heading text-lg mb-2">Danger Zone</h2>
           <p className="text-xs text-muted-foreground mb-4">Reset all data (members, expenses, todos) to factory seed state.</p>
-          <button 
+          <button
             onClick={() => { if (confirm("Are you sure you want to reset all data?")) { gym.reset(); toast.success("Data reset successfully"); } }}
             className="px-4 py-2 border border-danger/40 text-danger rounded-lg text-sm hover:bg-danger/10 w-full sm:w-auto text-center font-semibold cursor-pointer"
           >
