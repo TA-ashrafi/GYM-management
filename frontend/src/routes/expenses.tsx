@@ -92,9 +92,9 @@ function Expenses() {
 
   return (
     <div className="p-4 sm:p-8 max-w-[1400px] w-full">
-      <PageHeader 
-        title="Expenses" 
-        subtitle={`Total: ${inr(total)} across ${expenses.length} entries`} 
+      <PageHeader
+        title="Expenses"
+        subtitle={`Total: ${inr(total)} across ${expenses.length} entries`}
       />
 
       {/* Category Summary Cards */}

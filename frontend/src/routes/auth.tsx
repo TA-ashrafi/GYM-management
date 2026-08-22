@@ -86,6 +86,7 @@ function Auth() {
     setLoading(true);
     try {
       if (mode === "login") {
+<<<<<<< HEAD:src/routes/auth.tsx
         try {
           await signIn(form.email, form.password);
           clearAttempts();
@@ -118,6 +119,19 @@ function Auth() {
           }
           setLoading(false);
           return;
+=======
+        await signIn(form.email, form.password);
+        await new Promise((r) => setTimeout(r, 500));
+
+        const branches = await fetchBranches();
+        if (branches.length === 0) {
+          nav({ to: "/onboarding" });
+        } else {
+          const activeBranchId = getActiveBranchId();
+          const valid = branches.find((b: any) => b.id === activeBranchId);
+          if (!valid) setActiveBranchId(branches[0].id);
+          nav({ to: "/" });
+>>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/auth.tsx
         }
       } else {
         if (!form.name.trim()) {
