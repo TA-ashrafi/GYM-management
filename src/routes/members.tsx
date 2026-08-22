@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Search, Trash2, Star, RefreshCw, Phone, User, Calendar, ShieldCheck, X, Save, CreditCard, Copy, Eye, SlidersHorizontal, ArrowUpDown, Columns, Check } from "lucide-react";
+import { Search, Trash2, Star, RefreshCw, Phone, User, Calendar, ShieldCheck, X, Save, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/AppShell";
@@ -83,34 +83,6 @@ function MembersPage() {
 
   useEffect(() => {
     loadMembersData();
-
-    // Quiet background updater that fetches members list and recent ghost scanner activity log every 5 seconds
-    const pollInterval = setInterval(() => {
-      loadMembersData();
-    }, 5000);
-
-    const branchId = getActiveBranchId();
-    if (!branchId) return () => clearInterval(pollInterval);
-
-    // Live Supabase subscription on 'members' table for real-time updates
-    const membersChannel = supabase
-      .channel("members-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "members" },
-        (payload) => {
-          const row = (payload.new || payload.old) as any;
-          if (!row?.branch_id || row.branch_id === branchId) {
-            loadMembersData();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      clearInterval(pollInterval);
-      supabase.removeChannel(membersChannel);
-    };
   }, []);
 
   async function handleDelete(id: string, name: string) {
@@ -186,53 +158,35 @@ function MembersPage() {
           </div>
         </div>
 
-        {/* HeroUI Top Toolbar */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 bg-secondary/80 rounded-full text-foreground font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-secondary">
-              <SlidersHorizontal className="size-3.5" /> Filter
-            </span>
-            <span className="px-3 py-1.5 bg-secondary/80 rounded-full text-foreground font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-secondary">
-              <ArrowUpDown className="size-3.5" /> Sort
-            </span>
-            <span className="px-3 py-1.5 bg-secondary/80 rounded-full text-foreground font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-secondary">
-              <Columns className="size-3.5" /> Columns
-            </span>
-          </div>
-          <div className="font-semibold text-foreground">
-            Total Members: <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-bold">{filtered.length}</span>
-          </div>
-        </div>
-
-        {/* Desktop View Table - HeroUI Styled */}
+        {/* Desktop View Table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 border-b border-border bg-secondary/20">
-                <th className="px-6 py-3.5">Worker ID</th>
-                <th className="px-6 py-3.5">Member</th>
-                <th className="px-4 py-3.5">Role / Plan</th>
-                <th className="px-4 py-3.5">Fee Status</th>
-                <th className="px-4 py-3.5">Expiry</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
+              <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
+                <th className="px-6 py-3">Member</th>
+                <th className="px-4 py-3">Roll / RFID</th>
+                <th className="px-4 py-3">Plan</th>
+                <th className="px-4 py-3">Fee</th>
+                <th className="px-4 py-3">Expiry</th>
+                <th className="px-4 py-3">Slot</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-border">
               {filtered.map((m) => {
                 const s = statusOf(m);
                 const d = daysUntil(m.expiryDate ?? m.expiry_date);
                 const overdueDays = d < 0 ? -d : 0;
                 const rowRed = d < 0 && overdueDays >= 5;
                 const badge = planBadge(m.plan);
-                const displayId = `#${(m.rollNo ?? m.roll_no ?? m.id ?? "1001").toString().replace(/[^0-9]/g, "").padStart(7, "0")}`;
                 const nameCls =
-                  "font-bold text-foreground text-sm " +
+                  "font-semibold " +
                   (badge.golden
                     ? "px-2 py-0.5 rounded-md bg-gradient-to-r from-yellow-500/30 to-amber-400/30 text-yellow-200 ring-1 ring-yellow-400/50"
                     : "");
                 const expiryText =
-                  d < 0 ? `+${overdueDays}d overdue` : d === 0 ? "Today" : `${d}d remaining`;
+                  d < 0 ? `+${overdueDays}d` : d === 0 ? "Today" : `${d}d`;
                 const expiryCls =
                   d < 0
                     ? "text-danger font-bold"
@@ -246,42 +200,27 @@ function MembersPage() {
                   <tr
                     key={m.id}
                     className={
-                      "transition-colors group " +
-                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/40")
+                      "transition-colors " +
+                      (rowRed ? "bg-danger/10 hover:bg-danger/15" : "hover:bg-secondary/30")
                     }
                   >
-                    <td className="px-6 py-4 font-mono font-bold text-foreground">
-                      <div className="flex items-center gap-2">
-                        <span>{displayId}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(displayId);
-                            toast.success(`Copied ${displayId} to clipboard`);
-                          }}
-                          className="size-6 rounded bg-secondary/80 hover:bg-brand/20 hover:text-brand grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-muted-foreground"
-                          title="Copy ID"
-                        >
-                          <Copy className="size-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         {m.photo ? (
                           <img
                             src={m.photo}
                             alt={m.name}
-                            className="size-10 rounded-full object-cover ring-2 ring-border/80 shadow-sm"
+                            className="size-10 rounded-full object-cover ring-1 ring-border"
                             width={40}
                             height={40}
                             loading="lazy"
                           />
                         ) : (
-                          <div className="size-10 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 grid place-items-center text-brand font-black text-sm ring-2 ring-border/80 shadow-sm">
+                          <div className="size-10 rounded-full bg-brand/20 grid place-items-center text-brand font-bold">
                             {m.name?.[0] ?? "?"}
                           </div>
                         )}
-                        <div className="min-w-0">
+                        <div>
                           <p className="flex items-center gap-1.5 flex-wrap">
                             <span className={nameCls}>{m.name}</span>
                             {badge.stars > 0 && (
@@ -297,53 +236,57 @@ function MembersPage() {
                               </span>
                             )}
                           </p>
-                          <p className="text-[11px] text-muted-foreground truncate font-medium">
-                            {m.phone || "No phone"} · {m.rfid ? `RFID: ${m.rfid}` : "No RFID"}
+                          <p className="text-[11px] text-muted-foreground">
+                            {m.phone} · {m.gender} · {m.age}y
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="font-semibold text-foreground">{m.plan || "Member"}</div>
-                      <div className="text-[11px] text-muted-foreground">{m.preferredSlot || "Any Time"}</div>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      <div>{m.rollNo ?? m.roll_no}</div>
+                      <div className="text-brand">{m.rfid}</div>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className={"inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-1 rounded-full " + (feePaid ? "bg-brand/10 text-brand" : "bg-danger/10 text-danger")}>
-                        {money(feeAmount)} {feePaid ? "✓ Paid" : "· Unpaid"}
+                    <td className="px-4 py-3">{m.plan}</td>
+                    <td className="px-4 py-3">
+                      <span className={feePaid ? "text-brand" : "text-danger"}>
+                        {money(feeAmount)} {feePaid ? "✓" : "·due"}
                       </span>
                     </td>
-                    <td className={"px-4 py-4 font-semibold text-xs " + expiryCls}>{expiryText}</td>
-                    <td className="px-4 py-4">
+                    <td className={"px-4 py-3 " + expiryCls}>{expiryText}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-muted-foreground">
+                        {m.preferredSlot ?? m.preferred_slot}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       <span
                         className={
-                          "px-2.5 py-1 text-[10px] rounded-full uppercase font-extrabold tracking-wider inline-block w-fit shadow-xs " +
+                          "px-2 py-1 text-[10px] rounded uppercase font-bold tracking-wider inline-block w-fit " +
                           statusStyles[s]
                         }
                       >
                         {s}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex gap-2">
                         <Link
                           to="/reports"
                           search={{ q: m.rollNo ?? m.roll_no }}
-                          className="size-8 rounded-full bg-secondary/80 hover:bg-brand/20 hover:text-brand grid place-items-center text-muted-foreground transition cursor-pointer"
-                          title="View Full Profile Report"
+                          className="size-8 rounded-md bg-secondary hover:bg-accent/10 hover:text-accent grid place-items-center text-[10px] font-bold"
                         >
-                          <Eye className="size-4" />
+                          R
                         </Link>
                         <button
                           onClick={() => setRenewingMember(m)}
-                          className="size-8 rounded-full bg-secondary/80 hover:bg-brand/20 hover:text-brand grid place-items-center text-muted-foreground transition cursor-pointer"
-                          title="Renew Membership"
+                          className="size-8 rounded-md bg-secondary hover:bg-brand/10 hover:text-brand grid place-items-center transition cursor-pointer"
+                          title="Renew Plan"
                         >
                           <RefreshCw className="size-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(m.id, m.name)}
-                          className="size-8 rounded-full bg-secondary/80 hover:bg-danger/20 hover:text-danger grid place-items-center text-muted-foreground transition cursor-pointer"
-                          title="Delete Member"
+                          className="size-8 rounded-md bg-secondary hover:bg-danger/10 hover:text-danger grid place-items-center transition cursor-pointer"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -354,7 +297,7 @@ function MembersPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
+                  <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
                     {members.length === 0
                       ? "No members found. Click + Add Member!"
                       : "No members match your search criteria."}

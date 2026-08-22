@@ -103,29 +103,7 @@ function Attendance() {
         photo: m.photo || "",
         type,
       });
-      toast.custom(() => (
-        <div className="flex items-center gap-3.5 bg-card/95 backdrop-blur-md border border-border text-foreground p-4 rounded-2xl shadow-2xl min-w-[320px]">
-          {m.photo ? (
-            <img src={m.photo} alt={m.name} className="size-11 rounded-full object-cover ring-2 ring-brand/50 shrink-0" />
-          ) : (
-            <div className="size-11 rounded-full bg-brand/20 text-brand grid place-items-center font-black text-sm shrink-0 ring-2 ring-brand/30">
-              {m.name?.[0] ?? "?"}
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-bold text-sm text-foreground truncate">{m.name}</p>
-              <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider ${type === "IN" ? "bg-brand/20 text-brand border border-brand/40" : "bg-warn/20 text-warn border border-warn/40"}`}>
-                {type === "IN" ? "✓ Punch IN" : "👋 Punch OUT"}
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
-              <span>{m.rollNo ? `#${m.rollNo}` : "Member"}</span>
-              <span className="font-mono text-[10px] font-bold">{new Date().toLocaleTimeString("en-IN")}</span>
-            </p>
-          </div>
-        </div>
-      ));
+      toast.success(type === "IN" ? `✓ ${m.name} — Punch IN` : `👋 ${m.name} — Punch OUT`);
 
       // Trigger Automated WhatsApp Webhook dynamically (Zero-click alert feature)
       supabase
@@ -175,35 +153,6 @@ function Attendance() {
       return;
     }
 
-    const fetchSyncData = () => {
-      fetchMembers().then((data) => {
-        if (data) {
-          setMembers(data);
-          membersRef.current = data;
-        }
-      }).catch(console.error);
-
-      // Solve local time shifting / India timezone bugs by using clients start & end of today formatted in proper UTC ISO format
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-      const endOfToday = new Date();
-      endOfToday.setHours(23, 59, 59, 999);
-
-      supabase
-        .from("attendance_logs")
-        .select("*")
-        .eq("branch_id", branchId)
-        .gte("checked_in_at", startOfToday.toISOString())
-        .lte("checked_in_at", endOfToday.toISOString())
-        .order("checked_in_at", { ascending: true })
-        .then(({ data, error }) => {
-          if (!error && data) {
-            setTodayLogs(data);
-          }
-        });
-    };
-
-    // Initial load
     fetchMembers().then((data) => {
       setMembers(data || []);
       membersRef.current = data || [];
@@ -213,6 +162,7 @@ function Attendance() {
       setLoading(false);
     });
 
+    // Solve local time shifting / India timezone bugs by using clients start & end of today formatted in proper UTC ISO format
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
@@ -229,11 +179,6 @@ function Attendance() {
         if (error) console.error("Error fetching logs:", error);
         else setTodayLogs(data ?? []);
       });
-
-    // Quiet background updater that fetches fresh logs and members every 5 seconds
-    const pollInterval = setInterval(() => {
-      fetchSyncData();
-    }, 5000);
 
     // Realtime subscription for new attendance logs for this branch
     const logsChannel = supabase
@@ -283,7 +228,6 @@ function Attendance() {
       .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
       supabase.removeChannel(logsChannel);
       supabase.removeChannel(rfidChannel);
     };

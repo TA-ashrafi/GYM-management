@@ -55,14 +55,6 @@ function Home() {
 
   if (authLoading) {
     return (
-<<<<<<< HEAD:src/routes/index.tsx
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center select-none">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="size-10 border-2 border-t-[#ed3434] border-white/10 rounded-full animate-spin" />
-          <div className="text-[10px] text-white/50 tracking-[0.3em] uppercase font-black">
-            ALPHA FITNESS
-          </div>
-=======
       <div className="min-h-screen bg-[#070707] flex flex-col items-center justify-center space-y-6">
         <div className="text-center space-y-2">
           <Dumbbell className="size-8 text-[#ed3434] animate-bounce mx-auto" />
@@ -71,7 +63,6 @@ function Home() {
         <div className="loader">
           <div className="light"></div>
           <div className="black_overlay"></div>
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
         </div>
       </div>
     );
@@ -86,65 +77,9 @@ function Home() {
 
 function MarketingPortal() {
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [visibleNavbar, setVisibleNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  // Hide Navbar on Scroll Down, Show on Scroll Up, and Track Scroll Progress
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Calculate Scroll Progress Percentage
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalHeight > 0) {
-        setScrollProgress((currentScrollY / totalHeight) * 100);
-      }
-
-      // Hide / Show logic
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setVisibleNavbar(false);
-      } else {
-        setVisibleNavbar(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f4f4f2] selection:bg-[#ed3434] selection:text-white overflow-x-hidden relative font-sans leading-relaxed">
-
-      {/* Scroll Progress Tracker in Right Bottom Corner */}
-      <div className="fixed bottom-6 right-6 z-50 pointer-events-none select-none">
-        <div className="relative size-14 bg-black/60 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-md shadow-2xl">
-          {/* Radial Progress Circle SVG */}
-          <svg className="absolute inset-0 size-full -rotate-90">
-            <circle
-              cx="28"
-              cy="28"
-              r="22"
-              className="stroke-white/5 fill-transparent"
-              strokeWidth="3"
-            />
-            <circle
-              cx="28"
-              cy="28"
-              r="22"
-              className="stroke-[#ed3434] fill-transparent transition-all duration-75"
-              strokeWidth="3"
-              strokeDasharray={`${2 * Math.PI * 22}`}
-              strokeDashoffset={`${2 * Math.PI * 22 * (1 - scrollProgress / 100)}`}
-              strokeLinecap="round"
-            />
-          </svg>
-          <span className="text-[10px] font-heading font-black text-white relative z-10">
-            {Math.round(scrollProgress)}%
-          </span>
-        </div>
-      </div>
 
       {/* High-performance optimized canvas fire sparks backdrop (no lagging smoke effect) */}
       <FireSparksOverlay intensity={35} color="red" speed={0.8} />
@@ -155,7 +90,7 @@ function MarketingPortal() {
       <div className="absolute bottom-1/4 right-1/4 size-[600px] bg-[#ed3434]/3 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* SECTION 1: Fixed Nav Bar */}
-      <header className={`fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-all duration-300 ${visibleNavbar ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
+      <header className="fixed top-0 left-0 right-0 h-20 bg-[#070707]/90 backdrop-blur-md border-b border-[#242424] z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 relative z-10 hover:opacity-90 transition">
             <div>
@@ -208,16 +143,6 @@ function MarketingPortal() {
           <div className="w-full h-full relative">
             {/* Main strip with gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#ff0000]/20 via-[#ff0000]/10 to-transparent" />
-<<<<<<< HEAD:src/routes/index.tsx
-            
-            {/* Inner glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent blur-xl" />
-            
-            {/* Vertical accent lines */}
-            <div className="absolute left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/30 to-transparent" />
-            <div className="absolute right-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/20 to-transparent" />
-            
-=======
 
             {/* Inner glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent blur-xl" />
@@ -226,24 +151,10 @@ function MarketingPortal() {
             <div className="absolute left-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/30 to-transparent" />
             <div className="absolute right-[20%] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#ff0000]/20 to-transparent" />
 
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
             {/* Diagonal light rays */}
             <div className="absolute top-[10%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/15 to-transparent" />
             <div className="absolute top-[30%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/10 to-transparent" />
             <div className="absolute top-[50%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff0000]/5 to-transparent" />
-<<<<<<< HEAD:src/routes/index.tsx
-            
-            {/* Vertical gradient edge */}
-            <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/30 to-transparent" />
-            <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/20 to-transparent" />
-            
-            {/* Subtle grid pattern */}
-            <div className="absolute inset-0 opacity-[0.04]" 
-                 style={{
-                   backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
-                   backgroundSize: '32px 32px'
-                 }} 
-=======
 
             {/* Vertical gradient edge */}
             <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#ed3434]/30 to-transparent" />
@@ -255,7 +166,6 @@ function MarketingPortal() {
                    backgroundImage: `radial-gradient(circle at 1px 1px, #ed3434 1px, transparent 0)`,
                    backgroundSize: '32px 32px'
                  }}
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
             />
           </div>
         </div>
@@ -272,13 +182,8 @@ function MarketingPortal() {
               </div>
 
               {/* VARIANT 7: Vintage Strength - Old School Gym */}
-<<<<<<< HEAD:src/routes/index.tsx
-              <h1 className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none" 
-                  style={{ 
-=======
               <h1 className="text-white uppercase leading-[0.8] tracking-[0.05em] select-none"
                   style={{
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
                     fontSize: "clamp(64px, 9.5vw, 150px)",
                     fontFamily: "'Abril Fatface', 'Georgia', serif",
                     fontWeight: 400
@@ -287,11 +192,7 @@ function MarketingPortal() {
                 Mastery<br />
                 Alpha
               </h1>
-<<<<<<< HEAD:src/routes/index.tsx
-              
-=======
 
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
               <p className="text-[#8d8d8d] text-base leading-relaxed max-w-xl font-medium pt-2">
                 Train with purpose. Build relentless strength. ALPHA FITNESS is a performance-driven gym management platform designed to eliminate fingerprint bypass, track RFID attendance, automate WhatsApp communication, and deliver absolute clarity over your gym console.
               </p>
@@ -488,11 +389,7 @@ function MarketingPortal() {
             { num: "02", name: "Hypertrophy", desc: "Structured muscle-building sessions designed for shape, density and balanced development." },
             { num: "03", name: "Conditioning", desc: "Build work capacity, athletic movement and the engine to perform when the session gets hard." }
           ].map((program) => (
-<<<<<<< HEAD:src/routes/index.tsx
-            <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group">
-=======
             <article key={program.num} className="bg-[#101010] border border-[#242424] p-8 rounded-2xl text-left relative overflow-hidden rise-red min-h-[300px] flex flex-col justify-between hover:border-[#ed3434] transition-all duration-300 cursor-pointer group">
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
               <span className="font-heading text-[80px] font-black text-[#1a1a1a] absolute right-6 top-2 leading-none select-none z-0">{program.num}</span>
               <div className="z-10 mt-12 space-y-3">
                 <h3 className="font-heading text-2xl font-bold text-white uppercase group-hover:text-[#ed3434] transition-colors duration-300">{program.name}</h3>
@@ -561,11 +458,7 @@ function MarketingPortal() {
             { num: "08", name: "Crowd Control Slots", desc: "Assign members to custom capacity slots and shifts to distribute peak-hour attendance seamlessly." },
             { num: "09", name: "A4 Print-Ready Reports", desc: "Generate professional progress cards, physical assessments, and attendance logs formatted perfectly for paper printing." }
           ].map((f) => (
-<<<<<<< HEAD:src/routes/index.tsx
-            <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group">
-=======
             <div key={f.num} className="p-8 bg-[#101010] border border-[#242424] rounded-2xl text-left rise-red min-h-[220px] hover:border-[#ed3434]/40 transition-all duration-300 cursor-pointer group">
->>>>>>> d2527aba660be9bcb3e2651d607910efc4da2d7d:frontend/src/routes/index.tsx
               <span className="text-[10px] uppercase font-bold text-[#ed3434] tracking-widest group-hover:text-[#ed3434]">{f.num}</span>
               <h3 className="font-heading text-xl font-bold text-white uppercase tracking-tight mt-2 group-hover:text-[#ed3434] transition-colors duration-300">{f.name}</h3>
               <p className="text-xs text-[#8d8d8d] mt-2 leading-relaxed font-medium">{f.desc}</p>
@@ -869,7 +762,7 @@ function Dashboard() {
     return d;
   });
 
-  const fetchDashboardData = useCallback(() => {
+  const fetchDashboardData = () => {
     const branchId = getActiveBranchId();
     if (!branchId) return;
 
@@ -970,18 +863,13 @@ function Dashboard() {
       setPayments([...payData, ...extraPayments]);
       setStoreSales(salesData);
     });
-  }, [cycleStart]);
+  };
 
   useEffect(() => {
     fetchDashboardData();
 
-    // Silent background updater that polls fresh records every 5 seconds quietly
-    const pollInterval = setInterval(() => {
-      fetchDashboardData();
-    }, 5000);
-
     const branchId = getActiveBranchId();
-    if (!branchId) return () => clearInterval(pollInterval);
+    if (!branchId) return;
 
     const channel = supabase
       .channel("dashboard-realtime")
@@ -1000,10 +888,9 @@ function Dashboard() {
       .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [cycleStart, fetchDashboardData]);
+  }, [cycleStart]);
 
   const settings = useGym((s) => s.settings);
   const layout = settings.dashboardLayout?.length ? settings.dashboardLayout : DEFAULT_LAYOUT;
