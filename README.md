@@ -1,50 +1,12 @@
 # ALPHA FITNESS — Your GYM Operating System
 
-ALPHA FITNESS is a performance-driven gym management platform powered by **React 19, TypeScript, TanStack Start (Router), Tailwind CSS, and Supabase**.
+ALPHA FITNESS is a performance-driven gym management platform and enterprise ERP designed for modern fitness networks, athletic clubs, and multi-branch gym facilities.
 
----
+## ✨ Core Features & Highlights
 
-## 🏗️ Architecture & Structure
-
-This application is built as a **Full-Stack Single Project architecture with TanStack Start SSR & Supabase Backend-as-a-Service**.
-
-### 📁 `.env` Configuration Placement
-Place your `.env` file directly in the **root directory** (`/`):
-
-```env
-VITE_SUPABASE_URL=https://your-supabase-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
----
-
-## 🚀 Running the Project
-
-### Option 1: Direct Bun Command (Recommended)
-Make sure you have [Bun](https://bun.sh) installed:
-
-```bash
-# 1. Install dependencies
-bun install
-
-# 2. Start dev server
-bun run dev
-
-# 3. Start dev server accessible across local network (e.g. ESP32 RFID readers)
-bun run dev --host 0.0.0.0 --port 3000
-```
-
-### Option 2: Docker Setup (Full-Stack Container)
-
-```bash
-# Build and run with Docker Compose
-docker-compose up --build -d
-```
-
----
-
-## 🛠️ Project Commands Summary
-
-- `bun run dev` — Starts the TanStack Start development server.
-- `bun run build` — Compiles production build.
-- `bun test` — Runs test suite.
+- **Direct RFID Hardware Attendance:** Hardware integration eliminating biometric bypass and scan fraud.
+- **Ghost Member Detection:** Automated tracking for inactive members with zero attendance over 4 days.
+- **Zero-Click WhatsApp Reminders:** Automatic webhook dispatches for dues, plan expirations, and greetings.
+- **Supplement POS Console:** Profit margin and inventory management for retail products.
+- **Multi-Branch Network ERP:** Isolated multi-location branch management with live cash-flow P&L tracking.
+- **A4 Print-Ready Reports:** Physical progress cards, member assessments, and attendance logs.
