@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { apiClient } from "../api/client";
 
 // ==================== Type Definitions ====================
 
@@ -97,6 +98,17 @@ export type Settings = {
   dashboardLayout: DashboardWidget[];
   dismissedNotifIds: string[];
   designStyle: DesignStyle;
+  timeFormat?: string;
+};
+
+export type State = {
+  members: Member[];
+  expenses: Expense[];
+  todos: Todo[];
+  slots: Record<string, number>;
+  products: Product[];
+  sales: Sale[];
+  settings: Settings;
 };
 
 // ==================== Constants & Helpers ====================
@@ -113,19 +125,14 @@ function pad(n: number) {
 
 /**
  * Generate time slots based on shifts and duration
- * @param shifts - Array of shift objects with start and end times
- * @param durMin - Duration in minutes for each slot
- * @returns Array of formatted time slot strings
  */
 export function generateSlots(shifts: Shift[], durMin: number): string[] {
   const out: string[] = [];
   for (const s of shifts) {
     const [sh, sm] = s.start.split(":").map(Number);
     const [eh, em] = s.end.split(":").map(Number);
-    const startMin = sh * 60 + sm;
     const endMin = eh * 60 + em;
 
-    // Generate a single full slot per shift (start to end)
     out.push(
       `${pad(sh)}:${pad(sm)}-${pad(Math.floor(endMin / 60))}:${pad(endMin % 60)}`
     );
@@ -167,10 +174,6 @@ const DEFAULT_SETTINGS: Settings = {
 
 // ==================== State Management ====================
 
-/**
- * Create an empty state with default settings
- * @returns Initial State object
- */
 function emptyState(): State {
   const settings = DEFAULT_SETTINGS;
   const slotList = generateSlots(settings.shifts, settings.slotDurationMin);
@@ -187,14 +190,9 @@ function emptyState(): State {
   };
 }
 
-/**
- * Load state from localStorage or create default if not found
- * @returns The loaded or default State object
- */
 function load(): State {
   if (typeof window === "undefined") return emptyState();
   
-  // Clean up old version
   if (localStorage.getItem("ironsync_v4")) {
     localStorage.removeItem("ironsync_v4");
   }
@@ -218,7 +216,6 @@ function load(): State {
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
     };
     
-    // Ensure all required settings fields exist
     if (!merged.settings.dashboardLayout?.length) merged.settings.dashboardLayout = DEFAULT_LAYOUT;
     if (!merged.settings.theme) merged.settings.theme = "dark";
     if (!merged.settings.preset) merged.settings.preset = "lime";
@@ -234,29 +231,16 @@ function load(): State {
 let state: State = typeof window === "undefined" ? emptyState() : load();
 const listeners = new Set<() => void>();
 
-/**
- * Emit state changes to all listeners and persist to localStorage
- */
 function emit() {
   if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(state));
   listeners.forEach((l) => l());
 }
 
-/**
- * Subscribe to state changes
- * @param cb - Callback function to be called on state changes
- * @returns Unsubscribe function
- */
 function subscribe(cb: () => void) {
   listeners.add(cb);
   return () => listeners.delete(cb);
 }
 
-/**
- * React hook for accessing gym state
- * @param selector - Selector function to extract specific data from state
- * @returns The selected data
- */
 export function useGym<T>(selector: (s: State) => T): T {
   return useSyncExternalStore(
     subscribe,
@@ -274,13 +258,54 @@ export const gym = {
     state = next; 
     emit(); 
   },
+
+  async fetchMembersFromApi(branchId?: string) {
+    try {
+      const query = branchId ? `?branch_id=${branchId}` : '';
+      const data = await apiClient.get<any[]>(`/members${query}`);
+      if (Array.isArray(data)) {
+        state = { ...state, members: data };
+        emit();
+      }
+    } catch (e) {
+      console.warn("Backend API members fetch fallback:", e);
+    }
+  },
+
+  async fetchExpensesFromApi(branchId?: string) {
+    try {
+      const query = branchId ? `?branch_id=${branchId}` : '';
+      const data = await apiClient.get<any[]>(`/expenses${query}`);
+      if (Array.isArray(data)) {
+        state = { ...state, expenses: data };
+        emit();
+      }
+    } catch (e) {
+      console.warn("Backend API expenses fetch fallback:", e);
+    }
+  },
+
+  async fetchProductsFromApi(branchId?: string) {
+    try {
+      const query = branchId ? `?branch_id=${branchId}` : '';
+      const data = await apiClient.get<any[]>(`/products${query}`);
+      if (Array.isArray(data)) {
+        state = { ...state, products: data };
+        emit();
+      }
+    } catch (e) {
+      console.warn("Backend API products fetch fallback:", e);
+    }
+  },
   
   addMember(m: Omit<Member, "id" | "attendance">) {
+    const newMember = { ...m, id: `mem_${Date.now()}`, attendance: [] };
     state = { 
       ...state, 
-      members: [...state.members, { ...m, id: `mem_${Date.now()}`, attendance: [] }] 
+      members: [...state.members, newMember]
     };
     emit();
+    apiClient.post('/members', newMember).catch(() => {});
   },
   
   updateMember(id: string, patch: Partial<Member>) {
@@ -289,6 +314,7 @@ export const gym = {
       members: state.members.map((m) => (m.id === id ? { ...m, ...patch } : m)) 
     };
     emit();
+    apiClient.put(`/members/${id}`, patch).catch(() => {});
   },
   
   deleteMember(id: string) {
@@ -297,6 +323,7 @@ export const gym = {
       members: state.members.filter((m) => m.id !== id) 
     };
     emit();
+    apiClient.delete(`/members/${id}`).catch(() => {});
   },
   
   checkIn(id: string) {
@@ -308,6 +335,7 @@ export const gym = {
       ),
     };
     emit();
+    apiClient.post('/attendance', { member_id: id, check_in: now }).catch(() => {});
   },
   
   punchByRfid(code: string): Member | null {
@@ -319,11 +347,13 @@ export const gym = {
   },
   
   addExpense(e: Omit<Expense, "id">) {
+    const newExpense = { ...e, id: `e_${Date.now()}` };
     state = { 
       ...state, 
-      expenses: [{ ...e, id: `e_${Date.now()}` }, ...state.expenses] 
+      expenses: [newExpense, ...state.expenses]
     };
     emit();
+    apiClient.post('/expenses', newExpense).catch(() => {});
   },
   
   deleteExpense(id: string) {
@@ -399,6 +429,7 @@ export const gym = {
       products: exists ? state.products.map((x) => (x.id === p.id ? p : x)) : [p, ...state.products],
     };
     emit();
+    apiClient.post('/products', p).catch(() => {});
   },
   
   deleteProduct(id: string) {
@@ -427,31 +458,16 @@ export const gym = {
 
 // ==================== Utility Functions ====================
 
-/**
- * Calculate days until a given date
- * @param iso - ISO date string
- * @returns Number of days until the date (negative if past)
- */
 export function daysUntil(iso: string) {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
 }
 
-/**
- * Calculate days since a given date
- * @param iso - ISO date string
- * @returns Number of days since the date
- */
 export function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
-/**
- * Determine a member's status based on expiry and attendance
- * @param m - Member object
- * @returns Status string: "active" | "expiring" | "expired" | "ghost"
- */
 export function memberStatus(m: Member): "active" | "expiring" | "expired" | "ghost" {
-  const d = daysUntil(m.expiryDate ?? m.expiry_date ?? m.expiry_date);
+  const d = daysUntil(m.expiryDate);
   if (d < 0) return "expired";
   const lastVisit = m.attendance[0];
   const since = lastVisit ? daysSince(lastVisit) : 999;
@@ -460,30 +476,14 @@ export function memberStatus(m: Member): "active" | "expiring" | "expired" | "gh
   return "active";
 }
 
-/**
- * Get currency symbol for a given currency code
- * @param c - Currency code (default: "INR")
- * @returns Currency symbol string
- */
 export function currencySymbol(c: Settings["currency"] = "INR") {
   return CURRENCY_SYMBOL[c] ?? "₹";
 }
 
-/**
- * Format a number as currency
- * @param n - Number to format
- * @param c - Currency code (default: state.settings.currency)
- * @returns Formatted currency string
- */
 export function money(n: number, c: Settings["currency"] = state.settings?.currency ?? "INR") {
   return currencySymbol(c) + n.toLocaleString("en-IN");
 }
 
-/**
- * Alias for money() with INR currency
- * @param n - Number to format
- * @returns Formatted INR string
- */
 export function inr(n: number) {
   return money(n);
 }
@@ -500,15 +500,9 @@ export type Notification = {
   ts: number;
 };
 
-/**
- * Compute all active notifications from the current state
- * @param s - Current State object
- * @returns Array of Notification objects
- */
 export function computeNotifications(s: State): Notification[] {
   const out: Notification[] = [];
   
-  // Member-related notifications
   for (const m of s.members) {
     const st = memberStatus(m);
     if (st === "expired") {
@@ -544,7 +538,6 @@ export function computeNotifications(s: State): Notification[] {
     }
   }
   
-  // Todo notifications
   for (const t of s.todos) {
     if (!t.done && t.priority === "high") {
       out.push({
@@ -555,7 +548,6 @@ export function computeNotifications(s: State): Notification[] {
     }
   }
   
-  // Stock notifications
   for (const p of s.products) {
     if (p.stock <= p.lowStockAt) {
       out.push({
@@ -567,7 +559,6 @@ export function computeNotifications(s: State): Notification[] {
     }
   }
   
-  // Filter out dismissed notifications
   const dismissed = new Set(s.settings.dismissedNotifIds);
   return out.filter((n) => !dismissed.has(n.id)).slice(0, 50);
 }
