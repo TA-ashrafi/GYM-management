@@ -145,70 +145,72 @@ function NewMember() {
 
     const amount = planPrices[form.plan] ?? 0;
 
-    const { data: newMember, error } = await supabase
-      .from("members")
-      .insert({
-        branch_id: branchId,
-        roll_no: form.rollNo,
-        rfid: form.rfid,
-        name: form.name,
-        phone: form.phone,
-        email: form.email || null,
-        address: form.address || null,
-        gender: form.gender,
-        age: form.age,
-        height_cm: form.heightCm,
-        weight_kg: form.weightKg,
-        goal: form.goal,
-        medical: form.medical || null,
-        emergency_contact: form.emergencyContact || null,
-        photo: uploadedPhoto ?? PHOTOS[photoIdx],
-        joining_date: form.joiningDate || null,
-        plan: form.plan,
-        fee_amount: amount,
-        fee_paid: form.feePaid,
-        expiry_date: expiry.toISOString(),
-        preferred_slot: form.preferredSlot,
-      })
-      .select()
-      .single();
+    const payload = {
+      branch_id: branchId,
+      roll_no: form.rollNo,
+      rfid: form.rfid,
+      name: form.name,
+      full_name: form.name,
+      phone: form.phone,
+      email: form.email || null,
+      address: form.address || null,
+      gender: form.gender,
+      age: form.age,
+      height_cm: form.heightCm,
+      weight_kg: form.weightKg,
+      goal: form.goal,
+      medical: form.medical || null,
+      emergency_contact: form.emergencyContact || null,
+      photo: uploadedPhoto ?? PHOTOS[photoIdx],
+      joining_date: form.joiningDate || null,
+      plan: form.plan,
+      membership_plan: form.plan,
+      fee_amount: amount,
+      fee_paid: form.feePaid,
+      expiry_date: expiry.toISOString(),
+      preferred_slot: form.preferredSlot,
+    };
 
-    if (error) {
-      toast.error("Failed to save: " + error.message);
-      console.error(error);
-      return;
-    }
+    try {
+      toast.loading("Saving member and dispatching welcome email...", { id: "add-member" });
 
-    // Trigger welcome email via backend API if email provided
-    if (form.email) {
-      apiClient.post("/notifications/expiry", {
-        email: form.email,
-        memberName: form.name,
-        daysLeft: form.plan === "Monthly" ? 30 : 90,
-      }).catch(() => {});
-    }
+      // Save member through backend API so welcome email triggers
+      const createdMember = await apiClient.post<any>("/members", payload);
 
-    // Payment record — sirf jab fee paid ho
-    if (newMember && form.feePaid) {
-      const { error: payError } = await supabase.from("payments").insert({
-        branch_id: branchId,
-        member_id: newMember.id,
-        amount,
-        plan: form.plan,
-        payment_date: new Date().toISOString(),
-        note: "New member joining",
-      });
+      const createdId = Array.isArray(createdMember) ? createdMember[0]?.id : createdMember?.id;
 
-      if (payError) {
-        console.error("Payment insert error:", payError);
+      // Payment record if fee paid
+      if (form.feePaid && createdId) {
+        await supabase.from("payments").insert({
+          branch_id: branchId,
+          member_id: createdId,
+          amount,
+          plan: form.plan,
+          payment_date: new Date().toISOString(),
+          note: "New member joining",
+        }).catch((pErr) => console.error("Payment insert error:", pErr));
       }
+
+      toast.success(`${form.name} added successfully & welcome email sent! 💪`, { id: "add-member" });
+      nav({ to: "/members" });
+    } catch (err: any) {
+      console.warn("Backend API member creation fallback:", err);
+      // Fallback to direct client insert if API call encounters error
+      const { data: fallbackMember, error: fallbackError } = await supabase
+        .from("members")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (fallbackError) {
+        toast.error("Failed to save member: " + fallbackError.message, { id: "add-member" });
+        return;
+      }
+
+      toast.success(`${form.name} added successfully! 💪`, { id: "add-member" });
+      nav({ to: "/members" });
     }
-
-    toast.success(`${form.name} added successfully! 💪`);
-    nav({ to: "/members" });
   }
-
-  const bmi = form.weightKg / Math.pow(form.heightCm / 100, 2);
 
   return (
     <div className="p-8 max-w-6xl">

@@ -4,24 +4,33 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 class EmailService {
-  private transporter: nodemailer.Transporter
+  private getTransporter(): nodemailer.Transporter {
+    const host = process.env.SMTP_HOST || process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com'
+    const port = Number(process.env.SMTP_PORT || process.env.BREVO_SMTP_PORT) || 587
+    const isSecure = port === 465
+    const user = process.env.SMTP_USER || process.env.BREVO_SMTP_USER || process.env.BREVO_FROM_EMAIL || ''
+    const pass = process.env.SMTP_PASS || process.env.BREVO_SMTP_PASSWORD || process.env.BREVO_API_KEY || ''
 
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com',
-      port: Number(process.env.BREVO_SMTP_PORT) || 587,
-      secure: Number(process.env.BREVO_SMTP_PORT) === 465,
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: isSecure,
       auth: {
-        user: process.env.BREVO_SMTP_USER || process.env.BREVO_FROM_EMAIL || '',
-        pass: process.env.BREVO_SMTP_PASSWORD || process.env.BREVO_API_KEY || '',
+        user,
+        pass,
       },
+      tls: {
+        rejectUnauthorized: false, // Serverless runtime TLS fix
+      },
+      connectionTimeout: 10000,
     })
   }
 
   private getFromHeader(): string {
     const name = process.env.BREVO_FROM_NAME || 'ALPHA FITNESS'
-    const email = process.env.BREVO_FROM_EMAIL || 'notifications@alphafitness.com'
-    return `"${name}" <${email}>`
+    const rawSender = process.env.SENDER_EMAIL || process.env.BREVO_FROM_EMAIL || process.env.SMTP_USER || 'notifications@alphafitness.com'
+    if (rawSender.includes('<')) return rawSender
+    return `"${name}" <${rawSender}>`
   }
 
   private getBaseLayout(title: string, bodyContent: string): string {
@@ -41,7 +50,6 @@ class EmailService {
           .header p { margin: 5px 0 0; color: #8d8d8d; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; }
           .content { padding: 30px 25px; line-height: 1.6; font-size: 15px; color: #d0d0d0; }
           .badge { display: inline-block; padding: 6px 12px; background-color: rgba(237, 52, 52, 0.15); color: #ed3434; border: 1px solid rgba(237, 52, 52, 0.3); border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-          .cta-btn { display: block; width: 220px; margin: 25px auto; padding: 14px 20px; background: linear-gradient(to right, #6f0000, #ba0000); color: #ffffff; text-align: center; font-weight: bold; text-decoration: none; border-radius: 8px; text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px; }
           .footer { background-color: #0a0a0a; padding: 20px; text-align: center; border-top: 1px solid #1a1a1a; font-size: 12px; color: #666666; }
         </style>
       </head>
@@ -66,81 +74,113 @@ class EmailService {
 
   async sendWelcomeEmail(toEmail: string, memberName: string, planName: string, gymName = 'ALPHA FITNESS') {
     if (!toEmail) return
-    const body = `
-      <div class="badge">Welcome to the Elite</div>
-      <h2 style="color: #ffffff; margin-top: 0;">Congratulations, ${memberName}!</h2>
-      <p>Welcome to the <strong>${gymName}</strong> family! Your membership for <strong>${planName}</strong> plan is now active.</p>
-      <p>Your journey towards peak human performance starts right now. Our state-of-the-art facilities, automated RFID tracking, and elite community are ready to support every sweat and rep.</p>
-      <div style="background-color: #181818; padding: 15px; border-radius: 8px; border-left: 3px solid #ed3434; margin: 20px 0;">
-        <p style="margin: 0; font-size: 13px; color: #a0a0a0;"><strong>PRO TIP:</strong> Don't forget to scan your RFID card at the front desk console every time you enter to maintain your active training streak!</p>
-      </div>
-      <p>See you on the workout floor!</p>
-    `
-    const html = this.getBaseLayout(`Welcome to ${gymName}`, body)
-    await this.transporter.sendMail({
-      from: this.getFromHeader(),
-      to: toEmail,
-      subject: `🔥 Welcome to ${gymName}, ${memberName}! Your Journey Begins Now`,
-      html,
-    })
+    try {
+      const body = `
+        <div class="badge">Welcome to the Family</div>
+        <h2 style="color: #ffffff; margin-top: 0;">Congratulations, ${memberName}! 🎉</h2>
+        <p>Welcome to the <strong>${gymName}</strong> family! Your membership for the <strong>${planName}</strong> plan is officially active.</p>
+        <p>Your journey towards peak physical fitness begins now. Our state-of-the-art facilities, automated RFID gate tracking, and expert trainers are here to support every step of your fitness goal.</p>
+        <div style="background-color: #181818; padding: 15px; border-radius: 8px; border-left: 3px solid #ed3434; margin: 20px 0;">
+          <p style="margin: 0; font-size: 13px; color: #a0a0a0;"><strong>PRO TIP:</strong> Always scan your RFID card at the front desk gate console when entering to log your daily attendance streak!</p>
+        </div>
+        <a href="${process.env.VITE_BASE_URL || 'http://localhost:5173'}" style="display: inline-block; background: linear-gradient(to right, #6f0000, #ba0000); color: #ffffff; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 6px; margin-top: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Access Console →</a>
+      `
+      const html = this.getBaseLayout(`Welcome to ${gymName}`, body)
+      const transporter = this.getTransporter()
+
+      const response = await transporter.sendMail({
+        from: this.getFromHeader(),
+        to: toEmail,
+        subject: `🎉 Congratulations & Welcome to ${gymName}, ${memberName}!`,
+        html,
+      })
+      console.log(`✉️ Welcome email sent to ${toEmail}. Message ID: ${response?.messageId}`)
+      return { success: true, response }
+    } catch (error: any) {
+      console.error(`❌ Error sending welcome email to ${toEmail}:`, error)
+      return { success: false, error: error.message || error }
+    }
   }
 
   async sendMissedPunchEmail(toEmail: string, memberName: string, dateStr: string) {
     if (!toEmail) return
-    const body = `
-      <div class="badge" style="color: #eab308; border-color: rgba(234, 179, 8, 0.3); background-color: rgba(234, 179, 8, 0.15);">Streak Alert</div>
-      <h2 style="color: #ffffff; margin-top: 0;">We missed you today, ${memberName}!</h2>
-      <p>Our attendance system noticed that you didn't punch in on <strong>${dateStr}</strong>.</p>
-      <p>If you trained today, please remember to swipe your RFID card at the entrance reader so your training streak and attendance records stay 100% accurate.</p>
-      <p>Consistency is the key to extraordinary results. Make sure to hit your training session tomorrow!</p>
-    `
-    const html = this.getBaseLayout('Missed Punch-In Alert', body)
-    await this.transporter.sendMail({
-      from: this.getFromHeader(),
-      to: toEmail,
-      subject: `⚠️ Missed Punch-In Notice — ALPHA FITNESS (${dateStr})`,
-      html,
-    })
+    try {
+      const body = `
+        <div class="badge" style="color: #eab308; border-color: rgba(234, 179, 8, 0.3); background-color: rgba(234, 179, 8, 0.15);">Streak Alert</div>
+        <h2 style="color: #ffffff; margin-top: 0;">We missed you today, ${memberName}!</h2>
+        <p>Our attendance console noticed that you did not punch in on <strong>${dateStr}</strong>.</p>
+        <p>If you trained today, please remember to swipe your RFID card at the gate reader so your workout streak stays 100% up to date.</p>
+        <p>Consistency is key to extraordinary results. We look forward to seeing you tomorrow!</p>
+      `
+      const html = this.getBaseLayout('Missed Punch-In Alert', body)
+      const transporter = this.getTransporter()
+
+      const response = await transporter.sendMail({
+        from: this.getFromHeader(),
+        to: toEmail,
+        subject: `⚠️ Missed Punch-In Notice — ALPHA FITNESS (${dateStr})`,
+        html,
+      })
+      console.log(`✉️ Missed punch email sent to ${toEmail}. Message ID: ${response?.messageId}`)
+      return { success: true, response }
+    } catch (error: any) {
+      console.error(`❌ Error sending missed punch email to ${toEmail}:`, error)
+      return { success: false, error: error.message || error }
+    }
   }
 
   async sendExpiryWarningEmail(toEmail: string, memberName: string, daysLeft: number, expiryDateStr: string) {
     if (!toEmail) return
-    const body = `
-      <div class="badge" style="color: #f97316; border-color: rgba(249, 115, 22, 0.3); background-color: rgba(249, 115, 22, 0.15);">Membership Alert</div>
-      <h2 style="color: #ffffff; margin-top: 0;">Notice: ${daysLeft} Days Remaining</h2>
-      <p>Hi ${memberName},</p>
-      <p>Your gym membership is scheduled to expire on <strong style="color: #ffffff;">${expiryDateStr}</strong> (${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining).</p>
-      <p>To avoid any interruption to your workout routine and RFID gate access, please renew your membership plan with the front desk before the expiry date.</p>
-      <div style="text-align: center; margin-top: 25px;">
-        <p style="font-size: 13px; color: #8d8d8d;">Visit the desk today or contact management to extend your plan.</p>
-      </div>
-    `
-    const html = this.getBaseLayout('Membership Expiring Soon', body)
-    await this.transporter.sendMail({
-      from: this.getFromHeader(),
-      to: toEmail,
-      subject: `⏳ Urgent: Your Membership Expires in ${daysLeft} Days — ALPHA FITNESS`,
-      html,
-    })
+    try {
+      const body = `
+        <div class="badge" style="color: #f97316; border-color: rgba(249, 115, 22, 0.3); background-color: rgba(249, 115, 22, 0.15);">Membership Alert</div>
+        <h2 style="color: #ffffff; margin-top: 0;">Notice: ${daysLeft} Days Remaining</h2>
+        <p>Hi ${memberName},</p>
+        <p>Your gym membership is scheduled to expire on <strong style="color: #ffffff;">${expiryDateStr}</strong> (${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining).</p>
+        <p>To avoid any interruption to your workout routine and RFID gate access, please renew your membership plan with the front desk before the expiry date.</p>
+      `
+      const html = this.getBaseLayout('Membership Expiring Soon', body)
+      const transporter = this.getTransporter()
+
+      const response = await transporter.sendMail({
+        from: this.getFromHeader(),
+        to: toEmail,
+        subject: `⏳ Urgent: Your Membership Expires in ${daysLeft} Days — ALPHA FITNESS`,
+        html,
+      })
+      console.log(`✉️ Expiry warning email sent to ${toEmail}. Message ID: ${response?.messageId}`)
+      return { success: true, response }
+    } catch (error: any) {
+      console.error(`❌ Error sending expiry warning email to ${toEmail}:`, error)
+      return { success: false, error: error.message || error }
+    }
   }
 
   async sendMembershipExpiredEmail(toEmail: string, memberName: string, expiredDateStr: string) {
     if (!toEmail) return
-    const body = `
-      <div class="badge">Plan Expired</div>
-      <h2 style="color: #ffffff; margin-top: 0;">Your Membership Plan Has Expired</h2>
-      <p>Hi ${memberName},</p>
-      <p>Your membership plan expired on <strong>${expiredDateStr}</strong>.</p>
-      <p>Your RFID access card has been temporarily paused. Renew your membership now to regain full access to all workout zones and classes without losing your streak progress!</p>
-      <p>We look forward to seeing you back on the floor stronger than ever.</p>
-    `
-    const html = this.getBaseLayout('Membership Plan Expired', body)
-    await this.transporter.sendMail({
-      from: this.getFromHeader(),
-      to: toEmail,
-      subject: `🚨 Membership Expired — Renew Your Plan at ALPHA FITNESS`,
-      html,
-    })
+    try {
+      const body = `
+        <div class="badge">Plan Expired</div>
+        <h2 style="color: #ffffff; margin-top: 0;">Your Membership Plan Has Expired</h2>
+        <p>Hi ${memberName},</p>
+        <p>Your membership plan expired on <strong>${expiredDateStr}</strong>.</p>
+        <p>Your RFID access card has been temporarily paused. Renew your membership now to regain full access without losing your streak progress!</p>
+      `
+      const html = this.getBaseLayout('Membership Plan Expired', body)
+      const transporter = this.getTransporter()
+
+      const response = await transporter.sendMail({
+        from: this.getFromHeader(),
+        to: toEmail,
+        subject: `🚨 Membership Expired — Renew Your Plan at ALPHA FITNESS`,
+        html,
+      })
+      console.log(`✉️ Expired email sent to ${toEmail}. Message ID: ${response?.messageId}`)
+      return { success: true, response }
+    } catch (error: any) {
+      console.error(`❌ Error sending expired email to ${toEmail}:`, error)
+      return { success: false, error: error.message || error }
+    }
   }
 }
 
