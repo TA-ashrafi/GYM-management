@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Mail, Lock, User, Phone, Eye, EyeOff, ArrowLeft, Building2, ShieldCheck, Trophy, Sparkles, KeyRound } from "lucide-react";
 import { signIn, signUp } from "@/lib/auth";
 import { supabase, fetchBranches, getActiveBranchId, setActiveBranchId } from "@/lib/supabase";
+import { apiClient } from "@/api/client";
 import logoPng from "@/assets/logo.png";
 import logintitan from "@/assets/login-titan.jpg";
 import { FireSparksOverlay } from "@/components/FireSparksOverlay";
@@ -211,13 +212,19 @@ function Auth() {
 
   async function handleGoogleLogin() {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth",
-        },
-      });
-      if (error) throw error;
+      const redirectTarget = window.location.origin + "/auth";
+      const res = await apiClient.get<{ url?: string }>(`/auth/google?redirectTo=${encodeURIComponent(redirectTarget)}`);
+      if (res && res.url) {
+        window.location.href = res.url;
+      } else {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: redirectTarget,
+          },
+        });
+        if (error) throw error;
+      }
     } catch (err: any) {
       toast.error(err?.message || "Failed to initialize Google Authentication");
     }

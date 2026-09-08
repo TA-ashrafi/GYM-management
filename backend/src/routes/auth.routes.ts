@@ -6,6 +6,7 @@ const router = Router()
 
 router.post('/login', validateBody(['email', 'password']), authController.login)
 router.post('/register', validateBody(['email', 'password']), authController.register)
+router.get('/google', authController.googleSignIn)
 router.post('/logout', authController.logout)
 router.get('/me', authController.me)
 

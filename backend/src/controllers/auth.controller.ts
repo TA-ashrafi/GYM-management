@@ -24,6 +24,22 @@ export const authController = {
     }
   },
 
+  async googleSignIn(req: Request, res: Response) {
+    try {
+      const redirectTo = (req.query.redirectTo as string) || 'http://localhost:5173/'
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+        },
+      })
+      if (error) return res.status(400).json({ error: error.message })
+      res.json(data)
+    } catch (error: any) {
+      res.status(500).json({ error: error.message })
+    }
+  },
+
   async logout(req: Request, res: Response) {
     try {
       const { error } = await supabase.auth.signOut()
