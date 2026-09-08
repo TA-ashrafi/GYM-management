@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { supabaseService } from '../services/supabase.service'
+import { emailService } from '../services/email.service'
 
 export const memberController = {
   async getAllMembers(req: Request, res: Response) {
@@ -24,8 +25,21 @@ export const memberController = {
 
   async createMember(req: Request, res: Response) {
     try {
-      const member = await supabaseService.createMember(req.body)
-      res.status(201).json(member)
+      const memberData = req.body
+      const result = await supabaseService.createMember(memberData)
+
+      // Asynchronously trigger welcome email if member has email
+      const email = memberData.email || (Array.isArray(result) ? result[0]?.email : result?.email)
+      const name = memberData.full_name || memberData.name || (Array.isArray(result) ? result[0]?.full_name : result?.name)
+      const plan = memberData.membership_plan || memberData.plan || 'Standard'
+
+      if (email && name) {
+        emailService.sendWelcomeEmail(email, name, plan).catch((err) => {
+          console.error('Error sending welcome email:', err)
+        })
+      }
+
+      res.status(201).json(result)
     } catch (error: any) {
       res.status(500).json({ error: error.message })
     }

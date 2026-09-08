@@ -5,6 +5,7 @@ import { Camera, IdCard, User, Activity, CreditCard, Heart, Radio, CheckCircle2,
 import { PageHeader } from "@/components/AppShell";
 import { useGym, generateSlots, type PlanType } from "@/lib/gym-store";
 import { supabase, getActiveBranchId } from "@/lib/supabase";
+import { apiClient } from "@/api/client";
 
 import m1 from "@/assets/m1.jpg";
 import m2 from "@/assets/m2.jpg";
@@ -78,23 +79,41 @@ function NewMember() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
+    img.onload = async () => {
       const canvas = document.createElement("canvas");
-      const MAX = 200;
+      const MAX = 600;
       let w = img.width, h = img.height;
       if (w > h) { if (w > MAX) { h = (h * MAX) / w; w = MAX; } }
       else { if (h > MAX) { w = (w * MAX) / h; h = MAX; } }
       canvas.width = w;
       canvas.height = h;
       canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      const compressed = canvas.toDataURL("image/jpeg", 0.7);
-      setUploadedPhoto(compressed);
+      const compressed = canvas.toDataURL("image/jpeg", 0.85);
+
+      try {
+        toast.loading("Uploading photo to Cloudinary...", { id: "photo-upload" });
+        const res = await apiClient.post<{ url: string }>("/upload", {
+          image: compressed,
+          folder: "alpha_fitness_members",
+        });
+        if (res && res.url) {
+          setUploadedPhoto(res.url);
+          toast.success("Photo uploaded to Cloudinary! ⚡", { id: "photo-upload" });
+        } else {
+          setUploadedPhoto(compressed);
+          toast.success("Photo set!", { id: "photo-upload" });
+        }
+      } catch (err: any) {
+        console.warn("Cloudinary upload fallback to local compressed base64:", err);
+        setUploadedPhoto(compressed);
+        toast.success("Photo set!", { id: "photo-upload" });
+      }
       URL.revokeObjectURL(url);
     };
     img.src = url;
@@ -160,6 +179,15 @@ function NewMember() {
       return;
     }
 
+    // Trigger welcome email via backend API if email provided
+    if (form.email) {
+      apiClient.post("/notifications/expiry", {
+        email: form.email,
+        memberName: form.name,
+        daysLeft: form.plan === "Monthly" ? 30 : 90,
+      }).catch(() => {});
+    }
+
     // Payment record — sirf jab fee paid ho
     if (newMember && form.feePaid) {
       const { error: payError } = await supabase.from("payments").insert({
@@ -173,7 +201,6 @@ function NewMember() {
 
       if (payError) {
         console.error("Payment insert error:", payError);
-        // Member ban gaya, payment fail hone pe bhi aage badho
       }
     }
 
