@@ -83,40 +83,29 @@ function NewMember() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = async () => {
-      const canvas = document.createElement("canvas");
-      const MAX = 600;
-      let w = img.width, h = img.height;
-      if (w > h) { if (w > MAX) { h = (h * MAX) / w; w = MAX; } }
-      else { if (h > MAX) { w = (w * MAX) / h; h = MAX; } }
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      const compressed = canvas.toDataURL("image/jpeg", 0.85);
-
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
       try {
         toast.loading("Uploading photo to Cloudinary...", { id: "photo-upload" });
         const res = await apiClient.post<{ url: string }>("/upload", {
-          image: compressed,
+          image: base64Data,
           folder: "alpha_fitness_members",
         });
         if (res && res.url) {
           setUploadedPhoto(res.url);
-          toast.success("Photo uploaded to Cloudinary! ⚡", { id: "photo-upload" });
+          toast.success("Crisp photo uploaded to Cloudinary! ⚡", { id: "photo-upload" });
         } else {
-          setUploadedPhoto(compressed);
+          setUploadedPhoto(base64Data);
           toast.success("Photo set!", { id: "photo-upload" });
         }
       } catch (err: any) {
-        console.warn("Cloudinary upload fallback to local compressed base64:", err);
-        setUploadedPhoto(compressed);
+        console.warn("Cloudinary upload fallback to raw data URL:", err);
+        setUploadedPhoto(base64Data);
         toast.success("Photo set!", { id: "photo-upload" });
       }
-      URL.revokeObjectURL(url);
     };
-    img.src = url;
+    reader.readAsDataURL(file);
   };
 
   async function submit(e: React.FormEvent) {
@@ -150,7 +139,6 @@ function NewMember() {
       roll_no: form.rollNo,
       rfid: form.rfid,
       name: form.name,
-      full_name: form.name,
       phone: form.phone,
       email: form.email || null,
       address: form.address || null,
@@ -164,7 +152,6 @@ function NewMember() {
       photo: uploadedPhoto ?? PHOTOS[photoIdx],
       joining_date: form.joiningDate || null,
       plan: form.plan,
-      membership_plan: form.plan,
       fee_amount: amount,
       fee_paid: form.feePaid,
       expiry_date: expiry.toISOString(),
@@ -172,14 +159,11 @@ function NewMember() {
     };
 
     try {
-      toast.loading("Saving member and dispatching welcome email...", { id: "add-member" });
+      toast.loading("Saving member and sending welcome email...", { id: "add-member" });
 
-      // Save member through backend API so welcome email triggers
       const createdMember = await apiClient.post<any>("/members", payload);
-
       const createdId = Array.isArray(createdMember) ? createdMember[0]?.id : createdMember?.id;
 
-      // Payment record if fee paid
       if (form.feePaid && createdId) {
         await supabase.from("payments").insert({
           branch_id: branchId,
@@ -191,11 +175,10 @@ function NewMember() {
         }).catch((pErr) => console.error("Payment insert error:", pErr));
       }
 
-      toast.success(`${form.name} added successfully & welcome email sent! 💪`, { id: "add-member" });
+      toast.success(`${form.name} added successfully & welcome email dispatched! 💪`, { id: "add-member" });
       nav({ to: "/members" });
     } catch (err: any) {
       console.warn("Backend API member creation fallback:", err);
-      // Fallback to direct client insert if API call encounters error
       const { data: fallbackMember, error: fallbackError } = await supabase
         .from("members")
         .insert(payload)
@@ -228,7 +211,7 @@ function NewMember() {
               alt="Member preview"
               className="w-full aspect-square object-cover rounded-xl ring-2 ring-brand/30"
             />
-            <label className="cursor-pointer block mt-4 px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 text-center">
+            <label className="cursor-pointer block mt-4 px-4 py-2 bg-secondary rounded-lg text-sm hover:bg-secondary/80 text-center font-medium">
               📷 Upload Photo
               <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
             </label>

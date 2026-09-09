@@ -26,6 +26,7 @@ export type Member = {
   feeAmount: number;
   feePaid: boolean;
   expiryDate: string;
+  expiry_date?: string;
   preferredSlot: string;
   attendance: string[];
 };
@@ -466,10 +467,12 @@ export function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
-export function memberStatus(m: Member): "active" | "expiring" | "expired" | "ghost" {
-  const d = daysUntil(m.expiryDate);
-  if (d < 0) return "expired";
-  const lastVisit = m.attendance[0];
+export function memberStatus(m: Member | any): "active" | "expiring" | "expired" | "ghost" {
+  const expiry = m.expiryDate ?? m.expiry_date;
+  if (!expiry) return "active";
+  const d = daysUntil(expiry);
+  if (isNaN(d) || d < 0) return "expired";
+  const lastVisit = Array.isArray(m.attendance) ? m.attendance[0] : null;
   const since = lastVisit ? daysSince(lastVisit) : 999;
   if (since >= 4 && d >= 0) return "ghost";
   if (d <= 7) return "expiring";
@@ -509,18 +512,18 @@ export function computeNotifications(s: State): Notification[] {
       out.push({
         id: `exp_${m.id}`, type: "expiry", tone: "danger",
         title: `${m.name}'s membership expired`,
-        desc: `${Math.abs(daysUntil(m.expiryDate))} days ago — renewal pending`,
+        desc: `${Math.abs(daysUntil(m.expiryDate ?? m.expiry_date ?? ''))} days ago — renewal pending`,
         href: "/members?filter=expired", ts: Date.now(),
       });
     } else if (st === "expiring") {
       out.push({
         id: `expg_${m.id}`, type: "expiry", tone: "warn",
         title: `${m.name}'s membership expiring soon`,
-        desc: `${daysUntil(m.expiryDate)} days remaining`,
+        desc: `${daysUntil(m.expiryDate ?? m.expiry_date ?? '')} days remaining`,
         href: "/members?filter=expiring", ts: Date.now(),
       });
     } else if (st === "ghost") {
-      const last = m.attendance[0];
+      const last = Array.isArray(m.attendance) ? m.attendance[0] : null;
       out.push({
         id: `gh_${m.id}`, type: "ghost", tone: "danger",
         title: `Ghost member: ${m.name}`,
@@ -528,11 +531,11 @@ export function computeNotifications(s: State): Notification[] {
         href: "/members?filter=ghost", ts: Date.now(),
       });
     }
-    if (!m.feePaid) {
+    if (!m.feePaid && !m.fee_paid) {
       out.push({
         id: `dues_${m.id}`, type: "dues", tone: "warn",
         title: `Pending dues: ${m.name}`,
-        desc: `${currencySymbol(s.settings.currency)}${m.feeAmount.toLocaleString("en-IN")} unpaid`,
+        desc: `${currencySymbol(s.settings.currency)}${(m.feeAmount ?? m.fee_amount ?? 0).toLocaleString("en-IN")} unpaid`,
         href: "/members?filter=unpaid", ts: Date.now(),
       });
     }
